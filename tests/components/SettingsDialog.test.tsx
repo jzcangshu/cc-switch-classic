@@ -147,6 +147,12 @@ vi.mock("@/components/settings/LogConfigPanel", () => ({
 vi.mock("@/components/settings/ProxyTabContent", () => ({
   ProxyTabContent: () => <div>proxy-tab-content</div>,
 }));
+vi.mock("@/components/settings/sections/RoutingSection", () => ({
+  RoutingSection: () => <div>routing-section</div>,
+}));
+vi.mock("@/components/skills/SkillsStorageSheet", () => ({
+  SkillsStorageSettings: () => <div>skills-storage-settings</div>,
+}));
 vi.mock("@/components/settings/GlobalProxySettings", () => ({
   GlobalProxySettings: () => <div>global-proxy-settings</div>,
 }));
@@ -255,6 +261,34 @@ describe("SettingsPage", () => {
     expect(props.onOpenApps).toHaveBeenCalledTimes(1);
   });
 
+  it("shows skill storage and Codex authentication in general instead of directory settings", () => {
+    const view = renderSettingsPage();
+    expect(screen.getByText("skills-storage-settings")).toBeInTheDocument();
+    expect(screen.getByText("codex-auth-settings")).toBeInTheDocument();
+    view.rerenderWith({ section: "appConfig" });
+    expect(
+      screen.queryByText("skills-storage-settings"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("codex-auth-settings")).not.toBeInTheDocument();
+  });
+
+  it("places outbound proxy beside routing and keeps it out of advanced", () => {
+    const view = renderSettingsPage({ section: "routing" });
+    expect(screen.getByText("routing-section")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "settings.advanced.globalProxy.title",
+      }),
+    );
+    expect(screen.getByText("global-proxy-settings")).toBeInTheDocument();
+    view.rerenderWith({ section: "data" });
+    expect(
+      screen.queryByRole("button", {
+        name: "settings.advanced.globalProxy.title",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("rolls a failed autosave back and reports it", async () => {
     settingsMock = createSettingsMock({
       autoSaveSettings: vi.fn().mockRejectedValue(new Error("disk full")),
@@ -310,16 +344,16 @@ describe("SettingsPage", () => {
   it("drives per-app directories and saves only after a change", async () => {
     const { rerenderWith } = renderSettingsPage({ section: "appConfig" });
 
-    expect(screen.getByText("codex-auth-settings")).toBeInTheDocument();
+    expect(screen.queryByText("codex-auth-settings")).not.toBeInTheDocument();
     // 第三版底部保存常驻，未改过时不可提交。
     expect(screen.getByRole("button", { name: "common.save" })).toBeDisabled();
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: "settings.browseDirectory" })[0],
+      screen.getAllByRole("button", { name: "settings.browseDirectory" })[1],
     );
     expect(settingsMock.browseDirectory).toHaveBeenCalledWith("claude");
     fireEvent.click(
-      screen.getAllByRole("button", { name: "settings.resetDefault" })[1],
+      screen.getAllByRole("button", { name: "settings.resetDefault" })[2],
     );
     expect(settingsMock.resetDirectory).toHaveBeenCalledWith("codex");
 

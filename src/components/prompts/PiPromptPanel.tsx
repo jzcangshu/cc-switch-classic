@@ -383,6 +383,13 @@ const PiPromptPanel: React.FC<PiPromptPanelProps> = ({
 
   return (
     <PromptPageFrame
+      libraryStatus={
+        activeTab === "global"
+          ? activePrompt
+            ? t("prompts.enabledName", { name: activePrompt[1].name })
+            : t("prompts.noneEnabled")
+          : undefined
+      }
       app="pi"
       apps={apps}
       onAppChange={onAppChange}

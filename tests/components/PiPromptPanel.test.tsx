@@ -102,6 +102,7 @@ describe("Pi prompts page", () => {
     expect(
       screen.getByRole("button", { name: "pi.prompts.globalTab" }),
     ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/prompts.noneEnabled/)).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pi.prompts.systemTab" }),
@@ -113,6 +114,7 @@ describe("Pi prompts page", () => {
       await screen.findByRole("list", { name: "pi.prompts.systemFilesLabel" }),
     ).toBeInTheDocument();
     expect(screen.getByText("~/.pi/agent/")).toBeInTheDocument();
+    expect(screen.queryByText(/prompts.noneEnabled/)).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pi.prompts.templatesTab" }),
@@ -121,6 +123,7 @@ describe("Pi prompts page", () => {
       screen.getAllByRole("button", { name: "pi.prompts.newTemplate" }).length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("~/.pi/agent/prompts/")).toBeInTheDocument();
+    expect(screen.queryByText(/prompts.noneEnabled/)).not.toBeInTheDocument();
   });
 
   it("locks navigation while a system prompt or template editor is saving", async () => {

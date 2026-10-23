@@ -8,7 +8,7 @@ const SECTION_TAB: Record<SettingsSection, ClassicTab> = {
   general: "general",
   appConfig: "advanced",
   routing: "proxy",
-  network: "advanced",
+  network: "proxy",
   data: "advanced",
   about: "about",
 };

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { GeneralSection } from "@/components/settings/sections/GeneralSection";
@@ -14,6 +14,13 @@ vi.mock("@/components/theme-provider", () => ({
 
 vi.mock("@/components/settings/TerminalSettings", () => ({
   TerminalSelect: () => null,
+}));
+
+vi.mock("@/components/skills/SkillsStorageSheet", () => ({
+  SkillsStorageSettings: () => null,
+}));
+vi.mock("@/components/settings/CodexAuthSettings", () => ({
+  CodexAuthSettings: () => null,
 }));
 
 const platform = vi.hoisted(() => ({ linux: false }));
@@ -35,6 +42,7 @@ function renderSection(settings: Partial<SettingsFormState> = {}) {
       settings={{ ...baseSettings, ...settings }}
       onAutoSave={onAutoSave}
       onOpenApps={vi.fn()}
+      onStorageMigrated={vi.fn()}
     />,
   );
   return onAutoSave;
@@ -59,6 +67,24 @@ describe("GeneralSection tray style", () => {
       screen.getByRole("button", { name: "settings.general.trayStyleMenu" }),
     );
     expect(onAutoSave).toHaveBeenCalledWith({ nativeTrayMenu: true });
+  });
+
+  it("saves language from its direct button and orders light, dark, system", () => {
+    const onAutoSave = renderSection();
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.languageOptionTurkish" }),
+    );
+    expect(onAutoSave).toHaveBeenCalledWith({ language: "tr" });
+    const group = screen.getByRole("group", { name: "settings.theme" });
+    expect(
+      within(group)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual([
+      "settings.themeLight",
+      "settings.themeDark",
+      "settings.themeSystem",
+    ]);
   });
 
   it("switches back to the panel", () => {

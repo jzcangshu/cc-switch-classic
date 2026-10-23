@@ -1,8 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { SkillsStorageSheet } from "@/components/skills/SkillsStorageSheet";
+import {
+  SkillsStorageSheet,
+  SkillsStorageSettings,
+} from "@/components/skills/SkillsStorageSheet";
+import type { SettingsFormState } from "@/hooks/useSettings";
 
 const m = vi.hoisted(() => ({
   settings: {
@@ -50,7 +55,11 @@ vi.mock("@/lib/api/skills", () => ({
 }));
 
 const renderDialog = () =>
-  render(<SkillsStorageSheet open onOpenChange={vi.fn()} />);
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <SkillsStorageSheet open onOpenChange={vi.fn()} />
+    </QueryClientProvider>,
+  );
 
 const radio = (name: string | RegExp) => screen.getByRole("radio", { name });
 
@@ -189,6 +198,107 @@ describe("SkillsStorageSheet", () => {
     );
   });
 
+  it("uses the settings page's callbacks and keeps partial migration details inline", async () => {
+    const onMigrated = vi.fn();
+    const onChange = vi.fn().mockResolvedValue(true);
+    m.migrate.mockResolvedValue({
+      migratedCount: 1,
+      skippedCount: 0,
+      errors: ["pdf: access denied"],
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SkillsStorageSettings
+          inline
+          settings={
+            {
+              ...m.settings,
+              showInTray: true,
+              minimizeToTrayOnClose: true,
+              language: "zh",
+            } as SettingsFormState
+          }
+          onMigrated={onMigrated}
+          onChange={onChange}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "settings.skillSync.copy" }),
+    );
+    expect(onChange).toHaveBeenCalledWith({ skillSyncMethod: "copy" });
+    expect(m.updateSettings).not.toHaveBeenCalled();
+    expect(m.autoSaveSettings).not.toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: "settings.skillStorage.unified" }),
+    );
+    await userEvent.click(moveButton());
+    await waitFor(() => expect(onMigrated).toHaveBeenCalledWith("unified"));
+    expect(m.toastWarning).toHaveBeenCalledWith(
+      "skills.storageSheet.movePartial",
+      expect.objectContaining({ description: "pdf: access denied" }),
+    );
+  });
+
+  it("rolls back and reports a failed sync preference save", async () => {
+    m.autoSaveSettings.mockRejectedValue(new Error("disk full"));
+    renderDialog();
+    await userEvent.click(radio(/skills\.storageSheet\.syncCopy/));
+    await waitFor(() =>
+      expect(m.updateSettings).toHaveBeenLastCalledWith({
+        skillSyncMethod: "auto",
+      }),
+    );
+    expect(m.toastError).toHaveBeenCalledWith("settings.saveFailedGeneric");
+  });
+
+  it("keeps the inline migration modal open until the migration finishes", async () => {
+    let finishMigration!: (result: {
+      migratedCount: number;
+      skippedCount: number;
+      errors: string[];
+    }) => void;
+    m.migrate.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishMigration = resolve;
+        }),
+    );
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SkillsStorageSettings
+          inline
+          settings={{
+            showInTray: true,
+            minimizeToTrayOnClose: true,
+            language: "zh",
+          }}
+          onMigrated={vi.fn()}
+          onChange={vi.fn().mockResolvedValue(true)}
+        />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "settings.skillStorage.unified" }),
+    );
+    await userEvent.click(moveButton());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("skills.storageSheet.moving");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    const navigationShortcut = vi.fn();
+    window.addEventListener("keydown", navigationShortcut);
+    fireEvent.keyDown(window, { key: ",", ctrlKey: true });
+    expect(navigationShortcut).not.toHaveBeenCalled();
+    window.removeEventListener("keydown", navigationShortcut);
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    finishMigration({ migratedCount: 0, skippedCount: 0, errors: [] });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
   it("names the apps and Skills that did not sync", async () => {
     m.resync.mockResolvedValue([
       { app: "claude", ok: true, failedSkills: [] },
@@ -220,7 +330,11 @@ describe("SkillsStorageSheet", () => {
 
   it("closes from the solid Done button", async () => {
     const onOpenChange = vi.fn();
-    render(<SkillsStorageSheet open onOpenChange={onOpenChange} />);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SkillsStorageSheet open onOpenChange={onOpenChange} />
+      </QueryClientProvider>,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "common.done" }));
 

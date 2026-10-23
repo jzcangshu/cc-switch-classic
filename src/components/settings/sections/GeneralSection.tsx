@@ -3,17 +3,13 @@ import { ChevronRight, Monitor, Moon, Sun } from "lucide-react";
 import type { SettingsFormState } from "@/hooks/useSettings";
 import { useTheme } from "@/components/theme-provider";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { isLinux } from "@/lib/platform";
 import { AppVisibilitySettings } from "@/components/settings/AppVisibilitySettings";
 import { TerminalSelect } from "@/components/settings/TerminalSettings";
+import { SkillsStorageSettings } from "@/components/skills/SkillsStorageSheet";
+import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
+import type { SkillStorageLocation } from "@/types";
 import {
   SettingsBlock,
   SettingsCard,
@@ -35,65 +31,51 @@ interface GeneralSectionProps {
   settings: SettingsFormState;
   onAutoSave: (updates: Partial<SettingsFormState>) => Promise<boolean>;
   onOpenApps: () => void;
+  savedCodexConfigDir?: string;
+  onStorageMigrated: (location: SkillStorageLocation) => void;
 }
 
 export function GeneralSection({
   settings,
   onAutoSave,
   onOpenApps,
+  savedCodexConfigDir,
+  onStorageMigrated,
 }: GeneralSectionProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
 
   return (
     <>
-      <SettingsCard className="p-4">
-        <AppVisibilitySettings
-          settings={settings}
-          onChange={(updates) => void onAutoSave(updates)}
-        />
-      </SettingsCard>
       <SettingsBlock title={t("settings.general.appearance")}>
         <SettingsCard>
-          <SettingsRow
-            label={t("settings.language")}
-            control={
-              <Select
-                value={settings.language}
-                onValueChange={(value) =>
-                  void onAutoSave({ language: value as Language })
-                }
-              >
-                <SelectTrigger
-                  className="h-8 w-[160px]"
-                  aria-label={t("settings.language")}
+          <SettingsRow label={t("settings.language")}>
+            <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1">
+              {LANGUAGES.map((language) => (
+                <Button
+                  key={language.value}
+                  type="button"
+                  size="sm"
+                  variant={
+                    settings.language === language.value ? "default" : "ghost"
+                  }
+                  aria-pressed={settings.language === language.value}
+                  onClick={() => void onAutoSave({ language: language.value })}
+                  className="min-w-[96px]"
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map((language) => (
-                    <SelectItem key={language.value} value={language.value}>
-                      {t(language.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
-          <SettingsRow
-            label={t("settings.theme")}
-            control={
-              <SegmentedControl
-                size="sm"
-                aria-label={t("settings.theme")}
-                value={theme}
-                onValueChange={setTheme}
-                items={[
-                  {
-                    value: "system",
-                    label: t("settings.themeSystem"),
-                    icon: Monitor,
-                  },
+                  {t(language.labelKey)}
+                </Button>
+              ))}
+            </div>
+          </SettingsRow>
+          <SettingsRow label={t("settings.theme")}>
+            <div
+              role="group"
+              aria-label={t("settings.theme")}
+              className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1"
+            >
+              {(
+                [
                   {
                     value: "light",
                     label: t("settings.themeLight"),
@@ -104,10 +86,28 @@ export function GeneralSection({
                     label: t("settings.themeDark"),
                     icon: Moon,
                   },
-                ]}
-              />
-            }
-          />
+                  {
+                    value: "system",
+                    label: t("settings.themeSystem"),
+                    icon: Monitor,
+                  },
+                ] as const
+              ).map(({ value, label, icon: Icon }) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant={theme === value ? "default" : "ghost"}
+                  aria-pressed={theme === value}
+                  className="min-w-[96px]"
+                  onClick={() => setTheme(value)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </SettingsRow>
           <SettingsRow
             label={t("settings.general.quotaDisplay")}
             help={{
@@ -137,6 +137,28 @@ export function GeneralSection({
           />
         </SettingsCard>
       </SettingsBlock>
+
+      <SettingsCard className="p-4">
+        <AppVisibilitySettings
+          settings={settings}
+          onChange={(updates) => void onAutoSave(updates)}
+        />
+      </SettingsCard>
+      <SettingsCard className="p-4">
+        <SkillsStorageSettings
+          inline
+          settings={settings}
+          onChange={onAutoSave}
+          onMigrated={onStorageMigrated}
+        />
+      </SettingsCard>
+      <SettingsCard>
+        <CodexAuthSettings
+          settings={settings}
+          onChange={onAutoSave}
+          codexConfigDir={savedCodexConfigDir}
+        />
+      </SettingsCard>
 
       <SettingsBlock title={t("settings.general.sidebarAndHeader")}>
         <SettingsCard>

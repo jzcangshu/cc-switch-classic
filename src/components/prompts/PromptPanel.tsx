@@ -476,9 +476,15 @@ const StandardPromptPanel: React.FC<PromptPanelProps> = ({
         : formatSize(utf8Bytes(fileText));
   const resultCount = filterPromptEntries(promptEntries, searchQuery).length;
   const isHermes = appId === "hermes";
+  const enabledPrompt = promptEntries.find(([, prompt]) => prompt.enabled);
 
   return (
     <PromptPageFrame
+      libraryStatus={
+        enabledPrompt
+          ? t("prompts.enabledName", { name: enabledPrompt[1].name })
+          : t("prompts.noneEnabled")
+      }
       app={appId}
       apps={apps}
       onAppChange={onAppChange}

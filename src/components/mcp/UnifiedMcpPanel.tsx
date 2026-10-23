@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { AppCountBar } from "@/components/common/AppCountBar";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Notice, NoticeSlot } from "@/components/ui/notice";
 import {
@@ -404,10 +405,14 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
     }
   };
 
-  const handleBulk = async (app: McpAppId, enabled: boolean) => {
+  const handleBulk = async (
+    app: McpAppId,
+    enabled: boolean,
+    rows = scope.rows,
+  ) => {
     if (!beginWrite()) return;
     try {
-      const targets = scope.rows
+      const targets = rows
         .filter(([, server]) => Boolean(server.apps[app]) !== enabled)
         .map(([id]) => ({ id, app }));
       if (targets.length === 0) return;
@@ -657,12 +662,28 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
 
       <div id="main-content" className="flex min-h-0 flex-1 flex-col">
         {showList && (
-          <div className="flex h-14 shrink-0 items-center gap-3 px-6">
+          <div className="shrink-0 px-6 pt-3">
+            <AppCountBar
+              totalLabel={t("mcp.serverCount", { count: serverEntries.length })}
+              counts={Object.fromEntries(
+                appIds.map((app) => [
+                  app,
+                  serverEntries.filter(([, server]) => server.apps[app]).length,
+                ]),
+              )}
+              appIds={appIds}
+              totalCount={serverEntries.length}
+              disabled={controlsDisabled}
+              onToggleAll={(app, enabled) => {
+                if (isMcpAppId(app))
+                  void handleBulk(app, enabled, serverEntries);
+              }}
+            />
             <MatrixSearch
-              className="w-[320px] min-w-[180px] shrink"
+              className="mb-4 w-full"
               value={searchQuery}
               onValueChange={setSearchQuery}
-              placeholder={t("mcpPage.searchPlaceholder")}
+              placeholder={t("mcp.unifiedPanel.searchPlaceholder")}
               ariaLabel={t("mcp.unifiedPanel.searchAriaLabel")}
               status={
                 normalizedSearchQuery
@@ -672,17 +693,19 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                   : ""
               }
             />
-            <span className="shrink-0 whitespace-nowrap text-caption tabular-nums text-fg-2">
-              {normalizedSearchQuery
-                ? t("mcpPage.countFiltered", {
-                    shown: filteredServerEntries.length,
-                    count: serverEntries.length,
-                  })
-                : t("mcpPage.count", { count: serverEntries.length })}
-            </span>
-            <span className="ms-auto min-w-0 truncate text-caption text-fg-2">
-              {t("mcpPage.overwriteNote")}
-            </span>
+            <div className="mb-3 flex items-center gap-3 text-caption text-fg-2">
+              <span className="shrink-0 whitespace-nowrap tabular-nums">
+                {normalizedSearchQuery
+                  ? t("mcpPage.countFiltered", {
+                      shown: filteredServerEntries.length,
+                      count: serverEntries.length,
+                    })
+                  : t("mcpPage.count", { count: serverEntries.length })}
+              </span>
+              <span className="ms-auto min-w-0 truncate">
+                {t("mcpPage.overwriteNote")}
+              </span>
+            </div>
           </div>
         )}
 
@@ -776,11 +799,11 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
             >
               <MatrixColumnHighlight>
                 <div className="min-w-[560px]">
-                  <div className="sticky top-0 z-10 flex h-11 items-center border-b border-border bg-muted pe-2 ps-4">
-                    <span className="min-w-0 flex-1 text-caption font-semibold text-fg-2">
-                      {t("mcpPage.columnName")}
-                    </span>
-                    <div className="flex shrink-0">
+                  <details className="border-b border-border bg-muted px-4 py-2">
+                    <summary className="cursor-pointer text-caption text-fg-2">
+                      {t("common.bulkActions", { defaultValue: "批量操作" })}
+                    </summary>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {appIds.map((app) => {
                         const enabledCount = serverEntries.filter(
                           ([, server]) => server.apps[app],
@@ -809,8 +832,7 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                         );
                       })}
                     </div>
-                    <span aria-hidden="true" className="w-24 shrink-0" />
-                  </div>
+                  </details>
 
                   {filteredServerEntries.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">

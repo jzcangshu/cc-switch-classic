@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { AppCountBar } from "@/components/common/AppCountBar";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Notice, NoticeSlot } from "@/components/ui/notice";
 import {
@@ -500,8 +501,12 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
     }
   };
 
-  const handleColumnBulk = (app: AppId, enabled: boolean) => {
-    const ids = scope.rows
+  const handleColumnBulk = (
+    app: AppId,
+    enabled: boolean,
+    rows = scope.rows,
+  ) => {
+    const ids = rows
       .filter((skill) => Boolean(skill.apps[app]) !== enabled)
       .map((skill) => skill.id);
     if (ids.length === 0) return;
@@ -1280,60 +1285,64 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
                   </>
                 )}
               </div>
-              <div className="flex shrink-0">
-                {appIds.map((app) => {
-                  const isPi = app === "pi";
-                  const onInScope = scope.rows.filter(
-                    (skill) => skill.apps[app],
-                  ).length;
-                  const appFilter: StatusFilter = `app:${app}`;
-                  return (
-                    <MatrixColumnHeader
-                      key={app}
-                      app={app}
-                      enabledCount={
-                        installedSkills.filter((skill) => skill.apps[app])
-                          .length
-                      }
-                      totalCount={nInstalled}
-                      scopeTotal={scope.rows.length}
-                      scopeEnabled={onInScope}
-                      scopeFailed={
-                        scope.rows.filter(
-                          (skill) => fails[failKey(skill.id, app)],
-                        ).length
-                      }
-                      scopeKind={scope.kind}
-                      noun={noun}
-                      disabled={controlsDisabled}
-                      title={isPi ? t("skillsPage.piColumnTitle") : undefined}
-                      help={
-                        isPi
-                          ? {
-                              title: t("skillsPage.piHelpTitle"),
-                              body: t("skillsPage.piHelp"),
-                            }
-                          : undefined
-                      }
-                      extraAction={{
-                        label:
-                          statusFilter === appFilter
-                            ? t("skillsPage.pop.showAll")
-                            : t("skillsPage.pop.onlyApp", {
-                                app: APP_DISPLAY_NAME[app],
-                              }),
-                        onClick: () =>
-                          setStatusFilter(
-                            statusFilter === appFilter ? "all" : appFilter,
-                          ),
-                      }}
-                      onEnableRest={() => handleColumnBulk(app, true)}
-                      onDisableAll={() => handleColumnBulk(app, false)}
-                    />
-                  );
-                })}
-              </div>
-              <span aria-hidden="true" className="w-28 shrink-0" />
+              <details className="shrink-0 px-2">
+                <summary className="cursor-pointer text-caption text-fg-2">
+                  {t("common.bulkActions", { defaultValue: "批量操作" })}
+                </summary>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {appIds.map((app) => {
+                    const isPi = app === "pi";
+                    const onInScope = scope.rows.filter(
+                      (skill) => skill.apps[app],
+                    ).length;
+                    const appFilter: StatusFilter = `app:${app}`;
+                    return (
+                      <MatrixColumnHeader
+                        key={app}
+                        app={app}
+                        enabledCount={
+                          installedSkills.filter((skill) => skill.apps[app])
+                            .length
+                        }
+                        totalCount={nInstalled}
+                        scopeTotal={scope.rows.length}
+                        scopeEnabled={onInScope}
+                        scopeFailed={
+                          scope.rows.filter(
+                            (skill) => fails[failKey(skill.id, app)],
+                          ).length
+                        }
+                        scopeKind={scope.kind}
+                        noun={noun}
+                        disabled={controlsDisabled}
+                        title={isPi ? t("skillsPage.piColumnTitle") : undefined}
+                        help={
+                          isPi
+                            ? {
+                                title: t("skillsPage.piHelpTitle"),
+                                body: t("skillsPage.piHelp"),
+                              }
+                            : undefined
+                        }
+                        extraAction={{
+                          label:
+                            statusFilter === appFilter
+                              ? t("skillsPage.pop.showAll")
+                              : t("skillsPage.pop.onlyApp", {
+                                  app: APP_DISPLAY_NAME[app],
+                                }),
+                          onClick: () =>
+                            setStatusFilter(
+                              statusFilter === appFilter ? "all" : appFilter,
+                            ),
+                        }}
+                        onEnableRest={() => handleColumnBulk(app, true)}
+                        onDisableAll={() => handleColumnBulk(app, false)}
+                      />
+                    );
+                  })}
+                </div>
+              </details>
             </div>
 
             {filteredSkills.length === 0 ? (
@@ -1488,11 +1497,28 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
         >
           {loadOk && nInstalled > 0 && (
             <div className="flex flex-wrap items-center justify-end gap-2 px-6 pb-1 pt-3">
+              <div className="w-full">
+                <AppCountBar
+                  totalLabel={`${t("skills.installed")} ${nInstalled}`}
+                  counts={Object.fromEntries(
+                    appIds.map((app) => [
+                      app,
+                      installedSkills.filter((skill) => skill.apps[app]).length,
+                    ]),
+                  )}
+                  appIds={appIds}
+                  totalCount={nInstalled}
+                  disabled={controlsDisabled}
+                  onToggleAll={(app, enabled) =>
+                    handleColumnBulk(app, enabled, installedSkills)
+                  }
+                />
+              </div>
               <MatrixSearch
-                className="w-[280px] min-w-[160px] shrink"
+                className="w-full"
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                placeholder={t("skillsPage.searchPlaceholder")}
+                placeholder={t("skills.installedSearchPlaceholder")}
                 ariaLabel={t("skills.installedSearchAriaLabel")}
                 status={
                   normalizedQuery

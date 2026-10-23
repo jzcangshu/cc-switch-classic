@@ -249,6 +249,52 @@ describe("SessionManagerPage", () => {
     expect(await screen.findByText("Alpha")).toBeInTheDocument();
   });
 
+  it("refreshes and enters batch management from the always visible list toolbar", async () => {
+    renderPage("codex");
+    await screen.findByText("Alpha Session");
+    fireEvent.click(screen.getByRole("button", { name: "common.refresh" }));
+    await waitFor(() =>
+      expect(toastSuccessMock).toHaveBeenCalledWith("已刷新会话列表"),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "sessionManager.manageBatchTooltip" }),
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "sessionManager.exitBatchModeTooltip",
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "sessionManager.exitBatchModeTooltip",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "sessionManager.manageBatchTooltip" }),
+    ).toBeInTheDocument();
+  });
+
+  it("collapses project groups and disables that action while search expands them", async () => {
+    renderPage("codex");
+    await screen.findByText("Alpha Session");
+    const collapse = screen.getByRole("button", {
+      name: "sessionManager.collapseAllGroups",
+    });
+    fireEvent.click(collapse);
+    expect(
+      within(sessionList()).queryByText("Alpha Session"),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话" }), {
+      target: { value: "Alpha" },
+    });
+    expect(collapse).toBeDisabled();
+    expect(await screen.findByText("Alpha")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话" }), {
+      target: { value: "" },
+    });
+    expect(collapse).toBeEnabled();
+  });
+
   it("switches to all apps and to time buckets", async () => {
     renderPage("codex");
     await screen.findByText("Alpha Session");

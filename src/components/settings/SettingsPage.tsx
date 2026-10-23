@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type ReactNode,
 } from "react";
 import {
   Database,
@@ -380,9 +381,8 @@ export function SettingsPage({
   const isBusy = useMemo(() => isLoading && !settings, [isLoading, settings]);
   const SectionIcon = SECTION_ICON[section];
 
-  const advanced =
-    section === "appConfig" || section === "data" || section === "network";
-  const renderSection = (target: SettingsSection = section) => {
+  const advanced = section === "appConfig" || section === "data";
+  const renderSection = (target: SettingsSection = section): ReactNode => {
     if (!settings) return null;
     switch (target) {
       case "general":
@@ -391,13 +391,16 @@ export function SettingsPage({
             settings={settings}
             onAutoSave={handleAutoSave}
             onOpenApps={onOpenApps}
+            savedCodexConfigDir={savedSettings?.codexConfigDir}
+            onStorageMigrated={(skillStorageLocation) =>
+              updateSettings({ skillStorageLocation })
+            }
           />
         );
       case "appConfig":
         return (
           <AppConfigSection
             settings={settings}
-            savedSettings={savedSettings}
             resolvedDirs={resolvedDirs}
             onAutoSave={handleAutoSave}
             onDirectoryChange={updateDirectory}
@@ -406,7 +409,12 @@ export function SettingsPage({
           />
         );
       case "routing":
-        return <RoutingSection onOpenApp={onOpenApp} />;
+        return (
+          <>
+            <RoutingSection onOpenApp={onOpenApp} />
+            {renderSection("network")}
+          </>
+        );
       case "network":
         return (
           <SettingsBlock
@@ -425,27 +433,6 @@ export function SettingsPage({
       case "data":
         return (
           <>
-            <SettingsBlock collapsible title={t("settings.data.location")}>
-              <SettingsCard>
-                <SettingsRow
-                  label={t("settings.appConfigDir")}
-                  help={{
-                    title: t("settings.appConfigDir"),
-                    body: t("settings.appConfigDirDescription"),
-                  }}
-                >
-                  <DirectoryInput
-                    label=""
-                    value={appConfigDir}
-                    resolvedValue={resolvedDirs.appConfig}
-                    placeholder={t("settings.browsePlaceholderApp")}
-                    onChange={updateAppConfigDir}
-                    onBrowse={browseAppConfigDir}
-                    onReset={resetAppConfigDir}
-                  />
-                </SettingsRow>
-              </SettingsCard>
-            </SettingsBlock>
             <SettingsBlock
               collapsible
               title={t("settings.advanced.data.title")}
@@ -553,17 +540,39 @@ export function SettingsPage({
               <>
                 <SettingsBlock
                   key={appConfigScrollTarget ?? "directories"}
-                  title={t("settings.sections.appConfig")}
+                  title={t("settings.advanced.configDir.title")}
+                  help={{
+                    title: t("settings.advanced.configDir.title"),
+                    body: t("settings.advanced.configDir.description"),
+                  }}
                   collapsible
                   initiallyOpen={section === "appConfig"}
                 >
+                  <SettingsCard>
+                    <SettingsRow
+                      label={t("settings.appConfigDir")}
+                      help={{
+                        title: t("settings.appConfigDir"),
+                        body: t("settings.appConfigDirDescription"),
+                      }}
+                    >
+                      <DirectoryInput
+                        label=""
+                        value={appConfigDir}
+                        resolvedValue={resolvedDirs.appConfig}
+                        placeholder={t("settings.browsePlaceholderApp")}
+                        onChange={updateAppConfigDir}
+                        onBrowse={browseAppConfigDir}
+                        onReset={resetAppConfigDir}
+                      />
+                    </SettingsRow>
+                  </SettingsCard>
                   {renderSection("appConfig")}
                 </SettingsBlock>
                 {renderSection("data")}
-                {renderSection("network")}
               </>
             ) : (
-              renderSection()
+              renderSection(section === "network" ? "routing" : section)
             )}
           </SettingsBody>
         )}

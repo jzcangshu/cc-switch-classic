@@ -14,6 +14,9 @@ import {
   History,
   LayoutGrid,
   MoreHorizontal,
+  ListChecks,
+  RefreshCw,
+  ChevronsDownUp,
 } from "lucide-react";
 import { useSessionSearch } from "@/hooks/useSessionSearch";
 import {
@@ -1199,6 +1202,62 @@ export function SessionManagerPage({
               </span>
             </div>
 
+            <HoverTip
+              content={t(
+                selectionMode
+                  ? "sessionManager.exitBatchModeTooltip"
+                  : "sessionManager.manageBatchTooltip",
+              )}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label={t(
+                  selectionMode
+                    ? "sessionManager.exitBatchModeTooltip"
+                    : "sessionManager.manageBatchTooltip",
+                )}
+                onClick={() =>
+                  selectionMode ? exitSelection() : enterSelection()
+                }
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+              </Button>
+            </HoverTip>
+            <HoverTip content={t("common.refresh")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label={t("common.refresh")}
+                onClick={() => void refreshList()}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </HoverTip>
+            {groupMode === "project" && (
+              <HoverTip
+                content={t(
+                  trimmedQuery
+                    ? "sessionManager.collapseSearchReason"
+                    : "sessionManager.collapseAllGroups",
+                )}
+              >
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label={t("sessionManager.collapseAllGroups")}
+                    disabled={trimmedQuery !== ""}
+                    onClick={() => setExpanded(new Set())}
+                  >
+                    <ChevronsDownUp className="h-3.5 w-3.5" />
+                  </Button>
+                </span>
+              </HoverTip>
+            )}
             <SegmentedControl<GroupMode>
               aria-label={t("sessionManager.groupBy", {
                 defaultValue: "分组方式",

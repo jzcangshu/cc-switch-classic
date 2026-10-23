@@ -51,6 +51,8 @@ interface PromptPageFrameProps {
   appSwitchDisabled?: boolean;
   /** 当前应用的条数（列表里现成的，不另外查） */
   count: number;
+  /** 仅提示库显示启用状态；Pi 原生系统文件、模板没有启用中的条目。 */
+  libraryStatus?: string;
   help: { title: string; text: string };
   primary?: { label: string; onClick: () => void; disabled?: boolean } | null;
   moreItems: PromptMoreItem[];
@@ -77,6 +79,7 @@ export function PromptPageFrame({
   onAppChange,
   appSwitchDisabled = false,
   count,
+  libraryStatus,
   help,
   primary,
   moreItems,
@@ -173,8 +176,20 @@ export function PromptPageFrame({
           </span>
         ) : null}
         <div className="flex-1" />
-        {search ? <PromptSearch {...search} /> : null}
       </div>
+
+      {libraryStatus !== undefined && (
+        <div className="mx-6 mb-4 shrink-0 rounded-xl border border-white/10 px-6 py-4 glass">
+          <span className="text-sm text-muted-foreground">
+            {t("prompts.count", { count })} · {libraryStatus}
+          </span>
+        </div>
+      )}
+      {search ? (
+        <div className="shrink-0 px-6 pb-4">
+          <PromptSearch {...search} />
+        </div>
+      ) : null}
 
       {notices ? (
         <div role="status" className="flex shrink-0 flex-col gap-2 px-6 pb-3">
@@ -195,12 +210,11 @@ function PromptSearch({
   placeholder,
   ariaLabel,
   resultCount,
-  width = 220,
 }: NonNullable<PromptPageFrameProps["search"]>) {
   const { t } = useTranslation();
   const hasQuery = value.trim().length > 0;
   return (
-    <div className="relative shrink-0" style={{ width }}>
+    <div className="relative w-full">
       <SearchField
         value={value}
         onValueChange={onChange}

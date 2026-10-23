@@ -8,7 +8,6 @@ import {
   DirectoryInput,
   type DirectoryAppId,
 } from "@/components/settings/DirectorySettings";
-import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
 import { APP_DISPLAY_NAME, AppGlyph } from "@/components/shell/AppGlyph";
 import {
   SettingsBlock,
@@ -52,7 +51,6 @@ const DIRECTORY_APPS: DirectoryAppId[] = [
 
 interface AppConfigSectionProps {
   settings: SettingsFormState;
-  savedSettings?: Settings;
   resolvedDirs: ResolvedDirectories;
   onAutoSave: (updates: Partial<SettingsFormState>) => Promise<boolean>;
   onDirectoryChange: (app: DirectoryAppId, value?: string) => void;
@@ -66,7 +64,6 @@ interface AppConfigSectionProps {
  */
 export function AppConfigSection({
   settings,
-  savedSettings,
   resolvedDirs,
   onAutoSave,
   onDirectoryChange,
@@ -143,13 +140,6 @@ export function AppConfigSection({
                   }
                 />
               </>
-            )}
-            {app === "codex" && (
-              <CodexAuthSettings
-                settings={settings}
-                onChange={onAutoSave}
-                codexConfigDir={savedSettings?.codexConfigDir}
-              />
             )}
             {directoryRow(app)}
           </SettingsCard>

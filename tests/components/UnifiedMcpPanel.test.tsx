@@ -263,46 +263,72 @@ describe("UnifiedMcpPanel", () => {
     });
   });
 
+  it("keeps the count bar's direct bulk action on the complete collection during search", async () => {
+    mocks.serversMap = {
+      "alpha-one": makeServer("alpha-one"),
+      "alpha-two": makeServer("alpha-two", { apps: { codex: true } }),
+      beta: makeServer("beta"),
+    };
+    renderPanel();
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "mcp.unifiedPanel.searchAriaLabel" }),
+      "alpha",
+    );
+    await userEvent.click(
+      screen.getAllByRole("checkbox", { name: "common.enableAllForApp" })[1],
+    );
+    await waitFor(() =>
+      expect(mocks.bulkToggle).toHaveBeenCalledWith({
+        serverIds: ["alpha-one", "beta"],
+        app: "codex",
+        enabled: true,
+      }),
+    );
+    const [, options] = mocks.toastSuccess.mock.calls[0];
+    act(() => options.action.onClick());
+    await waitFor(() =>
+      expect(mocks.bulkToggle).toHaveBeenLastCalledWith({
+        serverIds: ["alpha-one", "beta"],
+        app: "codex",
+        enabled: false,
+      }),
+    );
+  });
+
   it.each<["error" | "warning", string[]]>([
     ["error", ["alpha", "beta"]],
     ["warning", ["beta"]],
-  ])(
-    "shows a %s toast when bulk writes fail",
-    async (level, failedIds) => {
-      mocks.serversMap = {
-        alpha: makeServer("alpha"),
-        beta: makeServer("beta"),
-      };
-      mocks.bulkToggle.mockImplementationOnce(async ({ serverIds }) => ({
-        succeeded: serverIds.filter((id: string) => !failedIds.includes(id)),
-        failed: failedIds.map((item) => ({ item, error: "write failed" })),
-      }));
-      renderPanel();
-      await userEvent.click(
-        screen.getAllByRole("button", { name: /appMatrix.columnAria/ })[1],
-      );
-      await userEvent.click(
-        screen.getByRole("button", { name: "appMatrix.pop.enableRest" }),
-      );
+  ])("shows a %s toast when bulk writes fail", async (level, failedIds) => {
+    mocks.serversMap = {
+      alpha: makeServer("alpha"),
+      beta: makeServer("beta"),
+    };
+    mocks.bulkToggle.mockImplementationOnce(async ({ serverIds }) => ({
+      succeeded: serverIds.filter((id: string) => !failedIds.includes(id)),
+      failed: failedIds.map((item) => ({ item, error: "write failed" })),
+    }));
+    renderPanel();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /appMatrix.columnAria/ })[1],
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "appMatrix.pop.enableRest" }),
+    );
 
-      const expected =
-        level === "error" ? mocks.toastError : mocks.toastWarning;
-      await waitFor(() =>
-        expect(expected).toHaveBeenCalledWith(
-          expect.stringContaining("appMatrix.toast.partialFail"),
-          expect.objectContaining({ closeButton: true }),
-        ),
-      );
-      // 全部失败没有可撤销的，部分失败只撤销写成功的那些
-      expect(Boolean(expected.mock.calls[0][1].action)).toBe(
-        level === "warning",
-      );
-      expect(mocks.toastSuccess).not.toHaveBeenCalled();
-      expect(
-        screen.getAllByRole("button", { name: "appMatrix.cell.fail" }),
-      ).toHaveLength(failedIds.length);
-    },
-  );
+    const expected = level === "error" ? mocks.toastError : mocks.toastWarning;
+    await waitFor(() =>
+      expect(expected).toHaveBeenCalledWith(
+        expect.stringContaining("appMatrix.toast.partialFail"),
+        expect.objectContaining({ closeButton: true }),
+      ),
+    );
+    // 全部失败没有可撤销的，部分失败只撤销写成功的那些
+    expect(Boolean(expected.mock.calls[0][1].action)).toBe(level === "warning");
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    expect(
+      screen.getAllByRole("button", { name: "appMatrix.cell.fail" }),
+    ).toHaveLength(failedIds.length);
+  });
 
   it.each(["success", "partial", "total", "rejected"] as const)(
     "reports the real result of a bulk undo (%s)",

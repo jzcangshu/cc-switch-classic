@@ -240,6 +240,36 @@ describe("PromptPanel", () => {
     expect(screen.queryByText("Harbor Prompt")).not.toBeInTheDocument();
   });
 
+  it("keeps card content inert and opens editing only from the edit button", async () => {
+    renderPanel();
+    await waitForPanelReady();
+    fireEvent.click(screen.getByText("Harbor Prompt"));
+    expect(screen.queryByTestId("prompt-form")).not.toBeInTheDocument();
+    await userEvent.click(editButton("Harbor Prompt"));
+    expect(screen.getByTestId("prompt-form")).toHaveTextContent(
+      "Harbor Prompt",
+    );
+  });
+
+  it("shows the whole library count and active prompt while search filters the rows", async () => {
+    const view = renderPanel();
+    await waitForPanelReady();
+    searchFor("Harbor");
+    expect(
+      screen.getByText(/prompts.count · prompts.enabledName:Aurora Prompt/),
+    ).toBeInTheDocument();
+    mocks.state.prompts = Object.fromEntries(
+      Object.entries(createPrompts()).map(([id, prompt]) => [
+        id,
+        { ...prompt, enabled: false },
+      ]),
+    );
+    view.rerenderWith({});
+    expect(
+      screen.getByText(/prompts.count · prompts.noneEnabled/),
+    ).toBeInTheDocument();
+  });
+
   it("distinguishes an empty prompt collection from no search matches", async () => {
     const view = renderPanel();
     await waitForPanelReady();
@@ -294,7 +324,7 @@ describe("PromptPanel", () => {
     expect(screen.getByText("Harbor Prompt")).toBeInTheDocument();
   });
 
-  it("shows the target file, its size and the enabled badge", async () => {
+  it("shows the target file, its size and the enabled switch", async () => {
     renderPanel();
     await waitForPanelReady();
 
@@ -303,7 +333,13 @@ describe("PromptPanel", () => {
       screen.getByTitle("prompts.targetFile ~/.claude/CLAUDE.md · 38 B"),
     ).toBeInTheDocument();
     const activeRow = screen.getByTestId("prompt-row-record-index-47");
-    expect(within(activeRow).getByText("prompts.enabled")).toBeInTheDocument();
+    expect(within(activeRow).getByRole("switch")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(
+      within(activeRow).queryByText("prompts.enabled"),
+    ).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("prompt-row-second-record")).queryByText(
         "prompts.enabled",
@@ -326,9 +362,8 @@ describe("PromptPanel", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "form-close" }));
 
-    const { user, menu } = await openRowMenu("Harbor Prompt");
-    await user.click(
-      within(menu).getByRole("menuitem", { name: "common.delete" }),
+    await userEvent.click(
+      screen.getByRole("button", { name: "prompts.deleteAria:Harbor Prompt" }),
     );
 
     await waitFor(() => {
@@ -341,9 +376,8 @@ describe("PromptPanel", () => {
     await waitForPanelReady();
     const original = mocks.state.prompts["second-record"];
 
-    const { user, menu } = await openRowMenu("Harbor Prompt");
-    await user.click(
-      within(menu).getByRole("menuitem", { name: "common.delete" }),
+    await userEvent.click(
+      screen.getByRole("button", { name: "prompts.deleteAria:Harbor Prompt" }),
     );
 
     await waitFor(() =>
@@ -370,12 +404,14 @@ describe("PromptPanel", () => {
     renderPanel();
     await waitForPanelReady();
 
-    const { menu } = await openRowMenu("Aurora Prompt");
-    const item = within(menu).getByRole("menuitem", {
-      name: /common.delete/,
+    const item = screen.getByRole("button", {
+      name: "prompts.deleteAria:Aurora Prompt",
     });
-    expect(item).toHaveAttribute("data-disabled");
-    expect(within(menu).getByText("prompts.deleteBlocked")).toBeInTheDocument();
+    expect(item).toBeDisabled();
+    await userEvent.hover(item.parentElement!);
+    expect(
+      (await screen.findAllByText("prompts.deleteBlocked")).length,
+    ).toBeGreaterThan(0);
   });
 
   it("disabling says the file was emptied and undo re-enables it", async () => {

@@ -332,6 +332,75 @@ describe("UnifiedSkillsPanel", () => {
     },
   );
 
+  it("keeps the count bar's direct bulk action on every Skill during search", async () => {
+    m.installed = [
+      makeSkill({ id: "a", name: "Alpha" }),
+      makeSkill({ id: "b", name: "Beta", apps: { codex: true } }),
+      makeSkill({ id: "c", name: "Charlie" }),
+    ];
+    renderPanel();
+    await userEvent.type(
+      screen.getByRole("textbox", {
+        name: "skills.installedSearchAriaLabel",
+      }),
+      "Alpha",
+    );
+    await userEvent.click(
+      screen.getAllByRole("checkbox", {
+        name: "common.enableAllForApp",
+      })[1],
+    );
+    await waitFor(() =>
+      expect(m.bulkToggle).toHaveBeenCalledWith({
+        ids: ["a", "c"],
+        app: "codex",
+        enabled: true,
+      }),
+    );
+    const [, options] = m.toastSuccess.mock.calls[0];
+    act(() => options.action.onClick());
+    await waitFor(() =>
+      expect(m.bulkToggle).toHaveBeenLastCalledWith({
+        ids: ["a", "c"],
+        app: "codex",
+        enabled: false,
+      }),
+    );
+  });
+
+  it("keeps the scoped batch action inside the current search", async () => {
+    m.installed = [
+      makeSkill({ id: "a", name: "Alpha" }),
+      makeSkill({
+        id: "b",
+        name: "Beta",
+        description: "Beta description",
+        directory: "beta-skill",
+      }),
+    ];
+    renderPanel();
+    await userEvent.type(
+      screen.getByRole("textbox", {
+        name: "skills.installedSearchAriaLabel",
+      }),
+      "Alpha",
+    );
+    await userEvent.click(columns()[1]);
+    expect(screen.getByText("appMatrix.pop.scopeSearch")).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "appMatrix.pop.enableRest",
+      }),
+    );
+    await waitFor(() =>
+      expect(m.bulkToggle).toHaveBeenCalledWith({
+        ids: ["a"],
+        app: "codex",
+        enabled: true,
+      }),
+    );
+  });
+
   it("marks partial bulk failures in the matrix", async () => {
     m.installed = [
       makeSkill({ id: "a", name: "A" }),

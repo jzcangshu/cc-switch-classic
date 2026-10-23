@@ -66,7 +66,7 @@ describe("PromptFormPanel", () => {
     const nameInput = screen.getByLabelText(/prompts.name/);
     fireEvent.change(nameInput, { target: { value: "My Prompt" } });
     const saveButton = screen.getByRole("button", {
-      name: "prompts.addSubmit",
+      name: "common.save",
     });
     fireEvent.click(saveButton);
     fireEvent.click(saveButton);
@@ -92,7 +92,7 @@ describe("PromptFormPanel", () => {
     fireEvent.change(screen.getByLabelText(/prompts.name/), {
       target: { value: "Codex Prompt" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "prompts.addSubmit" }));
+    fireEvent.click(screen.getByRole("button", { name: "common.save" }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onClose).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe("PromptFormPanel", () => {
     expect(
       screen.queryByText("prompts.nameRequiredHermes"),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "prompts.addSubmit" }));
+    fireEvent.click(screen.getByRole("button", { name: "common.save" }));
 
     expect(screen.getByText("prompts.nameRequiredHermes")).toBeInTheDocument();
     expect(screen.getByLabelText(/prompts.name/)).toHaveAttribute(
@@ -119,7 +119,7 @@ describe("PromptFormPanel", () => {
     expect(screen.getByLabelText(/prompts.name/)).toHaveFocus();
   });
 
-  it("names the overwritten file on the save button of the enabled prompt", () => {
+  it("keeps the common save label and names the overwritten file beside the content", () => {
     render(
       <PromptFormPanel
         appId="hermes"
@@ -131,7 +131,10 @@ describe("PromptFormPanel", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "prompts.saveAndOverwrite:SOUL.md" }),
+      screen.getByRole("button", { name: "common.save" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("prompts.saveAndOverwrite:SOUL.md"),
     ).toBeInTheDocument();
     // 删除只在列表里，编辑页底栏只有取消和保存
     expect(
@@ -154,9 +157,7 @@ describe("PromptFormPanel", () => {
     fireEvent.change(screen.getByLabelText("prompts.content"), {
       target: { value: "  spaced\n" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "prompts.saveAndWritePi" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "common.save" }));
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(
@@ -176,7 +177,7 @@ describe("PromptFormPanel", () => {
     fireEvent.change(screen.getByLabelText("prompts.content"), {
       target: { value: "a".repeat(32 * 1024 + 1) },
     });
-    fireEvent.click(screen.getByRole("button", { name: "prompts.addSubmit" }));
+    fireEvent.click(screen.getByRole("button", { name: "common.save" }));
 
     expect(screen.getByText("prompts.mcodeTooLarge")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
@@ -206,7 +207,7 @@ describe("PromptFormPanel", () => {
     fireEvent.change(body, { target: { value: "# Edited\nKeep this draft" } });
     fireEvent.click(
       screen.getByRole("button", {
-        name: "prompts.saveAndOverwrite:CLAUDE.md",
+        name: "common.save",
       }),
     );
     await waitFor(() => expect(body).toBeEnabled());
@@ -227,7 +228,7 @@ describe("PromptFormPanel", () => {
     fireEvent.change(screen.getByLabelText("prompts.content"), {
       target: { value: "汉".repeat(11_000) },
     });
-    fireEvent.click(screen.getByRole("button", { name: "prompts.addSubmit" }));
+    fireEvent.click(screen.getByRole("button", { name: "common.save" }));
     expect(screen.getByText("prompts.mcodeTooLarge")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });

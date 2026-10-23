@@ -138,16 +138,15 @@ const PromptFormPanel: React.FC<PromptFormPanelProps> = ({
   };
 
   const title = editingId
-    ? t("prompts.editTitle")
+    ? t("prompts.editTitle", { appName })
     : t("prompts.addTitle", { appName });
 
-  const submitLabel = !editingId
-    ? t("prompts.addSubmit")
-    : isActive
+  const writeEffect =
+    editingId && isActive
       ? isPi
         ? t("prompts.saveAndWritePi")
         : t("prompts.saveAndOverwrite", { file: fileName })
-      : t("common.save");
+      : undefined;
 
   const countText = limit
     ? `${formatSize(bodyBytes)} / 32 KB`
@@ -235,6 +234,9 @@ const PromptFormPanel: React.FC<PromptFormPanelProps> = ({
             </div>
 
             <div className="flex min-h-[220px] flex-1 flex-col gap-1.5">
+              {writeEffect && (
+                <p className="text-xs text-muted-foreground">{writeEffect}</p>
+              )}
               <label
                 htmlFor={`${baseId}-body`}
                 id={`${baseId}-body-label`}
@@ -302,7 +304,7 @@ const PromptFormPanel: React.FC<PromptFormPanelProps> = ({
             onClick={() => void handleSave()}
             disabled={saving}
           >
-            {saving ? t("common.saving") : submitLabel}
+            {saving ? t("common.saving") : t("common.save")}
           </Button>
         </div>
       </SheetPageContent>
