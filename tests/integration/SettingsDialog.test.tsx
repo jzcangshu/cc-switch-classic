@@ -1,6 +1,12 @@
 import React, { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import type { Settings } from "@/types";
@@ -102,7 +108,9 @@ const renderDialog = async (
   );
   if (!props?.section || props.section === "data") {
     fireEvent.click(
-      await screen.findByRole("button", { name: "settings.data.location" }),
+      await screen.findByRole("button", {
+        name: "settings.advanced.configDir.title",
+      }),
     );
     fireEvent.click(
       await screen.findByRole("button", {
@@ -182,14 +190,18 @@ describe("SettingsPage integration", () => {
     expect(appInput.value).toBe("/home/mock/.cc-switch");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "settings.browseDirectory" }),
+      within(appInput.parentElement!).getByRole("button", {
+        name: "settings.browseDirectory",
+      }),
     );
     await waitFor(() =>
       expect(appInput.value).toBe("/home/mock/.cc-switch/picked"),
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "settings.resetDefault" }),
+      within(appInput.parentElement!).getByRole("button", {
+        name: "settings.resetDefault",
+      }),
     );
     await waitFor(() => expect(appInput.value).toBe("/home/mock/.cc-switch"));
   });
@@ -203,18 +215,19 @@ describe("SettingsPage integration", () => {
     fireEvent.change(claudeInput, { target: { value: "/custom/claude" } });
     await waitFor(() => expect(claudeInput.value).toBe("/custom/claude"));
 
-    const browseButtons = screen.getAllByRole("button", {
-      name: "settings.browseDirectory",
-    });
-    const resetButtons = screen.getAllByRole("button", {
-      name: "settings.resetDefault",
-    });
-    fireEvent.click(browseButtons[0]);
+    const directoryControls = within(claudeInput.parentElement!);
+    fireEvent.click(
+      directoryControls.getByRole("button", {
+        name: "settings.browseDirectory",
+      }),
+    );
     await waitFor(() =>
       expect(claudeInput.value).toBe("/custom/claude/picked"),
     );
 
-    fireEvent.click(resetButtons[0]);
+    fireEvent.click(
+      directoryControls.getByRole("button", { name: "settings.resetDefault" }),
+    );
     await waitFor(() => expect(claudeInput.value).toBe("/home/mock/.claude"));
   });
 
@@ -310,7 +323,9 @@ describe("SettingsPage integration", () => {
       );
       fireEvent.change(directory, { target: { value: "/edited/claude" } });
       fireEvent.click(
-        screen.getAllByRole("button", { name: "settings.browseDirectory" })[0],
+        within(directory.parentElement!).getByRole("button", {
+          name: "settings.browseDirectory",
+        }),
       );
       await waitFor(() => expect(selectDirectory).toHaveBeenCalledOnce());
       expect(directory).toHaveValue("/edited/claude");
@@ -327,7 +342,9 @@ describe("SettingsPage integration", () => {
       ).toBeDisabled();
 
       fireEvent.click(
-        screen.getAllByRole("button", { name: "settings.resetDefault" })[0],
+        within(directory.parentElement!).getByRole("button", {
+          name: "settings.resetDefault",
+        }),
       );
       expect(directory).toHaveValue("/home/mock/.claude");
       expect(getSettings().claudeConfigDir).toBe("/edited/claude");
