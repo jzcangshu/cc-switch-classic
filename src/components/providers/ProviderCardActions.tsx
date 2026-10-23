@@ -167,14 +167,14 @@ export function ProviderCardActions({
             </Button>
           </HoverTip>
         )}
-        {onTest && (
-          <HoverTip content={t("provider.connectivityCheck")}>
+        <HoverTip content={t("provider.connectivityCheck")}>
+          <span>
             <Button
               variant="ghost"
               size="icon"
               className={iconButtonClass}
               aria-label={t("provider.connectivityCheck")}
-              disabled={isTesting}
+              disabled={!onTest || isTesting}
               onClick={onTest}
             >
               {isTesting ? (
@@ -183,21 +183,22 @@ export function ProviderCardActions({
                 <Activity className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
-          </HoverTip>
-        )}
-        {onConfigureUsage && (
-          <HoverTip content={t("provider.configureUsage")}>
+          </span>
+        </HoverTip>
+        <HoverTip content={t("provider.configureUsage")}>
+          <span>
             <Button
               variant="ghost"
               size="icon"
               className={iconButtonClass}
               aria-label={t("provider.configureUsage")}
+              disabled={!onConfigureUsage}
               onClick={onConfigureUsage}
             >
               <BarChart3 className="h-4 w-4" aria-hidden="true" />
             </Button>
-          </HoverTip>
-        )}
+          </span>
+        </HoverTip>
         {onOpenTerminal && (
           <HoverTip content={t("provider.openTerminal")}>
             <Button

@@ -271,6 +271,20 @@ describe("ProviderCardActions — mode items in the more menu", () => {
     }
   });
 
+  it("keeps connectivity and usage controls disabled when their actions are unavailable", async () => {
+    const user = userEvent.setup();
+    renderActions({ buttons: [], chips: [] });
+    for (const label of [
+      "provider.connectivityCheck",
+      "provider.configureUsage",
+    ]) {
+      const button = screen.getByRole("button", { name: label });
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(button).toBeDisabled();
+    }
+  });
+
   it("keeps disabled direct actions focusable and explains why they cannot run", async () => {
     const user = userEvent.setup();
     const onSwitch = vi.fn();
