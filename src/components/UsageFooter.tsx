@@ -153,6 +153,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
         className="mt-3"
         title={t("usage.planUsage")}
         rows={[]}
+        queriedAt={lastQueriedAt}
         loading={loading}
         onRefresh={refresh}
         footer={

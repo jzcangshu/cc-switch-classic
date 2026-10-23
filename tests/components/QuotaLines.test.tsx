@@ -11,7 +11,15 @@ import type { TFunction } from "i18next";
 
 const t = ((key: string) => key) as unknown as TFunction;
 const lines: QuotaLine[] = [
-  { key: "five_hour", text: "5 小时剩余 82%", tone: "normal", left: 82 },
+  {
+    key: "five_hour",
+    text: "5 小时剩余 82%",
+    value: "剩余 82%",
+    label: "5 小时",
+    emphasis: "82%",
+    tone: "normal",
+    left: 82,
+  },
 ];
 
 beforeEach(() => vi.useFakeTimers());
@@ -31,9 +39,11 @@ const result = () =>
 const flush = () => act(async () => await Promise.resolve());
 
 describe("quota column refresh", () => {
-  it("keeps the refresh icon out of sight until hover or focus", () => {
+  it("keeps the refresh icon and update time visible without hovering", () => {
     render(<QuotaLines lines={lines} onRefresh={vi.fn()} />);
-    expect(icon()).toHaveClass("hidden", "group-hover:block");
+    expect(icon()).not.toHaveClass("hidden");
+    expect(screen.getByTestId("quota-update-clock")).toBeInTheDocument();
+    expect(screen.getByText("从未更新")).toBeInTheDocument();
     expect(isSpinning()).toBe(false);
   });
 
@@ -51,7 +61,7 @@ describe("quota column refresh", () => {
     rerender(<QuotaLines lines={lines} onRefresh={onRefresh} loading />);
     act(() => vi.advanceTimersByTime(MIN_REFRESH_SPIN_MS * 2));
     expect(isSpinning()).toBe(true);
-    expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button")).toBeDisabled();
     // 转圈时再点不会重复查
     fireEvent.click(screen.getByRole("button"));
     expect(onRefresh).toHaveBeenCalledTimes(1);
@@ -65,20 +75,13 @@ describe("quota column refresh", () => {
     expect(isSpinning()).toBe(false);
   });
 
-  it("stays quiet after the tick until the pointer leaves", () => {
+  it("restores the visible refresh control after its result clears", () => {
     render(<QuotaLines lines={lines} onRefresh={vi.fn()} />);
-    const button = screen.getByRole("button");
-    fireEvent.click(button);
+    fireEvent.click(screen.getByRole("button"));
     act(() => vi.advanceTimersByTime(MIN_REFRESH_SPIN_MS));
     act(() => vi.advanceTimersByTime(REFRESH_RESULT_MS));
-
-    // ✓ 消失后鼠标还停在上面：↻ 不跟着冒出来
-    expect(icon()).toHaveClass("hidden");
-    expect(icon()).not.toHaveClass("group-hover:block");
-
-    // 移出再移进来才重新可见
-    fireEvent.mouseLeave(button);
-    expect(icon()).toHaveClass("group-hover:block");
+    expect(icon()).not.toHaveClass("hidden");
+    expect(screen.getByRole("button")).not.toBeDisabled();
   });
 
   it("keeps spinning for the minimum time when the query returns at once", () => {
@@ -124,6 +127,35 @@ describe("quota column refresh", () => {
     expect(result()).toBe("✗");
   });
 
+  it("shows failed feedback for a business failure while the last good quota remains", async () => {
+    render(
+      <QuotaLines
+        lines={lines}
+        onRefresh={() =>
+          Promise.resolve({ isError: false, data: { success: false } })
+        }
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await flush();
+    act(() => vi.advanceTimersByTime(MIN_REFRESH_SPIN_MS));
+    expect(result()).toBe("✗");
+    expect(screen.getByText("82%")).toBeInTheDocument();
+  });
+
+  it("shows failed feedback when the refresh promise rejects", async () => {
+    render(
+      <QuotaLines
+        lines={lines}
+        onRefresh={() => Promise.reject(new Error("请求失败"))}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await flush();
+    act(() => vi.advanceTimersByTime(MIN_REFRESH_SPIN_MS));
+    expect(result()).toBe("✗");
+  });
+
   it("waits for the refetch promise before deciding", async () => {
     let resolve!: (value: unknown) => void;
     render(
@@ -145,7 +177,22 @@ describe("quota column refresh", () => {
   it("does not spin for background refreshes, only dims", () => {
     render(<QuotaLines lines={lines} onRefresh={vi.fn()} loading />);
     expect(isSpinning()).toBe(false);
-    expect(screen.getByRole("button")).toHaveClass("opacity-60");
+    expect(screen.getByRole("button").closest("div[title]")).toHaveClass(
+      "opacity-60",
+    );
+  });
+
+  it("shows the classic alert icon with a query failure", () => {
+    const { container } = render(
+      <QuotaLines
+        lines={failedLines(t, "查询端点不可用")}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(container.querySelector(".lucide-circle-alert")).toHaveClass(
+      "text-red-500",
+    );
+    expect(screen.getByText("查询端点不可用")).toBeInTheDocument();
   });
 
   it("shows no icon when the quota cannot be refreshed", () => {
@@ -154,7 +201,7 @@ describe("quota column refresh", () => {
     expect(result()).toBeNull();
   });
 
-  it("splits off the resets as a dropdown, the rest of the column still refreshes", () => {
+  it("keeps reset details separate from refreshing and stops card click propagation", () => {
     const onRefresh = vi.fn();
     const withResets: QuotaLine[] = [
       { ...lines[0], short: "5 小时 82%", window: 0 },
@@ -180,21 +227,28 @@ describe("quota column refresh", () => {
         },
       },
     ];
-    render(<QuotaLines lines={withResets} onRefresh={onRefresh} />);
+    const onCardClick = vi.fn();
+    render(
+      <div onClick={onCardClick}>
+        <QuotaLines lines={withResets} onRefresh={onRefresh} />
+      </div>,
+    );
 
-    // 只有一个刷新按钮（键盘、读屏认它），重置次数自己是按钮
     expect(screen.getAllByRole("button")).toHaveLength(2);
-    expect(icon()).toHaveClass("hidden");
-
-    // 同一行的「每周」也能悬停露 ↻、点了重查
-    const weekly = screen.getByText("每周 64%");
-    fireEvent.mouseEnter(weekly);
     expect(icon()).not.toHaveClass("hidden");
-    fireEvent.click(weekly);
-    expect(onRefresh).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "查看到期时间" }));
+    expect(
+      screen.getByRole("dialog", { name: "存下的限额重置" }),
+    ).toBeInTheDocument();
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(onCardClick).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "quota.clickToRefresh" }),
+    );
     expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(onCardClick).not.toHaveBeenCalled();
   });
 });
 
@@ -225,18 +279,28 @@ describe("expanded quota bars", () => {
 });
 
 describe("reset countdown on the card", () => {
-  it("only widens the column when some tier has a reset time", () => {
+  it("uses available width and shows each tier's countdown without empty slots", () => {
     vi.setSystemTime(new Date("2026-10-04T10:00:00Z"));
     const { container, rerender } = render(<QuotaLines lines={lines} />);
-    expect(container.firstElementChild).toHaveClass("w-[136px]");
-    expect(container.querySelector("svg")).toBeNull();
+    expect(container.firstElementChild).not.toHaveClass(
+      "w-[136px]",
+      "w-[194px]",
+      "w-[208px]",
+    );
+    expect(screen.getByTestId("quota-update-clock")).toBeInTheDocument();
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
 
     rerender(
       <QuotaLines
         lines={[{ ...lines[0], resetsAt: "2026-10-04T12:30:00Z" }]}
       />,
     );
-    expect(container.firstElementChild).toHaveClass("w-[194px]");
+    expect(container.firstElementChild).not.toHaveClass(
+      "w-[136px]",
+      "w-[194px]",
+      "w-[208px]",
+    );
     expect(screen.getByText("2h30m")).toBeInTheDocument();
+    expect(container.querySelectorAll("svg")).toHaveLength(2);
   });
 });

@@ -209,12 +209,14 @@ export function quotaFailureReason(
   if (quota.credentialStatus === "refresh_pending") {
     return t("quota.reason.tokenRefreshPending");
   }
-  return quota.error || t("subscription.queryFailed");
+  return (
+    quota.error || quota.credentialMessage || t("subscription.queryFailed")
+  );
 }
 
 /**
- * 纯展示组件：渲染 SubscriptionQuota 的状态（not_found / parse_error 不显示；
- * 登录过期 / 令牌待刷新 / 查询失败写「额度没查到」+ 原因；成功按档写剩余或已用），支持卡片（inline）和展开两种布局。
+ * 纯展示组件：渲染 SubscriptionQuota 的状态（无凭据且无错误时不显示；
+ * 登录过期 / 令牌待刷新 / 查询失败写「查询失败」+ 原因；成功按档写剩余或已用），支持卡片（inline）和展开两种布局。
  *
  * 数据源由调用方 hook 注入，方便不同的额度后端复用同一套渲染逻辑：
  * - `SubscriptionQuotaFooter`（CLI 凭据路径，by appId）
@@ -230,9 +232,15 @@ export const SubscriptionQuotaView: React.FC<SubscriptionQuotaViewProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
 
-  // 无凭据 / 凭据解析错误 → 不显示（静默）
-  if (!quota || quota.credentialStatus === "not_found") return null;
-  if (quota.credentialStatus === "parse_error") return null;
+  if (!quota) return null;
+  // 未配置账号仍不显示；后端明确返回的错误须保留重试入口。
+  if (
+    (quota.credentialStatus === "not_found" ||
+      quota.credentialStatus === "parse_error") &&
+    !quota.error?.trim() &&
+    !quota.credentialMessage?.trim()
+  )
+    return null;
 
   if (!quota.success) {
     // 登录过期和令牌待刷新都是运行一次 CLI 就能解决，展开时给同一条提示
@@ -256,6 +264,7 @@ export const SubscriptionQuotaView: React.FC<SubscriptionQuotaViewProps> = ({
         className="mt-3"
         title={t("subscription.title")}
         rows={[]}
+        queriedAt={quota.queriedAt}
         loading={loading}
         onRefresh={refetch}
         footer={

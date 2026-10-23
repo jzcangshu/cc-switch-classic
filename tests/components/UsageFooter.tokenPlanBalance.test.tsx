@@ -1,12 +1,13 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import UsageFooter from "@/components/UsageFooter";
+import { usageApi } from "@/lib/api/usage";
 import { usageKeys } from "@/lib/query/usage";
 import type { Provider, UsageResult } from "@/types";
 import { createTestQueryClient } from "../utils/testQueryClient";
 
-function renderFooter(result: UsageResult) {
+function renderFooter(result: UsageResult, inline = false) {
   const provider: Provider = {
     id: "zhipu",
     name: "Zhipu GLM",
@@ -32,10 +33,13 @@ function renderFooter(result: UsageResult) {
         appId="claude"
         usageEnabled={true}
         isCurrent={true}
+        inline={inline}
       />
     </QueryClientProvider>,
   );
 }
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("UsageFooter token plan", () => {
   // 智谱按量账户没有 Coding Plan 时，后端回落成账户余额（#8465）
@@ -66,5 +70,43 @@ describe("UsageFooter token plan", () => {
 
     expect(screen.queryByText("quota.balance")).not.toBeInTheDocument();
     expect(screen.queryByText("Zhipu GLM")).not.toBeInTheDocument();
+  });
+  it("keeps token plan badges, update time and refresh visible and calls the query", async () => {
+    const result: UsageResult = {
+      success: true,
+      data: [{ planName: "five_hour", used: 20, remaining: 80, unit: "%" }],
+    };
+    const query = vi.spyOn(usageApi, "query").mockResolvedValue(result);
+    renderFooter(result, true);
+
+    expect(screen.getByText("subscription.fiveHour:")).toBeInTheDocument();
+    expect(screen.getByTestId("quota-update-clock")).toBeInTheDocument();
+    expect(screen.getByTestId("quota-refresh-icon")).not.toHaveClass("hidden");
+    fireEvent.click(
+      screen.getByRole("button", { name: "quota.clickToRefresh" }),
+    );
+    await waitFor(() => expect(query).toHaveBeenCalledWith("zhipu", "claude"));
+  });
+
+  it("keeps a failed script query visible with its reason and a working retry", async () => {
+    const result: UsageResult = { success: false, error: "查询端点不可用" };
+    const query = vi.spyOn(usageApi, "query").mockResolvedValue(result);
+    renderFooter(result, true);
+
+    expect(screen.getByText("quota.failed")).toBeInTheDocument();
+    expect(screen.getByText("查询端点不可用")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "quota.clickToRefresh" }),
+    );
+    await waitFor(() => expect(query).toHaveBeenCalledWith("zhipu", "claude"));
+  });
+
+  it("retains the update time and retry control on an expanded failure", () => {
+    renderFooter({ success: false, error: "查询端点不可用" });
+    expect(screen.getByText("quota.failed")).toBeInTheDocument();
+    expect(screen.getByText("usage.justNow")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "subscription.refresh" }),
+    ).toBeInTheDocument();
   });
 });

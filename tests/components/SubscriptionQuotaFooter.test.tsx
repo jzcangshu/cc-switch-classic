@@ -84,7 +84,7 @@ const sentence = (text: string) => (_: string, node: Element | null) =>
   !Array.from(node.children).some((child) => child.textContent === text);
 
 describe("Claude Fable subscription quota", () => {
-  it("pins the shortest window first and merges the rest into one line", () => {
+  it("keeps the selected tiers as colored badges with persistent time and refresh", () => {
     renderQuota([
       ...baseTiers,
       {
@@ -93,42 +93,46 @@ describe("Claude Fable subscription quota", () => {
         resetsAt: "2026-09-12T00:00:00Z",
       },
     ]);
-    // 第一行固定是 5 小时，哪怕它剩得最多；其余两档并成一行，快用完的那段单独标橙
-    const lines = screen.getByRole("button").children;
-    expect(lines[0]).toHaveTextContent("5 小时剩余 88%");
-    expect(lines[1]).toHaveTextContent("每周 75% · Fable 5%");
-    // 只有数值上色，档名跟着外层灰字
-    expect(screen.getByText("75%")).toHaveClass("text-green-600");
-    expect(screen.getByText("5%")).toHaveClass("text-orange-500");
-    expect(screen.getByText("88%")).toHaveClass("text-green-600");
-    expect(screen.getByText("88%").parentElement).toHaveClass("text-fg-2");
-    // 重置倒计时直接写在每行后面：5 小时那行没有重置时间，留空占位；合并行写最近的那次
+    expect(screen.getByText(sentence("5小时:剩余 88%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("7天:剩余 75%"))).toBeInTheDocument();
+    expect(screen.getByText("75%")).toHaveClass(
+      "font-semibold",
+      "text-green-600",
+    );
+    expect(screen.getByText("5%")).toHaveClass(
+      "font-semibold",
+      "text-orange-500",
+    );
+    expect(screen.getByText("88%")).toHaveClass(
+      "font-semibold",
+      "text-green-600",
+    );
+    expect(screen.getByTestId("quota-update-clock")).toBeInTheDocument();
+    expect(screen.getByTestId("quota-refresh-icon")).not.toHaveClass("hidden");
+    expect(screen.getByText("刚刚")).toBeInTheDocument();
     expect(screen.getByText("2d12h")).toBeInTheDocument();
     expect(
-      screen.getAllByText(/后重置$/).map((node) => node.textContent),
-    ).toEqual(["2d12h后重置"]);
-    // 悬停说明照旧逐档写全
-    expect(screen.getByRole("button").getAttribute("title")).toContain(
-      "Fable · 2d12h后重置",
-    );
+      screen
+        .getByRole("button", { name: i18n.t("quota.clickToRefresh") })
+        .getAttribute("title"),
+    ).toContain("Fable · 2d12h后重置");
   });
 
   it.each([
-    ["en", "5-hour 88% left", "Wk 75% · Fable 5%"],
-    ["ja", "5時間 残り 88%", "週 75% · Fable 5%"],
-  ])(
-    "uses short tier names on the merged line in %s",
-    async (language, first, merged) => {
-      await i18n.changeLanguage(language);
-      renderQuota([
-        ...baseTiers,
-        { name: "seven_day_fable", utilization: 95, resetsAt: null },
-      ]);
-      const lines = screen.getByRole("button").children;
-      expect(lines[0]).toHaveTextContent(first);
-      expect(lines[1]).toHaveTextContent(merged);
-    },
-  );
+    ["en", "5-Hour:88% left", "7-Day:75% left"],
+    ["ja", "5時間:残り 88%", "7日間:残り 75%"],
+  ])("localizes the full badges in %s", async (language, first, weekly) => {
+    await i18n.changeLanguage(language);
+    renderQuota([
+      ...baseTiers,
+      { name: "seven_day_fable", utilization: 95, resetsAt: null },
+    ]);
+    expect(screen.getByText(sentence(first))).toBeInTheDocument();
+    expect(screen.getByText(sentence(weekly))).toBeInTheDocument();
+    expect(
+      screen.getByText(sentence("Fable:" + i18n.t("quota.left", { value: 5 }))),
+    ).toBeInTheDocument();
+  });
 
   it("shows every tier as a bar when expanded", () => {
     renderQuota(
@@ -143,7 +147,7 @@ describe("Claude Fable subscription quota", () => {
       false,
     );
     expect(
-      screen.getByRole("meter", { name: "5 小时: 剩余 88%" }),
+      screen.getByRole("meter", { name: "5小时: 剩余 88%" }),
     ).toHaveAttribute("aria-valuenow", "88");
     expect(screen.getByText("已用完")).toHaveClass("text-red-500");
     // 展开时重置时间直接写在数值后面
@@ -156,9 +160,9 @@ describe("Claude Fable subscription quota", () => {
       { name: "seven_day_fable", utilization: 95, resetsAt: null },
     ];
     renderQuota(tiers, true, {}, vi.fn(), "used");
-    const lines = screen.getByRole("button").children;
-    expect(lines[0]).toHaveTextContent("5 小时已用 12%");
-    expect(lines[1]).toHaveTextContent("每周 25% · Fable 95%");
+    expect(screen.getByText(sentence("5小时:已用 12%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("7天:已用 25%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("Fable:已用 95%"))).toBeInTheDocument();
     // 颜色仍按剩余：Fable 已用 95% = 剩余 5%
     expect(screen.getByText("95%")).toHaveClass("text-orange-500");
     expect(screen.getByText("12%")).toHaveClass("text-green-600");
@@ -167,7 +171,7 @@ describe("Claude Fable subscription quota", () => {
   it("draws the expanded bar as used when chosen", () => {
     renderQuota(baseTiers, false, {}, vi.fn(), "used");
     expect(
-      screen.getByRole("meter", { name: "5 小时: 已用 12%" }),
+      screen.getByRole("meter", { name: "5小时: 已用 12%" }),
     ).toHaveAttribute("aria-valuenow", "12");
   });
 
@@ -178,15 +182,15 @@ describe("Claude Fable subscription quota", () => {
 
   it("keeps legacy quotas visible without inventing a Fable limit", () => {
     renderQuota(baseTiers);
-    expect(screen.getByText(sentence("5 小时剩余 88%"))).toBeInTheDocument();
-    expect(screen.getByText(sentence("每周剩余 75%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("5小时:剩余 88%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("7天:剩余 75%"))).toBeInTheDocument();
     expect(screen.queryByText(/Fable/)).not.toBeInTheDocument();
   });
 
   it.each([
-    ["zh-TW", "Fable 剩餘 63%"],
-    ["en", "Fable 63% left"],
-    ["ja", "Fable 残り 63%"],
+    ["zh-TW", "Fable:剩餘 63%"],
+    ["en", "Fable:63% left"],
+    ["ja", "Fable:残り 63%"],
   ])("localizes the Fable line in %s", async (language, text) => {
     await i18n.changeLanguage(language);
     renderQuota([{ name: "seven_day_fable", utilization: 37, resetsAt: null }]);
@@ -208,10 +212,10 @@ describe("Antigravity quota groups", () => {
 
   it("keeps one line per group on the card: the window with the least left", () => {
     renderQuota(agyTiers);
-    const lines = screen.getByRole("button", { name: "查看各档额度" }).children;
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toHaveTextContent("Gemini 剩余 60%");
-    expect(lines[1]).toHaveTextContent("Claude/GPT 剩余 5%");
+    const details = screen.getByRole("button", { name: "查看各档额度" });
+    expect(details).toHaveTextContent("Gemini:剩余 60%");
+    expect(details).toHaveTextContent("Claude/GPT:剩余 5%");
+    expect(details.querySelector("button")).toBeNull();
     // 倒计时跟着留下的那档（Gemini 每周）
     expect(screen.getByText("2d12h")).toBeInTheDocument();
   });
@@ -233,7 +237,9 @@ describe("Antigravity quota groups", () => {
       "Claude/GPT 每周剩余 80%",
     ]);
 
-    fireEvent.click(screen.getByRole("button", { name: "点击重新查询" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: i18n.t("quota.clickToRefresh") }),
+    );
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
@@ -267,7 +273,7 @@ describe("credential failures", () => {
 
   it("says the token is waiting for a refresh, not that the login expired", () => {
     failed("refresh_pending");
-    expect(screen.getByText("额度没查到")).toBeInTheDocument();
+    expect(screen.getByText("查询失败")).toBeInTheDocument();
     expect(screen.getByText("令牌待刷新")).toBeInTheDocument();
     expect(screen.queryByText("登录已过期")).not.toBeInTheDocument();
     expect(screen.queryByText("raw backend message")).not.toBeInTheDocument();
@@ -276,6 +282,52 @@ describe("credential failures", () => {
   it("still says the login expired when it really did", () => {
     failed("expired");
     expect(screen.getByText("登录已过期")).toBeInTheDocument();
+  });
+});
+
+describe("missing credentials with and without backend errors", () => {
+  it.each(["not_found", "parse_error"] as const)(
+    "keeps an unconfigured %s result silent",
+    (credentialStatus) => {
+      const { container } = renderQuota([], true, {
+        success: false,
+        credentialStatus,
+        error: null,
+        credentialMessage: null,
+        queriedAt: null,
+      });
+      expect(container).toBeEmptyDOMElement();
+    },
+  );
+
+  it.each(["not_found", "parse_error"] as const)(
+    "shows an explicit %s error with a retry button",
+    (credentialStatus) => {
+      const refetch = vi.fn();
+      renderQuota(
+        [],
+        true,
+        { success: false, credentialStatus, error: "后端明确的凭据错误" },
+        refetch,
+      );
+      expect(screen.getByText("查询失败")).toBeInTheDocument();
+      expect(screen.getByText("后端明确的凭据错误")).toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole("button", { name: i18n.t("quota.clickToRefresh") }),
+      );
+      expect(refetch).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("uses a credential message when the error field is empty", () => {
+    renderQuota([], false, {
+      success: false,
+      credentialStatus: "parse_error",
+      error: null,
+      credentialMessage: "凭据读取失败",
+    });
+    expect(screen.getByText("凭据读取失败")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "刷新" })).toBeInTheDocument();
   });
 });
 
@@ -295,11 +347,11 @@ describe("ChatGPT saved limit resets", () => {
 
   it("rides along with the weekly tier on the card", () => {
     codex(true);
-    expect(screen.getByText(sentence("5 小时剩余 88%"))).toBeInTheDocument();
-    expect(screen.getByText(sentence("重置 2 次"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("5小时:剩余 88%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("重置剩余 2 次"))).toBeInTheDocument();
     expect(
       screen
-        .getByRole("button", { name: /点击重新查询/ })
+        .getByRole("button", { name: i18n.t("quota.clickToRefresh") })
         .getAttribute("title"),
     ).toContain("存下的限额重置剩余 2 次");
   });
@@ -318,14 +370,16 @@ describe("ChatGPT saved limit resets", () => {
     expect(within(dialog).getByText("不会过期")).toBeInTheDocument();
 
     // 第一行和同一行的「每周」照旧点了重查
-    fireEvent.click(screen.getByRole("button", { name: /点击重新查询/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: i18n.t("quota.clickToRefresh") }),
+    );
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
   it("gets its own row in the expanded view, with the earliest expiry instead of a bar", () => {
     codex(false);
     expect(screen.getByText("重置")).toBeInTheDocument();
-    expect(screen.getByText("剩余 2 次")).toBeInTheDocument();
+    expect(screen.getByText(sentence("剩余 2 次"))).toBeInTheDocument();
     expect(screen.getByText(/到期$/)).toBeInTheDocument();
     // 只有两档画额度条
     expect(screen.getAllByRole("meter")).toHaveLength(2);
@@ -355,7 +409,7 @@ describe("ChatGPT Credits balance", () => {
     renderQuota(baseTiers, false, credits);
     expect(screen.getByText("Credits")).toBeInTheDocument();
     expect(screen.getByText("62,500")).toBeInTheDocument();
-    expect(screen.getByText("约 $2500")).toBeInTheDocument();
+    expect(screen.getByText(sentence("约 $2500"))).toBeInTheDocument();
     // 只有两档画额度条
     expect(screen.getAllByRole("meter")).toHaveLength(2);
   });
@@ -363,18 +417,22 @@ describe("ChatGPT Credits balance", () => {
   it("stays off the card while no tier is used up", () => {
     renderQuota(baseTiers, true, credits);
     expect(screen.queryByText(/\$2500/)).not.toBeInTheDocument();
-    expect(screen.getByText(sentence("重置 2 次"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("重置剩余 2 次"))).toBeInTheDocument();
   });
 
   it("shows up on the card in dollars once a tier is used up, ahead of the resets", () => {
     renderQuota(usedUp, true, credits);
     expect(screen.getByText("$2500")).toBeInTheDocument();
-    expect(screen.getByText(sentence("每周 75%"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("7天:剩余 75%"))).toBeInTheDocument();
     // 合并行只放得下两段：余额排在重置次数前面
-    expect(screen.queryByText(sentence("重置 2 次"))).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(sentence("重置剩余 2 次")),
+    ).not.toBeInTheDocument();
     // 没有下拉段时整列是一个按钮，悬停说明里写全余额
     expect(
-      screen.getByRole("button", { name: /\$2500/ }).getAttribute("title"),
+      screen
+        .getByRole("button", { name: i18n.t("quota.clickToRefresh") })
+        .getAttribute("title"),
     ).toContain("Credits 余额 62,500");
   });
 
@@ -385,7 +443,7 @@ describe("ChatGPT Credits balance", () => {
       credits,
     );
     expect(screen.getByText("$2500")).toBeInTheDocument();
-    expect(screen.getByText(sentence("重置 2 次"))).toBeInTheDocument();
+    expect(screen.getByText(sentence("重置剩余 2 次"))).toBeInTheDocument();
   });
 
   it("is listed under the resets when they drop down on the card", () => {

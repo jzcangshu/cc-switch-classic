@@ -1,5 +1,5 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
-import { Check, Clock, RefreshCw, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { AlertCircle, Check, Clock, RefreshCw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { HoverTip } from "@/components/ui/hover-tip";
@@ -27,10 +27,10 @@ export const TONE_TEXT: Record<QuotaTone, string> = {
 };
 
 export const TONE_FILL: Record<QuotaTone, string> = {
-  normal: "bg-chart-1",
+  normal: "bg-green-500",
   muted: "bg-chart-1",
-  warning: "bg-warning",
-  danger: "bg-danger",
+  warning: "bg-orange-500",
+  danger: "bg-red-500",
   plain: "bg-chart-1",
 };
 
@@ -71,46 +71,28 @@ export function useNow(active: boolean) {
   return now;
 }
 
-/** 一行里最早到点的那次重置（合并行几档各有各的，写最近的那个）；都没有或都过了为 null */
-function rowCountdown(row: QuotaLine[], now: number) {
-  let earliest: string | null = null;
-  for (const line of row) {
-    if (!countdownStr(line.resetsAt, now)) continue;
-    if (!earliest || Date.parse(line.resetsAt!) < Date.parse(earliest)) {
-      earliest = line.resetsAt!;
-    }
-  }
-  return countdownStr(earliest, now);
-}
-
-/**
- * 额度行后面的「⏱ 2h30m」（卡片、授权中心）：定宽、内容靠左，几行的时钟上下对齐；
- * 这一行没有重置时间时留空占位，免得各行右边缘错开
- */
+/** 单档重置倒计时：只在有有效时间时显示，不占固定列宽。 */
 export function ResetSlot({
   countdown,
-  className = "ms-1.5",
+  className = "ms-0.5",
 }: {
   countdown: string | null;
   className?: string;
 }) {
   const { t } = useTranslation();
+  if (!countdown) return null;
   return (
     <span
       className={cn(
-        "inline-flex w-[52px] shrink-0 items-center gap-0.5 text-fg-3",
+        "inline-flex shrink-0 items-center gap-0.5 text-muted-foreground/60",
         className,
       )}
     >
-      {countdown && (
-        <>
-          <Clock aria-hidden className="h-2.5 w-2.5 shrink-0" strokeWidth={2} />
-          <span className="sr-only">
-            {t("subscription.resetsIn", { time: countdown })}
-          </span>
-          <span aria-hidden>{countdown}</span>
-        </>
-      )}
+      <Clock aria-hidden className="h-2.5 w-2.5 shrink-0" strokeWidth={2} />
+      <span className="sr-only">
+        {t("subscription.resetsIn", { time: countdown })}
+      </span>
+      <span aria-hidden>{countdown}</span>
     </span>
   );
 }
@@ -133,20 +115,21 @@ type RefreshPhase =
   | { kind: "succeeded" }
   | { kind: "failed" };
 
-/** react-query refetch() 的结果：请求失败时 isError 为真（即使界面还留着上次成功的值） */
+/** refetch 可能保留旧成功值；请求错误和业务失败都不能显示成功反馈。 */
 function isRejectedResult(result: unknown): boolean {
-  return (
-    typeof result === "object" &&
-    result !== null &&
-    (result as { isError?: unknown }).isError === true
-  );
+  if (typeof result !== "object" || result === null) return false;
+  const queryResult = result as {
+    isError?: unknown;
+    data?: { success?: unknown };
+  };
+  return queryResult.isError === true || queryResult.data?.success === false;
 }
 
 /**
  * 点击触发的重查：从点下去开始转，直到查完且满 MIN_REFRESH_SPIN_MS，再按结果换成 ✓ 或 ✗
  * 停一会儿。✗ 不能省：本来就没查到、再点又失败时，红字前后一模一样，没有它就像没点过。
  *
- * 成败两头看：额度列换成了「额度没查到」，或 refetch() 的结果是失败——后者管的是
+ * 成败两头看：额度列换成了「查询失败」，或 refetch() 的结果是失败——后者管的是
  * 「保留上次成功值」窗口里的瞬时失败（界面照旧显示旧值，只看额度行会误打 ✓）。
  * 要等 Promise 有结果且 loading 落下（新的额度行已渲染）两件事都到，才下结论。
  *
@@ -203,10 +186,8 @@ interface QuotaLinesProps {
 }
 
 /**
- * 卡片右侧的额度列（v7）：最多两行、右对齐、平时灰色；档数多时第一行写窗口最短的那档，
- * 其余并成一行、每段各自上色（cardRows）。点一下重查，悬停说明每档、更新时间和重置时间。
- * 能重查时，悬停 / 键盘聚焦在第一行左边露出 ↻，点了之后它转到查完，再按结果换成 ✓ / ✗ 停一秒。
- * 给了 `breakdown`（卡片只写得下其中几档）时整列是一个下拉，点开逐档列出；重查改点 ↻。
+ * 第三版紧凑额度：第一行常驻查询时间与刷新，第二行横排彩色徽章。
+ * 保留 cardRows 的选档规则和请求结果反馈，新增明细使用独立按钮。
  */
 export function QuotaLines({
   lines,
@@ -218,390 +199,145 @@ export function QuotaLines({
 }: QuotaLinesProps) {
   const { t } = useTranslation();
   const now = useNow(Boolean(queriedAt) || lines.some((line) => line.resetsAt));
-  const refresh = useClickRefreshFeedback(
-    loading,
-    lines.some((line) => line.key === FAILED_LINE_KEY),
-  );
+  const failed = lines.some((line) => line.key === FAILED_LINE_KEY);
+  const refresh = useClickRefreshFeedback(loading, failed);
   const spinning = refresh.phase === "spinning";
-  // 点过之后，鼠标移出 / 焦点离开之前不再露 ↻：否则 ✓ 一消失，还停在上面的鼠标又把 ↻ 叫出来
-  const [quiet, setQuiet] = useState(false);
-  // 拆开布局时刷新区不止一块，悬停改用状态记（见下）
-  const [hovered, setHovered] = useState(false);
   const ResultIcon = refresh.phase === "failed" ? X : Check;
-  const rows = cardRows(lines, max);
-  if (rows.length === 0) return null;
+  const selected = cardRows(lines, max).flat();
+  if (selected.length === 0) return null;
 
   const title = [
     ...lines.map((line) => lineHint(t, line, now)),
     queriedAt
       ? t("quota.updatedAt", { time: formatRelativeTime(queriedAt, now, t) })
       : null,
-    onRefresh ? t("quota.clickToRefresh") : null,
   ]
     .filter(Boolean)
     .join("\n");
-
-  // 有一档带重置时间，每行后面就都留出倒计时那一格（v7 原来只放进悬停说明，看不到）
-  const showReset = rows.some((row) => rowCountdown(row, now));
-  const resetSlot = (row: QuotaLine[]) =>
-    showReset ? <ResetSlot countdown={rowCountdown(row, now)} /> : null;
-
-  const rowNodes = rows.map((row) => (
-    <span
-      key={row.map((line) => line.key).join("+")}
-      className="flex max-w-full items-center justify-end"
-    >
-      {row.length === 1 ? (
-        <span className="min-w-0 truncate text-fg-2">
-          <TonedText text={row[0].text} line={row[0]} />
-        </span>
-      ) : (
-        <span className="min-w-0 truncate text-fg-2">
-          {row.map((line, index) => (
-            <span key={line.key}>
-              {index > 0 && " · "}
-              <TonedText text={line.short ?? line.text} line={line} />
-            </span>
-          ))}
-        </span>
-      )}
-      {resetSlot(row)}
-    </span>
-  ));
-
-  const className = cn(
-    "flex shrink-0 flex-col items-end text-caption leading-[18px] tabular-nums whitespace-nowrap",
-    // 文字仍是 136 宽，倒计时那格（52 + 间距）另加；整列下拉的 ⌄ 那格（14）也另加
-    showReset ? "w-[194px]" : "w-[136px]",
-    breakdown && (showReset ? "w-[208px]" : "w-[150px]"),
-    loading && !spinning && "opacity-60",
-  );
-
-  if (!onRefresh) {
-    return (
-      <span className={className} title={title}>
-        {rowNodes}
-      </span>
-    );
-  }
-
-  // 用 aria-disabled 不用 disabled：禁用的按钮在 Chromium 里可能收不到 mouseleave，
-  // 转圈时把鼠标移走，quiet 就解不开了
   const busy = loading || spinning;
-  const refreshProps = {
-    "aria-busy": busy,
-    "aria-disabled": busy,
-    onClick: (event: MouseEvent) => {
-      event.stopPropagation();
-      if (busy) return;
-      setQuiet(true);
-      refresh.start(onRefresh());
-    },
-    onMouseEnter: () => setHovered(true),
-    onMouseLeave: () => {
-      setHovered(false);
-      setQuiet(false);
-    },
-    onBlur: () => setQuiet(false),
-  };
-  const split = rows.some((row) => row.some((line) => line.breakdown));
-  const icon =
-    refresh.phase === "succeeded" || refresh.phase === "failed" ? (
-      <ResultIcon
-        aria-hidden
-        data-testid={`quota-refresh-${refresh.phase}`}
-        className={cn(
-          "h-[11px] w-[11px] shrink-0 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-75",
-          refresh.phase === "failed" ? "text-danger-text" : "text-fg-3",
-        )}
-        strokeWidth={2}
-      />
+  const badges = selected.map((line) => {
+    const content = <QuotaBadge line={line} now={now} />;
+    return line.breakdown && !breakdown ? (
+      <QuotaBreakdownRow
+        key={line.key}
+        line={line}
+        breakdown={line.breakdown}
+        align="end"
+        className="inline-flex items-center gap-0.5"
+      >
+        {content}
+        <QuotaBreakdownChevron />
+      </QuotaBreakdownRow>
     ) : (
-      <RefreshCw
-        aria-hidden
-        data-testid="quota-refresh-icon"
-        className={cn(
-          "h-[11px] w-[11px] shrink-0 text-fg-3 group-hover:text-fg-2",
-          spinning
-            ? "motion-safe:animate-spin"
-            : quiet
-              ? "hidden"
-              : split
-                ? hovered
-                  ? "block"
-                  : "hidden group-focus-visible:block"
-                : "hidden group-hover:block group-focus-visible:block",
-        )}
-        strokeWidth={1.75}
-      />
-    );
-
-  if (breakdown) {
-    return (
-      <DropdownQuotaColumn
-        rows={rows}
-        breakdown={breakdown}
-        className={className}
-        title={title}
-        icon={icon}
-        resetSlot={resetSlot}
-        refreshProps={refreshProps}
-      />
-    );
-  }
-
-  if (split) {
-    return (
-      <SplitQuotaColumn
-        rows={rows}
-        className={className}
-        title={title}
-        icon={icon}
-        showReset={showReset}
-        resetSlot={resetSlot}
-        refreshProps={refreshProps}
-      />
-    );
-  }
-
-  // ↻ 放在第一行左边：列是右对齐的，它出现 / 消失只占左侧空白，文字不挪位置
-  const [firstRow, ...restRows] = rowNodes;
-  return (
-    <button
-      type="button"
-      className={cn(
-        className,
-        "group rounded-control text-end transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      )}
-      title={title}
-      {...refreshProps}
-    >
-      <span className="flex max-w-full items-center justify-end gap-1">
-        {icon}
-        <span className="flex min-w-0 flex-col items-end">{firstRow}</span>
+      <span
+        key={line.key}
+        className="max-w-full"
+        title={lineHint(t, line, now)}
+      >
+        {content}
       </span>
-      {restRows}
-    </button>
-  );
-}
+    );
+  });
 
-interface RefreshProps {
-  "aria-busy": boolean;
-  "aria-disabled": boolean;
-  onClick: (event: MouseEvent) => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-  onBlur: () => void;
-}
-
-/**
- * 整列一个下拉：点文字打开各档明细，⌄ 跟在第一行文字后面（其余行留同宽的空位，数字仍竖着对齐）。
- * 下拉里不能再套按钮，↻ 单独做成下拉左边的小按钮（不占宽度），悬停整列时露出来。
- */
-function DropdownQuotaColumn({
-  rows,
-  breakdown,
-  className,
-  title,
-  icon,
-  resetSlot,
-  refreshProps,
-}: {
-  rows: QuotaLine[][];
-  breakdown: QuotaBreakdown;
-  className: string;
-  title: string;
-  icon: ReactNode;
-  resetSlot: (row: QuotaLine[]) => ReactNode;
-  refreshProps: RefreshProps;
-}) {
-  const { t } = useTranslation();
   return (
     <div
-      className={cn(className, "flex-row items-start justify-end")}
-      onMouseEnter={refreshProps.onMouseEnter}
-      onMouseLeave={refreshProps.onMouseLeave}
+      className={cn(
+        "flex min-w-0 max-w-full flex-col items-end gap-1 text-xs tabular-nums",
+        loading && !spinning && "opacity-60",
+      )}
+      title={title}
     >
-      <span className="relative flex min-w-0">
-        {/* 绝对定位贴在下拉左边、不占宽度：↻ 出现 / 消失时文字不被挤动 */}
-        <button
-          type="button"
-          title={title}
-          aria-label={t("quota.clickToRefresh")}
-          className="group absolute end-full top-0 me-1 flex h-[18px] items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          {...refreshProps}
-          // 悬停交给整列：移出这个小按钮、还在列上时 ↻ 不能消失
-          onMouseEnter={undefined}
-          onMouseLeave={undefined}
-        >
-          {icon}
-        </button>
+      <div className="flex items-center justify-end gap-2">
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+          <Clock aria-hidden data-testid="quota-update-clock" size={10} />
+          {queriedAt
+            ? formatRelativeTime(queriedAt, now, t)
+            : t("usage.never", { defaultValue: "从未更新" })}
+        </span>
+        {onRefresh && (
+          <button
+            type="button"
+            title={title}
+            aria-label={t("quota.clickToRefresh")}
+            aria-busy={busy}
+            disabled={busy}
+            onClick={(event) => {
+              event.stopPropagation();
+              refresh.start(onRefresh());
+            }}
+            className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {refresh.phase === "succeeded" || refresh.phase === "failed" ? (
+              <ResultIcon
+                aria-hidden
+                data-testid={`quota-refresh-${refresh.phase}`}
+                size={12}
+                className={
+                  refresh.phase === "failed"
+                    ? TONE_TEXT.danger
+                    : "text-green-600 dark:text-green-400"
+                }
+              />
+            ) : (
+              <RefreshCw
+                aria-hidden
+                data-testid="quota-refresh-icon"
+                size={12}
+                className={spinning ? "motion-safe:animate-spin" : undefined}
+              />
+            )}
+          </button>
+        )}
+      </div>
+      {breakdown ? (
         <QuotaBreakdownRow
           breakdown={breakdown}
           align="end"
-          className="flex min-w-0 flex-col items-end text-fg-2"
+          className="flex max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-1"
         >
-          {rows.map((row, rowIndex) => (
-            <span
-              key={row.map((line) => line.key).join("+")}
-              className="flex max-w-full items-center justify-end"
-            >
-              <span className="min-w-0 truncate">
-                {row.map((line, index) => (
-                  <span key={line.key}>
-                    {index > 0 && " · "}
-                    <TonedText
-                      text={(row.length > 1 && line.short) || line.text}
-                      line={line}
-                    />
-                  </span>
-                ))}
-              </span>
-              <span className="ms-0.5 flex w-3 shrink-0">
-                {rowIndex === 0 && <QuotaBreakdownChevron />}
-              </span>
-              {resetSlot(row)}
-            </span>
-          ))}
+          {badges}
+          <QuotaBreakdownChevron />
         </QuotaBreakdownRow>
-      </span>
+      ) : (
+        <div
+          className={cn(
+            "flex max-w-full items-center gap-x-2 gap-y-1",
+            failed ? "flex-col items-end" : "flex-wrap justify-end",
+          )}
+        >
+          {badges}
+        </div>
+      )}
     </div>
   );
 }
 
-/**
- * 有一段能点开明细时（「每周 64% · 重置 3 次 ⌄」）：那一段单独做成下拉，其余照旧点了重查。
- * 按钮里不能再套按钮，所以整列拆成几块：第一块刷新是真按钮（键盘、读屏都认它），
- * 后面的刷新块只接鼠标点击，下拉段自己是按钮。
- * 下拉段独占一行且留了倒计时格时，⌄ 放进那一格，和上一行的 ⏱ 竖着对齐。
- */
-function SplitQuotaColumn({
-  rows,
-  className,
-  title,
-  icon,
-  showReset,
-  resetSlot,
-  refreshProps,
-}: {
-  rows: QuotaLine[][];
-  className: string;
-  title: string;
-  icon: ReactNode;
-  showReset: boolean;
-  resetSlot: (row: QuotaLine[]) => ReactNode;
-  refreshProps: RefreshProps;
-}) {
-  const { t } = useTranslation();
-  const refreshText = rows
-    .flat()
-    .filter((line) => !line.breakdown)
-    .map((line) => line.text)
-    .join(", ");
-  let mainPlaced = false;
-
+/** 档名与数字复用第四版额度行，保留剩余/已用语义及新增数据。 */
+function QuotaBadge({ line, now }: { line: QuotaLine; now: number }) {
+  const value = line.label && line.value ? line.value : line.text;
   return (
-    <div className={className}>
-      {rows.map((row, rowIndex) => {
-        const merged = row.length > 1;
-        // 这一行只有下拉段：⌄ 占倒计时格的图标位，余下的宽度留空
-        const chevronInSlot = showReset && !merged && Boolean(row[0].breakdown);
-        // 连续的普通段并成一块刷新区，带明细的段单独成块
-        const parts: { breakdown: boolean; lines: QuotaLine[] }[] = [];
-        for (const line of row) {
-          const last = parts[parts.length - 1];
-          if (!line.breakdown && last && !last.breakdown) last.lines.push(line);
-          else
-            parts.push({ breakdown: Boolean(line.breakdown), lines: [line] });
-        }
-        let segment = 0;
-        const segmentText = (line: QuotaLine) => {
-          const node = (
-            <span key={line.key}>
-              {segment > 0 && " · "}
-              <TonedText
-                text={(merged && line.short) || line.text}
-                line={line}
-              />
-            </span>
-          );
-          segment += 1;
-          return node;
-        };
-
-        return (
-          <span
-            key={row.map((line) => line.key).join("+")}
-            className="flex max-w-full items-center justify-end text-fg-2"
-          >
-            {parts.map((part) => {
-              if (part.breakdown) {
-                const line = part.lines[0];
-                const separator = segment > 0;
-                segment += 1;
-                return (
-                  <span key={line.key} className="flex shrink-0 items-center">
-                    {separator && <span>&nbsp;·&nbsp;</span>}
-                    <QuotaBreakdownRow
-                      line={line}
-                      breakdown={line.breakdown!}
-                      align="end"
-                      className="flex items-center gap-0.5"
-                    >
-                      <TonedText
-                        text={(merged && line.short) || line.text}
-                        line={line}
-                      />
-                      {chevronInSlot ? (
-                        <span className="ms-1 flex">
-                          <QuotaBreakdownChevron />
-                        </span>
-                      ) : (
-                        <QuotaBreakdownChevron />
-                      )}
-                    </QuotaBreakdownRow>
-                    {/* 和上一行的「ms-1.5 + 52 宽倒计时格」等宽：gap-0.5 + ms-1 + ⌄ 12 + 40 */}
-                    {chevronInSlot && <span className="w-10" />}
-                  </span>
-                );
-              }
-              const key = part.lines.map((line) => line.key).join("+");
-              const text = part.lines.map(segmentText);
-              if (!mainPlaced) {
-                mainPlaced = true;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    title={title}
-                    aria-label={`${refreshText} · ${t("quota.clickToRefresh")}`}
-                    className="group flex min-w-0 items-center gap-1 rounded-control text-end focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    {...refreshProps}
-                  >
-                    {rowIndex === 0 && icon}
-                    <span className="min-w-0 truncate">{text}</span>
-                  </button>
-                );
-              }
-              return (
-                <span
-                  key={key}
-                  aria-hidden
-                  title={title}
-                  className="min-w-0 cursor-pointer truncate"
-                  onClick={refreshProps.onClick}
-                  onMouseEnter={refreshProps.onMouseEnter}
-                  onMouseLeave={refreshProps.onMouseLeave}
-                >
-                  {text}
-                </span>
-              );
-            })}
-            {!chevronInSlot && resetSlot(row)}
-          </span>
-        );
-      })}
-    </div>
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-0.5 text-gray-500 dark:text-gray-400",
+        line.tone === "muted"
+          ? "break-words whitespace-normal"
+          : "whitespace-nowrap",
+      )}
+    >
+      {line.key === FAILED_LINE_KEY && (
+        <AlertCircle aria-hidden size={12} className={TONE_TEXT.danger} />
+      )}
+      {line.label && line.value && <span>{line.label}:</span>}
+      <TonedText
+        text={value}
+        line={line}
+        className={cn(
+          line.tone !== "muted" && "font-semibold",
+          TONE_TEXT[line.tone],
+        )}
+      />
+      <ResetSlot countdown={countdownStr(line.resetsAt, now)} />
+    </span>
   );
 }
 
@@ -616,7 +352,7 @@ interface QuotaBarsProps {
   className?: string;
 }
 
-const BAR_ROW_CLASS = "flex h-[18px] items-center gap-2 text-caption";
+const BAR_ROW_CLASS = "flex min-w-0 flex-wrap items-center gap-3 text-xs";
 
 /** 展开的额度条（授权中心、多套餐展开）：条长跟着数值（剩余或已用，见 barPercent） */
 export function QuotaBars({
@@ -636,19 +372,20 @@ export function QuotaBars({
   return (
     <div
       className={cn(
-        "rounded-panel border border-border bg-surface px-3.5 py-2.5",
+        "rounded-xl border border-border-default bg-card px-4 py-3 shadow-sm",
         className,
       )}
     >
       {(title || queriedAt || onRefresh) && (
-        <div className="mb-1.5 flex items-center justify-between gap-2 text-caption">
+        <div className="mb-2 flex items-center justify-between gap-2 text-xs">
           <span className="font-medium text-fg-2">{title}</span>
-          <span className="flex items-center gap-1 text-fg-3">
-            {queriedAt
-              ? t("quota.updatedAt", {
-                  time: formatRelativeTime(queriedAt, now, t),
-                })
-              : null}
+          <span className="flex items-center gap-2 text-muted-foreground/70">
+            <span className="flex items-center gap-1 text-[10px]">
+              <Clock aria-hidden size={10} />
+              {queriedAt
+                ? formatRelativeTime(queriedAt, now, t)
+                : t("usage.never", { defaultValue: "从未更新" })}
+            </span>
             {onRefresh && (
               <HoverTip content={t("subscription.refresh")}>
                 <button
@@ -667,20 +404,20 @@ export function QuotaBars({
           </span>
         </div>
       )}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         {rows.map(({ label, line, note }) => {
           const width = barPercent(line);
-          // 展开时地方够，重置时间直接写在数值后面（卡片上只在悬停说明里）
+          // 展开时地方够，重置时间直接写在数值后面（卡片上跟在各徽章后面）
           const trailing = [resetText(t, line, now), note]
             .filter(Boolean)
             .join(" · ");
           const cells = (
             <>
-              <span className="w-[72px] shrink-0 truncate text-fg-2">
+              <span className="min-w-0 basis-1/4 truncate font-medium text-gray-500 dark:text-gray-400">
                 {label}
               </span>
               {line.caption ? (
-                <span className="flex w-[120px] shrink-0 items-center gap-0.5 text-fg-3">
+                <span className="flex min-w-0 flex-1 items-center gap-0.5 text-fg-3">
                   <span className="truncate">{line.caption}</span>
                   {line.breakdown && <QuotaBreakdownChevron />}
                 </span>
@@ -691,7 +428,7 @@ export function QuotaBars({
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={Math.round(width)}
-                  className="relative h-1 w-[120px] shrink-0 overflow-hidden rounded-full bg-chart-grid"
+                  className="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
                 >
                   <span
                     className={cn(
@@ -702,12 +439,11 @@ export function QuotaBars({
                   />
                 </span>
               )}
-              {/* 旁边已有额度条，正常时数值不上色 */}
-              <span className="shrink-0 text-end tabular-nums whitespace-nowrap text-fg-1">
+              <span className="shrink-0 text-end font-semibold tabular-nums whitespace-nowrap text-fg-1">
                 <TonedText
                   text={line.value ?? line.text}
                   line={line}
-                  className={line.tone === "normal" ? "" : TONE_TEXT[line.tone]}
+                  className={TONE_TEXT[line.tone]}
                 />
               </span>
               {trailing && (

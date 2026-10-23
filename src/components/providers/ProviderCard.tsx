@@ -524,8 +524,7 @@ export function ProviderCard({
         </div>
 
         <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-3">
-          {/* 额度列 136 宽，带重置倒计时时 194 宽（见 QuotaLines） */}
-          <div className="max-w-[208px] text-end">
+          <div className="min-w-0 max-w-full text-end">
             <div className="flex items-center justify-end gap-1">
               {isCopilot ? (
                 <CopilotQuotaFooter
