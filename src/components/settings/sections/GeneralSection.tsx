@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import type { SettingsFormState } from "@/hooks/useSettings";
 import { useTheme } from "@/components/theme-provider";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -30,7 +30,6 @@ const LANGUAGES: { value: Language; labelKey: string }[] = [
 interface GeneralSectionProps {
   settings: SettingsFormState;
   onAutoSave: (updates: Partial<SettingsFormState>) => Promise<boolean>;
-  onOpenApps: () => void;
   savedCodexConfigDir?: string;
   onStorageMigrated: (location: SkillStorageLocation) => void;
 }
@@ -38,7 +37,6 @@ interface GeneralSectionProps {
 export function GeneralSection({
   settings,
   onAutoSave,
-  onOpenApps,
   savedCodexConfigDir,
   onStorageMigrated,
 }: GeneralSectionProps) {
@@ -162,15 +160,6 @@ export function GeneralSection({
 
       <SettingsBlock title={t("settings.general.sidebarAndHeader")}>
         <SettingsCard>
-          <SettingsRow
-            label={t("appPage.installAndUpgrade")}
-            control={
-              <Button variant="quiet" size="compact" onClick={onOpenApps}>
-                {t("settings.general.goToApps")}
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            }
-          />
           <SettingsSwitchRow
             label={t("settings.appVisibility.showProfileSwitcher")}
             help={{

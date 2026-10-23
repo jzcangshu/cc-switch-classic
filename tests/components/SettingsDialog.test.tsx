@@ -133,7 +133,14 @@ vi.mock("@/components/ui/dialog", () => ({
 }));
 
 vi.mock("@/components/settings/AboutSection", () => ({
-  AboutSection: ({ isPortable }: any) => <div>about:{String(isPortable)}</div>,
+  AboutSection: ({ isPortable, onOpenApps }: any) => (
+    <div>
+      about:{String(isPortable)}
+      <button type="button" onClick={onOpenApps}>
+        about-open-apps
+      </button>
+    </div>
+  ),
 }));
 vi.mock("@/components/settings/WebdavSyncSection", () => ({
   WebdavSyncSection: () => <div>webdav-sync-section</div>,
@@ -231,8 +238,8 @@ describe("SettingsPage", () => {
     expect(screen.getByText("global-proxy-settings")).toBeInTheDocument();
   });
 
-  it("saves general switches immediately and links to the Apps page", async () => {
-    const { props } = renderSettingsPage();
+  it("saves general switches immediately and links to the Apps page from about", async () => {
+    const { props, rerenderWith } = renderSettingsPage();
 
     fireEvent.click(
       screen.getByRole("switch", { name: "settings.minimizeToTray" }),
@@ -255,9 +262,13 @@ describe("SettingsPage", () => {
       }),
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /settings\.general\.goToApps/ }),
-    );
+    // 安装与升级入口只在「关于 → 本地环境检查」里，通用设置不再重复
+    expect(
+      screen.queryByRole("button", { name: /settings\.general\.goToApps/ }),
+    ).not.toBeInTheDocument();
+
+    rerenderWith({ section: "about" });
+    fireEvent.click(screen.getByText("about-open-apps"));
     expect(props.onOpenApps).toHaveBeenCalledTimes(1);
   });
 

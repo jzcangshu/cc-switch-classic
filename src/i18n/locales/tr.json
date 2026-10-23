@@ -50,7 +50,8 @@
     "collapse": "Daralt",
     "more": "Diğer",
     "retry": "Yeniden dene",
-    "required": "gerekli"
+    "required": "gerekli",
+    "bulkActions": "Toplu işlemler"
   },
   "firstRunNotice": {
     "title": "CC Switch’e hoş geldiniz",
@@ -940,7 +941,7 @@
     "uninstallCommandCopied": "Kaldırma komutu kopyalandı",
     "uninstallCommandCopyFailed": "Kopyalama başarısız. Komutu seçip elle kopyalayın.",
     "oneClickInstallHint": "Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code'yi yükleyin veya yükseltin",
-    "localEnvCheck": "Yerel ortam kontrolü",
+    "localEnvCheck": "Yerel ortam denetimi",
     "updateAllTools": "Tümünü Güncelle ({{count}})",
     "currentVersion": "Güncel Sürüm",
     "latestVersion": "Son Sürüm",
@@ -1048,7 +1049,18 @@
     },
     "data": {
       "location": "Konum"
-    }
+    },
+    "skillStorage": {
+      "title": "Ana kopyaları saklayın",
+      "ccSwitch": "CC Switch",
+      "unified": "~/.agents/skills"
+    },
+    "skillSync": {
+      "title": "Beceriler her uygulamaya nasıl ulaşır?",
+      "symlink": "Yalnızca sembolik bağlantı",
+      "copy": "Yalnızca kopyala"
+    },
+    "localEnvCheckHint": "Yerel araçların kurulumunu ve sürümlerini denetleyin"
   },
   "apps": {
     "claude": "Claude",
@@ -1171,7 +1183,7 @@
       "templateCommand": "Eğik çizgi komutu",
       "templateSlug": "Tek kelime, ör. gözden geçirmek",
       "templateSlugInvalid": "Tek bir kelime kullanın: harfler, rakamlar, - _ . — / \\ : * ? gibi boşluk veya karakter yok",
-      "templateSlugExists": "/{{slug}} zaten mevcut; başka bir isim seç",
+      "templateSlugExists": "Bu eğik çizgi komutu zaten var.",
       "templateDescription": "Notlar",
       "templateDescriptionPlaceholder": "İsteğe bağlı, şablonun açıklamasına yazılır",
       "templateContent": "Şablon metni",
@@ -1179,7 +1191,7 @@
       "templateSyntax": "Şablon metni yazma",
       "templateSyntaxDescription": "Bağımsız değişkenler için $1, $2, $@ veya $ARGUMENTS kullanın; ön maddeyle başlayabilirsiniz (açıklama, argüman-ipucu).",
       "createTemplate": "Şablon oluştur",
-      "templateCreated": "Oluşturuldu /{{slug}}",
+      "templateCreated": "Pi istem şablonu oluşturuldu",
       "templateSaved": "/{{slug}} kaydedildi",
       "templateLoadFailed": "Pi bilgi istemi şablonları yüklenemedi",
       "templateSaveFailed": "Pi bilgi istemi şablonu kaydedilemedi",
@@ -1187,7 +1199,7 @@
       "searchTemplates": "Komut veya metin arayın",
       "noTemplates": "Henüz şablon yok",
       "noTemplatesDescription": "Kaydettikten sonra /command yazarak Pi'de çalıştırın.",
-      "noTemplateResults": "\"{{query}}\" ile eşleşen şablon komutu, not veya metin yok",
+      "noTemplateResults": "Eşleşen şablon yok",
       "kindLabel": "Pi bilgi istemi türü",
       "libraryLabel": "Pi bilgi istemi kitaplığı",
       "systemFilesLabel": "Pi sistem bilgi istemi dosyaları",
@@ -1511,7 +1523,11 @@
       "rawMatch": "Kaynaktaki eşleşmeler",
       "expandContent": "İçeriğin tamamını göster",
       "collapseContent": "Daralt"
-    }
+    },
+    "manageBatchTooltip": "Toplu yönetim",
+    "exitBatchModeTooltip": "Toplu yönetimden çık",
+    "collapseAllGroups": "Tümünü daralt",
+    "collapseSearchReason": "Arama sırasında gruplar otomatik açılır. Daraltmak için aramayı temizleyin."
   },
   "console": {
     "providerSwitchReceived": "Alınan sağlayıcı değiştirme etkinliği:",
@@ -2753,19 +2769,19 @@
   "prompts": {
     "add": "İstem Ekle",
     "addTitle": "İstem ekle · {{appName}}",
-    "editTitle": "İstemi düzenle",
+    "editTitle": "{{appName}} istemini düzenle",
     "enabled": "Etkin",
     "enable": "Etkinleştir",
     "loading": "Yükleniyor...",
     "searchPlaceholder": "Ad, not veya metin arayın",
     "searchAriaLabel": "Arama istemleri",
-    "noSearchResults": "\"{{query}}\" ile eşleşen bilgi istemi adı, notu veya metni yok",
+    "noSearchResults": "Eşleşen istem bulunamadı",
     "name": "İsim",
     "namePlaceholder": "örneğin Takım kodlama kuralları",
     "description": "Not",
     "descriptionPlaceholder": "İsteğe bağlı, yalnızca CC Switch’te gösterilir",
     "content": "Metin",
-    "contentPlaceholder": "#{{filename}}\n\nMarkdown'da {{appName}} için ayakta talimatlar…",
+    "contentPlaceholder": "# {{filename}}\n\nİstem içeriğini buraya girin...",
     "loadFailed": "İstemler yüklenemedi",
     "saveSuccess": "Başarıyla kaydedildi",
     "saveFailed": "Kaydedilemedi",
@@ -2871,7 +2887,10 @@
       "importedPi": "AGENTS.md kütüphaneye kaydedildi; dosya değişmedi",
       "copied": "\"{{name}}\" {{apps}}'ye kopyalandı"
     },
-    "deleteAria": "{{name}} sil"
+    "deleteAria": "{{name}} sil",
+    "count": "{{count}} istem",
+    "enabledName": "Etkin: {{name}}",
+    "noneEnabled": "Etkin istem yok"
   },
   "profiles": {
     "switcherAriaLabel": "Proje: {{name}}",
@@ -4196,18 +4215,18 @@
   "providerCard": {
     "status": {
       "inUse": "Kullanımda",
-      "routing": "Yönlendirme",
+      "routing": "Kullanımda",
       "currentDefault": "Mevcut varsayılan",
       "defaultAfterSwitch": "Geçişten sonra varsayılan",
       "current": "Mevcut",
       "default": "Varsayılan"
     },
     "action": {
-      "switch": "Geçiş yap",
-      "routeHere": "Buraya yönlendir",
+      "switch": "Etkinleştir",
+      "routeHere": "Etkinleştir",
       "backToDirectAndUse": "Doğrudan bağlantıya dön ve kullan",
-      "addToQueue": "Kuyruğa ekle",
-      "removeFromQueue": "Kuyruktan kaldır",
+      "addToQueue": "Ekle",
+      "removeFromQueue": "Sırada",
       "setDefault": "Varsayılan olarak ayarla",
       "add": "Ekle",
       "remove": "Kaldır",
@@ -4221,13 +4240,13 @@
     "chip": {
       "official": "Resmi",
       "needsRoute": "Yönlendirme gerekiyor",
-      "directWhenDirect": "Doğrudan kullanıldığında kullanılır",
+      "directWhenDirect": "Doğrudan",
       "default": "Varsayılan",
       "models": "{{count}} model",
       "noModels": "Model yok",
       "mapping": "Model eşleme",
       "direct": "Doğrudan",
-      "hermesManaged": "Hermes tarafından yönetilmektedir",
+      "hermesManaged": "Hermes Yönetilen",
       "defaultModel": "Varsayılan model {{model}}"
     },
     "reason": {
@@ -4319,13 +4338,13 @@
     "balance": "Bakiye {{value}}",
     "balanceUsedUp": "Bakiye tükendi",
     "planExpired": "Planın süresi doldu",
-    "failed": "Kota bilgisi alınamıyor",
+    "failed": "Sorgu başarısız oldu",
     "reason": {
       "loginExpired": "Oturum açma süresi doldu",
       "tokenRefreshPending": "Token yenilenmesi bekleniyor"
     },
     "updatedAt": "{{time}} tarihinde güncellendi",
-    "clickToRefresh": "Tekrar kontrol etmek için tıklayın",
+    "clickToRefresh": "Kullanımı yenile",
     "resetCredits": {
       "label": "Sıfırlanma",
       "left": "Kalan sıfırlama: {{count}}",
@@ -4383,20 +4402,20 @@
     "add": "MCP'yi ekleyin",
     "moreActions": "Daha fazla MCP eylemi",
     "copyAll": "Tümünü mcpServers JSON olarak kopyalayın",
-    "searchPlaceholder": "Adı, komutu veya URL'yi arayın",
-    "count": "{{count}} MCP sunucuları",
+    "searchPlaceholder": "MCP adını, açıklamasını, etiketini veya komutunu arayın...",
+    "count": "{{count}} MCP sunucuları yapılandırılmış",
     "countFiltered": "{{count}} MCP sunucularının {{shown}}'si",
     "overwriteNote": "Doğrudan uygulama yapılandırmalarında aynı girişlerde yapılan düzenlemelerin üzerine yazılır",
     "failNoticeTitle": "{{app}}'nin yapılandırması yazılamadı",
     "failNoticeBody": "{{error}}. Dosyayı düzeltin ve Yeniden Dene'ye tıklayın.",
     "loadFailed": "MCP listesi yüklenemedi",
     "noFilesChanged": "CC Switch hiçbir dosyayı değiştirmedi.",
-    "emptyTitle": "Henüz MCP sunucusu yok",
+    "emptyTitle": "Henüz sunucu yok",
     "emptyBody": "Uygulamalarınızda önceden kurulmuş olan MCP sunucuları içe aktarılabilir",
     "importHelpTitle": "İçe aktarma ne okur?",
     "importHelp": "Yalnızca kullanıcı düzeyindeki yapılandırmalar okunur. claude mcp add komutunun varsayılan olarak proje düzeyinde eklediği MCP sunucuları ve eklentilerle gelen sunucular içe aktarılmaz.",
     "columnName": "İsim",
-    "noMatch": "Hiçbir MCP sunucusunun adı, komutu veya URL'si “{{query}}” ile eşleşmiyor",
+    "noMatch": "Aramanızla eşleşen MCP sunucusu yok",
     "clearSearch": "Aramayı temizle",
     "listLabel": "MCP sunucuları",
     "notEnabled": "Kapalı",
@@ -4553,7 +4572,7 @@
     "viewInstalled": "Yüklendi",
     "viewInstalledCount": "{{count}} kuruldu",
     "viewDiscover": "Keşfet",
-    "searchPlaceholder": "Ad, klasör, açıklama veya repoyu arayın",
+    "searchPlaceholder": "Yüklü beceri adını, açıklamasını veya deposunu arayın...",
     "lastChecked": "Son kontrol: {{when}}",
     "justNow": "şimdi",
     "banner": {
@@ -4595,12 +4614,12 @@
     "copyDir": "Klasör adını kopyala",
     "uninstallEllipsis": "Kaldır",
     "listLabel": "Yüklü Beceriler",
-    "noMatch": "“{{query}}” Beceri eşleşmesi yok",
+    "noMatch": "Aramanızla eşleşen yüklü beceri yok",
     "noFilterMatch": "Filtrelerle eşleşen Beceri yok",
     "searchInDiscover": "“{{query}}” için Keşfet'i arayın",
     "clearFilters": "Filtreleri temizle",
     "loadFailed": "Yüklü Beceriler yüklenemedi",
-    "emptyTitle": "Henüz Beceri yok",
+    "emptyTitle": "Hiçbir beceri yüklü değil",
     "emptyBody": "Keşfet'ten bir tane yükleyin veya bu bilgisayarda zaten bulunan Becerileri içe aktarın.",
     "goDiscover": "Keşfet'e git",
     "importCount": "Bu bilgisayardan içe aktar ({{count}})",

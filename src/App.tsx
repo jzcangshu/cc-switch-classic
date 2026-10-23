@@ -10,10 +10,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
 import { invoke } from "@tauri-apps/api/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, MoreHorizontal, Plus, Search } from "lucide-react";
+import { ExternalLink, Plus, Search } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Provider, VisibleApps } from "@/types";
-import { KNOWN_APP_TYPES, type AppTypeFilter } from "@/types/usage";
+import { type AppTypeFilter } from "@/types/usage";
 import type { EnvConflict } from "@/types/env";
 import {
   providersQueryOptions,
@@ -72,7 +72,6 @@ import {
   PageBackContext,
 } from "@/components/shell/AppPageHeader";
 import { WindowControls } from "@/components/shell/WindowControls";
-import { APP_DISPLAY_NAME } from "@/components/shell/AppGlyph";
 import { ProfileSwitcher } from "@/components/profiles/ProfileSwitcher";
 import { ProviderList } from "@/components/providers/ProviderList";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
@@ -87,10 +86,7 @@ import { discardUnsavedChanges, hasUnsavedChanges } from "@/lib/unsavedChanges";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 import { AppsPage } from "@/components/apps/AppsPage";
-import {
-  checkToolUpdatesInBackground,
-  useToolUpdatesAvailable,
-} from "@/components/apps/useToolManagement";
+import { checkToolUpdatesInBackground } from "@/components/apps/useToolManagement";
 import { UsagePage } from "@/components/usage/UsagePage";
 import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
 import { SwitchModePanel } from "@/components/providers/mode/SwitchModePanel";
@@ -107,13 +103,6 @@ import { WhatsNewNotice } from "@/components/WhatsNewDialog";
 import { Button } from "@/components/ui/button";
 import { HoverTip } from "@/components/ui/hover-tip";
 import { PageTabs } from "@/components/ui/page-tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SessionManagerPage } from "@/components/sessions/SessionManagerPage";
 import {
   useDisableCurrentOmo,
@@ -234,7 +223,6 @@ function App() {
   // 「启动时检查应用更新」（默认关）：打开了才在后台查一次，查到新版本侧栏「应用」上出现圆点
   const checkToolUpdatesOnStartup =
     settingsData?.checkToolUpdatesOnStartup ?? false;
-  const toolUpdatesAvailable = useToolUpdatesAvailable();
   const startupToolCheckDoneRef = useRef(false);
   useEffect(() => {
     if (!checkToolUpdatesOnStartup || startupToolCheckDoneRef.current) return;
@@ -1091,87 +1079,7 @@ function App() {
     }
   };
 
-  const handleHideActiveApp = async () => {
-    const visibleCount = Object.values(visibleApps).filter(Boolean).length;
-    if (visibleCount <= 1) return;
-    try {
-      const current = await settingsApi.get();
-      await settingsApi.save({
-        ...current,
-        visibleApps: { ...visibleApps, [activeApp]: false },
-      });
-      await queryClient.invalidateQueries({ queryKey: ["settings"] });
-    } catch (error) {
-      toast.error(
-        t("settings.saveFailedGeneric", { defaultValue: "保存失败，请重试" }),
-        { description: extractErrorMessage(error) || undefined },
-      );
-    }
-  };
-
   // ─── 应用页 ─────────────────────────────────────────────────────────────
-
-  // 应用页 ⋯ →「查看此应用的用量」：带上这个应用的筛选（Claude Desktop 的流量并在 Claude 里）
-  const usageAppOf = (app: AppId): AppTypeFilter | null => {
-    const type = app === "claude-desktop" ? "claude" : app;
-    return (KNOWN_APP_TYPES as ReadonlyArray<string>).includes(type)
-      ? (type as AppTypeFilter)
-      : null;
-  };
-  const activeUsageApp = usageAppOf(activeApp);
-
-  const appMenu = (
-    <DropdownMenu>
-      <HoverTip content={t("common.more")}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="quiet"
-            size="icon-compact"
-            className="relative h-8 w-8"
-            aria-label={t("appPage.moreActions", {
-              name: APP_DISPLAY_NAME[activeApp],
-            })}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            {checkToolUpdatesOnStartup && toolUpdatesAvailable && (
-              <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-green-500" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-      </HoverTip>
-      <DropdownMenuContent align="end" className="min-w-[180px]">
-        <DropdownMenuItem onSelect={() => openPage("sessions")}>
-          {t("appPage.viewSessions")}
-        </DropdownMenuItem>
-        {activeUsageApp && (
-          <DropdownMenuItem
-            onSelect={() => {
-              setUsageAppFilter(activeUsageApp);
-              openPage("usage");
-            }}
-          >
-            {t("appPage.viewUsage")}
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuItem onSelect={() => openSettings("appConfig", activeApp)}>
-          {t("appPage.configDirectory")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => openPage("apps")}>
-          {t("appPage.installAndUpgrade")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => openPage("auth")}>
-          {t("nav.auth")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={Object.values(visibleApps).filter(Boolean).length <= 1}
-          onSelect={() => void handleHideActiveApp()}
-        >
-          {t("appPage.hideFromSidebar")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
   const appPageName =
     currentView === "workspace"
@@ -1248,7 +1156,6 @@ function App() {
                 <Plus className="h-4 w-4" />
               </Button>
             )}
-            {appMenu}
           </>
         }
       />
@@ -1256,7 +1163,7 @@ function App() {
       <AppPageHeader
         title={appPageName}
         actions={
-          currentView === "hermesMemory" ? <HermesMemorySaveButton /> : appMenu
+          currentView === "hermesMemory" ? <HermesMemorySaveButton /> : undefined
         }
       />
     );

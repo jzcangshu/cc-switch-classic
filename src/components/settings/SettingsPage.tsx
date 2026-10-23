@@ -74,7 +74,7 @@ interface SettingsPageProps {
   /** 从应用页的「配置目录」进入时，定位到该应用的配置区域。 */
   appConfigScrollTarget?: AppId;
   onImportSuccess?: () => void | Promise<void>;
-  /** 「在侧栏显示哪些应用」跳到「应用」页 */
+  /** 关于 → 本地环境检查：打开应用安装与升级管理。 */
   onOpenApps: () => void;
   /** 本地路由 →「正在使用路由的应用」的「前往」 */
   onOpenApp: (app: AppId) => void;
@@ -390,7 +390,6 @@ export function SettingsPage({
           <GeneralSection
             settings={settings}
             onAutoSave={handleAutoSave}
-            onOpenApps={onOpenApps}
             savedCodexConfigDir={savedSettings?.codexConfigDir}
             onStorageMigrated={(skillStorageLocation) =>
               updateSettings({ skillStorageLocation })
@@ -513,7 +512,7 @@ export function SettingsPage({
           </>
         );
       case "about":
-        return <AboutSection isPortable={isPortable} />;
+        return <AboutSection isPortable={isPortable} onOpenApps={onOpenApps} />;
     }
   };
 

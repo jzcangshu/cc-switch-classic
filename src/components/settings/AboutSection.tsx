@@ -25,6 +25,7 @@ import { extractErrorMessage } from "@/utils/errorUtils";
 
 interface AboutSectionProps {
   isPortable: boolean;
+  onOpenApps: () => void;
 }
 
 // 应用自身版本（getVersion，本地毫秒级、无网络）也缓存一份，纯为重挂时免去 loading 闪烁。
@@ -43,9 +44,9 @@ function readStarPromptDismissed(): boolean {
 
 /**
  * 设置 → 关于：版本、便携模式、检查更新 / 安装并重启、项目链接。
- * 命令行应用的安装与升级在侧栏「应用」页。
+ * 本地环境检查入口承载应用安装与升级管理。
  */
-export function AboutSection({ isPortable }: AboutSectionProps) {
+export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   const { t } = useTranslation();
   // 惰性初始化自模块缓存：重挂时首帧即渲染上次的值，避免 loading 闪烁；首次挂载缓存
   // 为空则回退到原始初值（null / loading）。
@@ -350,6 +351,15 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           </div>
         </div>
       )}
+
+      <section className="space-y-3 px-5 py-4">
+        <h3 className="text-sm font-medium">{t("settings.localEnvCheck")}</h3>
+        <p className="text-xs text-muted-foreground">{t("settings.oneClickInstallHint")}</p>
+        <Button type="button" size="sm" onClick={onOpenApps}>
+          <Download className="h-3.5 w-3.5" />
+          {t("appPage.installAndUpgrade")}
+        </Button>
+      </section>
 
       <WhatsNewDialog
         open={whatsNewOpen}

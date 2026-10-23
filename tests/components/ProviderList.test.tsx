@@ -261,10 +261,8 @@ describe("ProviderList Component", () => {
     expect(screen.getByTestId("drag-attr-b")).toHaveTextContent("b");
     expect(screen.getByTestId("drag-attr-a")).toHaveTextContent("a");
 
-    // 直连那家显示「使用中」，其余是「切换」
-    expect(screen.getByTestId("status-b")).toHaveTextContent(
-      "providerCard.status.inUse",
-    );
+    // 直连那家显示第三版「使用中」，其余是「启用」
+    expect(screen.getByTestId("status-b")).toHaveTextContent("provider.inUse");
     fireEvent.click(screen.getByTestId("switch-a"));
     expect(mode.actions.switchDirect).toHaveBeenCalledWith(providerA);
 
