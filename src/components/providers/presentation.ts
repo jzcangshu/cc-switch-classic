@@ -58,10 +58,12 @@ export interface CardButton {
 }
 
 export interface CardPresentation {
-  /** 当前那张：模式色边框 + 淡底；neutral（灰底）只给共存式应用的默认那家（OpenClaw 默认、Hermes 当前） */
+  /** 生效项或已添加配置的色边框与淡底；neutral 给共存式默认项，沿用第三版蓝色。 */
   tone?: CardTone;
+  /** 路由页的悬停边框；与表示生效项的 tone 分开。 */
+  hoverTone?: "route";
   /** 主操作位换成状态文字（使用中 / 路由中 / 当前默认 / 已添加…） */
-  status?: { label: string; dot: CardTone | "muted" };
+  status?: { label: string; dot: CardTone | "muted"; icon?: "default" };
   buttons: CardButton[];
   /** 「更多」菜单最前面、跟当前模式有关的操作（聚合页的「设为默认」） */
   menuItems?: CardMenuItem[];
@@ -172,15 +174,15 @@ export function buildSwitchSections(input: SwitchModeInput): ProviderSection[] {
     ...section,
     items: section.items.map((item) => {
       const reason = deleteBlockedReason(item.provider.id);
-      return reason
-        ? {
-            ...item,
-            presentation: {
-              ...item.presentation,
-              deleteDisabledReason: reason,
-            },
-          }
-        : item;
+      return {
+        ...item,
+        presentation: {
+          ...item.presentation,
+          hoverTone: input.view === "route" ? "route" : undefined,
+          deleteDisabledReason:
+            reason ?? item.presentation.deleteDisabledReason,
+        },
+      };
     }),
   }));
 }
@@ -203,9 +205,11 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
   const official = (p: Provider) => isOfficialAccount(app, p);
 
   const chip = {
-    official: (): CardChip => ({
+    official: (p: Provider): CardChip => ({
       key: "official",
-      label: t("providerCard.chip.official"),
+      label: blockedFromRouting(app, p)
+        ? t("provider.noRoutingSupport")
+        : t("providerCard.chip.official"),
       tone: "outline",
     }),
     needsRoute: (p: Provider): CardChip => ({
@@ -225,11 +229,11 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
   };
   const base = (p: Provider) => {
     const chips: CardChip[] = [];
-    if (official(p)) chips.push(chip.official());
+    if (official(p)) chips.push(chip.official(p));
     if (providerNeedsRouting(app, p)) chips.push(chip.needsRoute(p));
     return chips;
   };
-  const officialOnly = (p: Provider) => (official(p) ? [chip.official()] : []);
+  const officialOnly = (p: Provider) => (official(p) ? [chip.official(p)] : []);
   const blocked = (p: Provider, label: string, reason: string) => ({
     provider: p,
     presentation: {
@@ -318,7 +322,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
           items: providers.map((p) => {
             if (blockedFromRouting(app, p))
               return blocked(p, t("provider.enable"), noRoute);
-            const chips = officialOnly(p);
+            const chips = base(p);
             if (p.id === routeId) {
               return {
                 provider: p,
@@ -367,12 +371,6 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
             provider: p,
             presentation: {
               tone: current ? "route" : undefined,
-              status: current
-                ? {
-                    label: t("provider.inUse"),
-                    dot: "route" as const,
-                  }
-                : undefined,
               chips: [
                 {
                   key: "priority",
@@ -382,6 +380,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                     priority: index + 1,
                   }),
                 },
+                ...base(p),
               ],
               showHealth: input.serviceRunning,
               buttons: [
@@ -417,7 +416,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
           return {
             provider: p,
             presentation: {
-              chips: officialOnly(p),
+              chips: base(p),
               buttons: [
                 {
                   key: "queueAdd",
@@ -458,7 +457,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
             return {
               provider: p,
               presentation: {
-                chips: [{ ...chip.official(), title: noRoute }],
+                chips: [{ ...chip.official(p), title: noRoute }],
                 dim: true,
                 buttons: [],
               } satisfies CardPresentation,
@@ -466,7 +465,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
           return {
             provider: p,
             presentation: {
-              chips: officialOnly(p),
+              chips: base(p),
               buttons: [],
             } satisfies CardPresentation,
           };
@@ -577,7 +576,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
         return {
           provider: p,
           presentation: {
-            chips: [chip.official()],
+            chips: [chip.official(p)],
             menuItems: setDefaultItems(p),
             buttons: [
               {
@@ -734,6 +733,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         added.push({
           provider: p,
           presentation: {
+            tone: "direct",
             chips,
             buttons: [
               {
@@ -797,7 +797,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
       continue;
     }
 
-    // 已添加：白底、不写「● 已添加」（分组标题和「移除」已经说清楚）；灰底只给默认那一家
+    // 第三版已添加的 OpenCode / Pi / MiniMax Code 有蓝色高亮，默认项仍单独标状态。
     const buttons: CardButton[] = [];
     let status: CardPresentation["status"];
     let isDefault = false;
@@ -807,7 +807,11 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
     if (app === "openclaw" || app === "opencode") {
       isDefault = input.defaultModel?.providerId === p.id;
       if (isDefault) {
-        status = { label: t("provider.isDefault"), dot: "muted" };
+        status = {
+          label: t("provider.isDefault"),
+          dot: "muted",
+          icon: app === "openclaw" ? "default" : undefined,
+        };
         chips.push({
           key: "defaultModel",
           label: t("providerCard.chip.defaultModel", {
@@ -849,7 +853,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
     if (app === "hermes") {
       if (p.id === input.hermesCurrentId) {
         isDefault = true;
-        status = { label: t("provider.inUse"), dot: "muted" };
+        status = { label: t("provider.inUse"), dot: "muted", icon: "default" };
         removeReason = t("providerCard.reason.currentCannotRemove");
       } else {
         buttons.push({
@@ -871,7 +875,11 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
     added.push({
       provider: p,
       presentation: {
-        tone: isDefault ? "neutral" : undefined,
+        tone: isDefault
+          ? "neutral"
+          : app === "opencode" || app === "pi" || app === "mcode"
+            ? "direct"
+            : undefined,
         status,
         chips,
         dim: managed,

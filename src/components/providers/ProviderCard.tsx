@@ -354,7 +354,9 @@ export function ProviderCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl border border-border p-4 transition-all duration-300 bg-card text-card-foreground group",
-        presentation.tone === "route" || presentation.tone === "stack"
+        presentation.hoverTone === "route" ||
+          presentation.tone === "route" ||
+          presentation.tone === "stack"
           ? "hover:border-emerald-500/50"
           : "hover:border-border-active",
         presentation.tone && TONE_CLASS[presentation.tone],

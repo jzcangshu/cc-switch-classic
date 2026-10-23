@@ -89,6 +89,27 @@ const setDefaultItem = (sections: ProviderSection[], id: string) => {
 };
 
 describe("buildSwitchSections — direct", () => {
+  it("labels blocked official subscriptions differently from routable Codex accounts", () => {
+    const claude = build({ active: "direct", view: "direct" });
+    expect(item(claude.sections, "official").chips[0].label).toBe(
+      "provider.noRoutingSupport",
+    );
+    const codex = build({
+      app: "codex",
+      active: "direct",
+      view: "direct",
+      providers: [
+        provider("official", {
+          category: "official",
+          settingsConfig: { auth: {}, config: "" },
+        }),
+      ],
+    });
+    expect(item(codex.sections, "official").chips[0].label).toBe(
+      "providerCard.chip.official",
+    );
+  });
+
   it("marks the direct provider in use and asks before switching to one that needs routing", () => {
     const { sections, input } = build({ active: "direct", view: "direct" });
 
@@ -176,8 +197,19 @@ describe("buildSwitchSections — route", () => {
 
     expect(item(sections, "backup")).toMatchObject({
       tone: "route",
+      hoverTone: "route",
       status: { label: "provider.inUse" },
     });
+    expect(item(sections, "relay").hoverTone).toBe("route");
+    expect(item(sections, "relay").tone).toBeUndefined();
+    expect(item(sections, "converted").chips).toEqual([
+      {
+        key: "needsRoute",
+        label: "providerCard.chip.needsRoute",
+        tone: "outline",
+        title: "reason",
+      },
+    ]);
     button(sections, "relay", "routeHere").onClick();
     expect(button(sections, "relay", "routeHere").label).toBe(
       "provider.enable",
@@ -186,6 +218,9 @@ describe("buildSwitchSections — route", () => {
     // 路由页上没有跟直连那家有关的操作，不标「直连时使用」
     expect(item(sections, "relay").chips).toEqual([]);
     expect(item(sections, "official").dim).toBe(true);
+    expect(item(sections, "official").chips[0].label).toBe(
+      "provider.noRoutingSupport",
+    );
     expect(button(sections, "official", "blocked").disabledReason).toBe(
       "providerCard.reason.noRoute",
     );
@@ -209,6 +244,10 @@ describe("buildSwitchSections — route", () => {
       showHealth: true,
       chips: [{ key: "priority", label: "P1" }],
     });
+    expect(item(sections, "relay").status).toBeUndefined();
+    expect(item(sections, "relay").buttons.map((button) => button.key)).toEqual(
+      ["queueRemove"],
+    );
     expect(item(sections, "relay").move?.onUp).toBeUndefined();
     item(sections, "relay").move?.onDown?.();
     expect(input.actions.queueMove).toHaveBeenCalledWith(relay, 1);
@@ -259,15 +298,19 @@ describe("buildSwitchSections — route", () => {
       },
     ]);
     expect(item(sections, "converted").chips[0].label).toBe("P3");
+    expect(item(sections, "converted").chips.map((chip) => chip.key)).toEqual([
+      "priority",
+      "needsRoute",
+    ]);
     item(sections, "backup").move?.onUp?.();
     expect(input.actions.queueMove).toHaveBeenCalledWith(backup, -1);
     expect(item(sections, "converted").move?.onDown).toBeUndefined();
 
-    // 转移成功后后端记下的路由是 backup：「路由中」在它身上，不在队首
+    // 转移成功后后端记下的路由是 backup：绿色高亮在它身上，不在队首。
     expect(item(sections, "backup")).toMatchObject({
       tone: "route",
-      status: { label: "provider.inUse" },
     });
+    expect(item(sections, "backup").status).toBeUndefined();
     expect(item(sections, "converted").status).toBeUndefined();
 
     // 记下的路由已不在队列里：退回队首
@@ -323,14 +366,23 @@ describe("buildSwitchSections — route", () => {
     // 也不标上次路由的那家和直连那家
     for (const id of ["relay", "backup", "converted"]) {
       expect(item(sections, id).buttons).toEqual([]);
-      expect(item(sections, id).chips).toEqual([]);
+      expect(item(sections, id).chips.map((chip) => chip.key)).toEqual(
+        id === "converted" ? ["needsRoute"] : [],
+      );
+      expect(item(sections, id).hoverTone).toBe("route");
       expect(item(sections, id).menuItems).toBeUndefined();
     }
     // 不能路由的官方订阅没有按钮可挂原因，原因在「官方」徽标上
     expect(item(sections, "official")).toMatchObject({
       dim: true,
       buttons: [],
-      chips: [{ key: "official", title: "providerCard.reason.noRoute" }],
+      chips: [
+        {
+          key: "official",
+          label: "provider.noRoutingSupport",
+          title: "providerCard.reason.noRoute",
+        },
+      ],
     });
   });
 });
@@ -403,6 +455,7 @@ describe("buildSwitchSections — stack", () => {
       tone: undefined,
       status: { label: "providerCard.status.defaultAfterSwitch" },
     });
+    expect(item(sections, "relay").status?.icon).toBeUndefined();
     // 行上没有会切模式的按钮，只有名单的添加 / 移除
     expect(item(sections, "backup").buttons.map((b) => b.key)).toEqual([
       "remove",
@@ -500,6 +553,45 @@ describe("buildAdditiveSections", () => {
     setDefault: vi.fn(),
   });
 
+  it.each(["pi", "mcode"] as const)(
+    "highlights live %s membership without claiming a single active provider",
+    (app) => {
+      const actions = additiveActions();
+      const sections = buildAdditiveSections({
+        app,
+        t,
+        providers: [relay, backup],
+        isInConfig: (p) => p.id === relay.id,
+        actions,
+      });
+      expect(item(sections, relay.id).tone).toBe("direct");
+      expect(item(sections, relay.id).status).toBeUndefined();
+      expect(item(sections, backup.id).tone).toBeUndefined();
+      button(sections, relay.id, "remove").onClick();
+      expect(actions.remove).toHaveBeenCalledWith(relay);
+      button(sections, backup.id, "add").onClick();
+      expect(actions.add).toHaveBeenCalledWith(backup);
+    },
+  );
+
+  it("highlights only the enabled Slim plugin and retains its disable handler", () => {
+    const slim = provider("slim", { category: "omo-slim" });
+    const other = provider("other-slim", { category: "omo-slim" });
+    const actions = additiveActions();
+    const sections = buildAdditiveSections({
+      app: "opencode",
+      t,
+      providers: [slim, other],
+      isInConfig: () => false,
+      currentOmoSlimId: slim.id,
+      actions,
+    });
+    expect(item(sections, slim.id).tone).toBe("direct");
+    expect(item(sections, other.id).tone).toBeUndefined();
+    button(sections, slim.id, "disable").onClick();
+    expect(actions.disableOmo).toHaveBeenCalledWith(slim);
+  });
+
   it("splits added and available providers and keeps OMO to one at a time", () => {
     const omo = provider("omo", { category: "omo" });
     const otherOmo = provider("omo-2", { category: "omo" });
@@ -522,9 +614,9 @@ describe("buildAdditiveSections", () => {
       "provider.removeFromConfig",
     );
     expect(actions.remove).toHaveBeenCalledWith(relay);
-    // 已添加的卡白底、不再写「● 已添加 / 已启用」：灰底只给默认那一家
+    // 已添加的配置和当前插件沿用第三版蓝色高亮，状态不重复。
     for (const id of ["relay", "omo"]) {
-      expect(item(sections, id).tone).toBeUndefined();
+      expect(item(sections, id).tone).toBe("direct");
       expect(item(sections, id).status).toBeUndefined();
     }
     button(sections, "backup", "add").onClick();
@@ -569,6 +661,7 @@ describe("buildAdditiveSections", () => {
       "providerCard.reason.defaultCannotRemove",
     );
     const setDefault = button(sections, "multi", "setDefault");
+    expect(item(sections, "relay").status?.icon).toBe("default");
     expect(setDefault.menu?.options.map((o) => [o.label, o.detail])).toEqual([
       ["Model 1", "m-1"],
       ["m-2", undefined],
@@ -599,6 +692,7 @@ describe("buildAdditiveSections", () => {
       item(sections, "relay").chips.some((c) => c.key === "defaultModel"),
     ).toBe(true);
     expect(button(sections, "relay", "remove").disabledReason).toBeUndefined();
+    expect(item(sections, "multi").tone).toBe("direct");
     const setDefault = button(sections, "multi", "setDefault");
     setDefault.onClick();
     expect(actions.setDefault).toHaveBeenCalledWith(multi, "m-1");
@@ -659,6 +753,7 @@ describe("buildAdditiveSections", () => {
       "providerCard.reason.currentCannotRemove",
     );
     expect(item(sections, "relay").tone).toBe("neutral");
+    expect(item(sections, "relay").status?.icon).toBe("default");
     expect(item(sections, "managed").tone).toBeUndefined();
     expect(item(sections, "managed")).toMatchObject({
       dim: true,

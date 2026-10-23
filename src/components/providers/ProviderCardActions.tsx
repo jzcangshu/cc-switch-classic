@@ -88,7 +88,11 @@ export function ProviderCardActions({
           disabled
           className="min-w-[4.5rem] px-2.5 bg-gray-200 text-muted-foreground hover:bg-gray-200 hover:text-muted-foreground dark:bg-gray-700 dark:hover:bg-gray-700"
         >
-          <Check className="h-4 w-4" aria-hidden="true" />
+          {status.icon === "default" ? (
+            <Zap className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <Check className="h-4 w-4" aria-hidden="true" />
+          )}
           {status.label}
         </Button>
       )}

@@ -107,8 +107,8 @@ describe("ProviderCardActions — classic controls with live presentation", () =
     });
     for (const card of cards) renderActions(card.presentation);
     expect(
-      screen.getByRole("button", { name: "provider.inUse" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "provider.inUse" }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "failover.inQueue" }));
     expect(input.actions.queueRemove).toHaveBeenCalledWith(provider);
     await user.click(screen.getByRole("button", { name: "failover.addQueue" }));
