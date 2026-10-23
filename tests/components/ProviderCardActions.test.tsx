@@ -1,8 +1,178 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import type { TFunction } from "i18next";
+import type { Provider } from "@/types";
 import { ProviderCardActions } from "@/components/providers/ProviderCardActions";
-import type { CardPresentation } from "@/components/providers/presentation";
+import {
+  buildAdditiveSections,
+  buildSwitchSections,
+  type CardPresentation,
+  type SwitchModeInput,
+} from "@/components/providers/presentation";
+
+const provider: Provider = { id: "relay", name: "Relay", settingsConfig: {} };
+const backup: Provider = { id: "backup", name: "Backup", settingsConfig: {} };
+const t = ((key: string) => key) as TFunction;
+
+function switchCards(overrides: Partial<SwitchModeInput> = {}) {
+  const input: SwitchModeInput = {
+    app: "claude",
+    t,
+    providers: [provider, backup],
+    active: "direct",
+    view: "direct",
+    directId: provider.id,
+    routeId: null,
+    failoverOn: false,
+    queue: [],
+    stackMembers: new Map(),
+    routingReason: () => "Needs routing",
+    serviceRunning: true,
+    actions: {
+      switchDirect: vi.fn(),
+      needsRouteDialog: vi.fn(),
+      exitAndUse: vi.fn(),
+      routeTo: vi.fn(),
+      queueAdd: vi.fn(),
+      queueRemove: vi.fn(),
+      queueMove: vi.fn(),
+      stackAdd: vi.fn(),
+      stackRemove: vi.fn(),
+      stackSetDefault: vi.fn(),
+    },
+    ...overrides,
+  };
+  const cards = buildSwitchSections(input).flatMap((section) => section.items);
+  const card = (id: string) =>
+    cards.find((item) => item.provider.id === id)!.presentation;
+  return { input, cards, card };
+}
+
+function renderActions(presentation: CardPresentation) {
+  return render(
+    <ProviderCardActions
+      providerName="Relay"
+      presentation={presentation}
+      onEdit={vi.fn()}
+      onDelete={vi.fn()}
+    />,
+  );
+}
+
+describe("ProviderCardActions — classic controls with live presentation", () => {
+  it("shows in-use as a disabled button and enables the selected direct provider", async () => {
+    const user = userEvent.setup();
+    const { input, card } = switchCards();
+    const view = renderActions(card(provider.id));
+    const inUse = screen.getByRole("button", { name: "provider.inUse" });
+    expect(inUse).toBeDisabled();
+    await user.click(inUse);
+    expect(input.actions.switchDirect).not.toHaveBeenCalled();
+
+    view.rerender(
+      <ProviderCardActions
+        providerName="Backup"
+        presentation={card(backup.id)}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "provider.enable" }));
+    expect(input.actions.switchDirect).toHaveBeenCalledWith(backup);
+    expect(input.actions.routeTo).not.toHaveBeenCalled();
+  });
+
+  it("uses the same enable label for routing while calling the route handler", async () => {
+    const user = userEvent.setup();
+    const { input, card } = switchCards({
+      active: "route",
+      view: "route",
+      routeId: provider.id,
+    });
+    renderActions(card(backup.id));
+    await user.click(screen.getByRole("button", { name: "provider.enable" }));
+    expect(input.actions.routeTo).toHaveBeenCalledWith(backup);
+    expect(input.actions.switchDirect).not.toHaveBeenCalled();
+  });
+
+  it("keeps join and joined buttons bound to opposite queue membership changes", async () => {
+    const user = userEvent.setup();
+    const { input, cards } = switchCards({
+      active: "route",
+      view: "route",
+      routeId: provider.id,
+      failoverOn: true,
+      queue: [provider.id],
+    });
+    for (const card of cards) renderActions(card.presentation);
+    expect(
+      screen.getByRole("button", { name: "provider.inUse" }),
+    ).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "failover.inQueue" }));
+    expect(input.actions.queueRemove).toHaveBeenCalledWith(provider);
+    await user.click(screen.getByRole("button", { name: "failover.addQueue" }));
+    expect(input.actions.queueAdd).toHaveBeenCalledWith(backup);
+    expect(input.actions.routeTo).not.toHaveBeenCalled();
+  });
+
+  it("preserves the return-to-direct label and exact handler from the preview", async () => {
+    const user = userEvent.setup();
+    const { input, card } = switchCards({
+      active: "stack",
+      view: "direct",
+      routeId: provider.id,
+    });
+    renderActions(card(backup.id));
+    await user.click(
+      screen.getByRole("button", {
+        name: "providerCard.action.backToDirectAndUse",
+      }),
+    );
+    expect(input.actions.exitAndUse).toHaveBeenCalledWith(backup);
+    expect(input.actions.switchDirect).not.toHaveBeenCalled();
+  });
+
+  it("does not expose enable actions or current status while previewing route", () => {
+    const { cards } = switchCards({
+      active: "direct",
+      view: "route",
+      routeId: backup.id,
+    });
+    for (const card of cards) renderActions(card.presentation);
+    expect(
+      screen.queryByRole("button", { name: "provider.enable" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "provider.inUse" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the active OMO in-use button clickable to disable that plugin", async () => {
+    const user = userEvent.setup();
+    const omo: Provider = { ...provider, category: "omo" };
+    const actions = {
+      add: vi.fn(),
+      remove: vi.fn(),
+      disableOmo: vi.fn(),
+      setDefault: vi.fn(),
+    };
+    const sections = buildAdditiveSections({
+      app: "opencode",
+      t,
+      providers: [omo],
+      isInConfig: () => false,
+      currentOmoId: omo.id,
+      actions,
+    });
+    renderActions(sections[0].items[0].presentation);
+    const inUse = screen.getByRole("button", { name: "provider.inUse" });
+    expect(inUse).toBeEnabled();
+    await user.click(inUse);
+    expect(actions.disableOmo).toHaveBeenCalledWith(omo);
+    expect(actions.add).not.toHaveBeenCalled();
+  });
+});
 
 async function openMenu(presentation: CardPresentation) {
   const user = userEvent.setup();

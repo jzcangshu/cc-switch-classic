@@ -94,10 +94,11 @@ describe("buildSwitchSections — direct", () => {
 
     expect(item(sections, "relay")).toMatchObject({
       tone: "direct",
-      status: { label: "providerCard.status.inUse", dot: "direct" },
+      status: { label: "provider.inUse", dot: "direct" },
       buttons: [],
     });
     button(sections, "backup", "switch").onClick();
+    expect(button(sections, "backup", "switch").label).toBe("provider.enable");
     expect(input.actions.switchDirect).toHaveBeenCalledWith(backup);
 
     button(sections, "converted", "switch").onClick();
@@ -116,6 +117,9 @@ describe("buildSwitchSections — direct", () => {
 
     expect(item(sections, "relay").chips.map((c) => c.key)).toContain("direct");
     button(sections, "backup", "exitAndUse").onClick();
+    expect(button(sections, "backup", "exitAndUse").label).toBe(
+      "providerCard.action.backToDirectAndUse",
+    );
     expect(input.actions.exitAndUse).toHaveBeenCalledWith(backup);
     expect(
       button(sections, "converted", "exitAndUse").disabledReason,
@@ -172,9 +176,12 @@ describe("buildSwitchSections — route", () => {
 
     expect(item(sections, "backup")).toMatchObject({
       tone: "route",
-      status: { label: "providerCard.status.routing" },
+      status: { label: "provider.inUse" },
     });
     button(sections, "relay", "routeHere").onClick();
+    expect(button(sections, "relay", "routeHere").label).toBe(
+      "provider.enable",
+    );
     expect(input.actions.routeTo).toHaveBeenCalledWith(relay);
     // 路由页上没有跟直连那家有关的操作，不标「直连时使用」
     expect(item(sections, "relay").chips).toEqual([]);
@@ -208,8 +215,14 @@ describe("buildSwitchSections — route", () => {
     expect(item(sections, "backup").move?.onDown).toBeUndefined();
 
     button(sections, "converted", "queueAdd").onClick();
+    expect(button(sections, "converted", "queueAdd").label).toBe(
+      "failover.addQueue",
+    );
     expect(input.actions.queueAdd).toHaveBeenCalledWith(converted);
     button(sections, "backup", "queueRemove").onClick();
+    expect(button(sections, "backup", "queueRemove").label).toBe(
+      "failover.inQueue",
+    );
     expect(input.actions.queueRemove).toHaveBeenCalledWith(backup);
 
     // 直连那家不在队列里时也不标「直连时使用」
@@ -238,7 +251,12 @@ describe("buildSwitchSections — route", () => {
     });
 
     expect(item(sections, "backup").chips).toEqual([
-      { key: "priority", label: "P2", tone: "outline" },
+      {
+        key: "priority",
+        label: "P2",
+        tone: "outline",
+        title: "failover.priority.tooltip",
+      },
     ]);
     expect(item(sections, "converted").chips[0].label).toBe("P3");
     item(sections, "backup").move?.onUp?.();
@@ -248,7 +266,7 @@ describe("buildSwitchSections — route", () => {
     // 转移成功后后端记下的路由是 backup：「路由中」在它身上，不在队首
     expect(item(sections, "backup")).toMatchObject({
       tone: "route",
-      status: { label: "providerCard.status.routing" },
+      status: { label: "provider.inUse" },
     });
     expect(item(sections, "converted").status).toBeUndefined();
 
@@ -337,7 +355,7 @@ describe("buildSwitchSections — stack", () => {
     expect(item(sections, "relay")).toMatchObject({
       section: "default",
       tone: "stack",
-      status: { label: "providerCard.status.currentDefault" },
+      status: { label: "provider.isDefault" },
     });
     // 发布了 0 个模型的成员要提醒
     expect(item(sections, "backup").chips[0]).toMatchObject({
@@ -500,6 +518,9 @@ describe("buildAdditiveSections", () => {
       ["available", 2],
     ]);
     button(sections, "relay", "remove").onClick();
+    expect(button(sections, "relay", "remove").label).toBe(
+      "provider.removeFromConfig",
+    );
     expect(actions.remove).toHaveBeenCalledWith(relay);
     // 已添加的卡白底、不再写「● 已添加 / 已启用」：灰底只给默认那一家
     for (const id of ["relay", "omo"]) {
@@ -507,8 +528,12 @@ describe("buildAdditiveSections", () => {
       expect(item(sections, id).status).toBeUndefined();
     }
     button(sections, "backup", "add").onClick();
+    expect(button(sections, "backup", "add").label).toBe(
+      "provider.addToConfig",
+    );
     expect(actions.add).toHaveBeenCalledWith(backup);
     button(sections, "omo", "disable").onClick();
+    expect(button(sections, "omo", "disable").label).toBe("provider.inUse");
     expect(actions.disableOmo).toHaveBeenCalledWith(omo);
     expect(item(sections, "omo-2").buttons.map((b) => b.key)).toEqual([
       "enable",
@@ -536,7 +561,7 @@ describe("buildAdditiveSections", () => {
 
     expect(item(sections, "relay")).toMatchObject({
       tone: "neutral",
-      status: { label: "providerCard.status.default" },
+      status: { label: "provider.isDefault" },
     });
     expect(item(sections, "multi").tone).toBeUndefined();
     expect(item(sections, "multi").status).toBeUndefined();
@@ -568,7 +593,7 @@ describe("buildAdditiveSections", () => {
 
     expect(item(sections, "relay")).toMatchObject({
       tone: "neutral",
-      status: { label: "providerCard.status.default" },
+      status: { label: "provider.isDefault" },
     });
     expect(
       item(sections, "relay").chips.some((c) => c.key === "defaultModel"),
@@ -656,7 +681,7 @@ describe("buildAdditiveSections", () => {
     });
 
     expect(button(sections, "relay", "add")).toMatchObject({
-      label: "providerCard.action.enable",
+      label: "provider.enable",
       disabledReason: "pi.current.stateUnavailableHint",
     });
     expect(item(sections, "relay").deleteDisabledReason).toBe(

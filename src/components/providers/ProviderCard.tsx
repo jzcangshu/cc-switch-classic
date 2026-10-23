@@ -15,7 +15,7 @@ import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
 import { authApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { ProviderIconBox } from "@/components/ProviderIconBox";
+import { ProviderIcon } from "@/components/ProviderIcon";
 import { HoverTip } from "@/components/ui/hover-tip";
 import UsageFooter from "@/components/UsageFooter";
 import SubscriptionQuotaFooter from "@/components/SubscriptionQuotaFooter";
@@ -72,7 +72,8 @@ const TONE_CLASS: Record<CardTone, string> = {
 };
 
 const CHIP_CLASS: Record<CardChip["tone"], string> = {
-  outline: "border border-border-strong text-fg-2",
+  outline:
+    "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200",
   direct: "bg-direct-soft text-direct-text",
   route: "bg-route-soft text-route-text",
   stack: "bg-stack-soft text-stack-text",
@@ -81,13 +82,21 @@ const CHIP_CLASS: Record<CardChip["tone"], string> = {
   danger: "bg-danger-soft text-danger-text",
 };
 
+const CHIP_KEY_CLASS: Record<string, string> = {
+  needsRoute: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  priority:
+    "rounded bg-emerald-500/10 text-xs text-emerald-600 dark:text-emerald-400",
+  omo: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  slim: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+};
+
 export function CardChipBadge({ chip }: { chip: CardChip }) {
   return (
     <span
       title={chip.title}
       className={cn(
-        "inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-full px-1.5 text-badge",
-        CHIP_CLASS[chip.tone],
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+        CHIP_KEY_CLASS[chip.key] ?? CHIP_CLASS[chip.tone],
         chip.title && "cursor-help",
       )}
     >
@@ -104,13 +113,39 @@ function HealthChip({
   isHealthy?: boolean;
 }) {
   const { t } = useTranslation();
-  const chip: CardChip =
+  const status =
     consecutiveFailures === 0
-      ? { key: "health", label: t("health.operational"), tone: "success" }
+      ? {
+          label: t("health.operational"),
+          dot: "bg-green-500",
+          className: "bg-green-500/10 text-green-600 dark:text-green-400",
+        }
       : isHealthy !== false
-        ? { key: "health", label: t("health.degraded"), tone: "warning" }
-        : { key: "health", label: t("health.circuitOpen"), tone: "danger" };
-  return <CardChipBadge chip={chip} />;
+        ? {
+            label: t("health.degraded"),
+            dot: "bg-yellow-500",
+            className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+          }
+        : {
+            label: t("health.circuitOpen"),
+            dot: "bg-red-500",
+            className: "bg-red-500/10 text-red-600 dark:text-red-400",
+          };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium",
+        status.className,
+      )}
+      title={t("health.consecutiveFailures", { count: consecutiveFailures })}
+    >
+      <span
+        aria-hidden="true"
+        className={cn("h-2 w-2 rounded-full", status.dot)}
+      />
+      {status.label}
+    </span>
+  );
 }
 
 /** 判断是否为官方供应商（无自定义 base URL / API key，直连官方 API） */
@@ -318,24 +353,26 @@ export function ProviderCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card/80 p-4 text-card-foreground backdrop-blur-sm transition-[border-color,box-shadow] duration-300",
-        presentation.tone
-          ? TONE_CLASS[presentation.tone]
-          : "border-border hover:border-border-strong hover:shadow-sm",
-        dragHandleProps?.isDragging && "cursor-grabbing shadow-v7-md",
+        "relative overflow-hidden rounded-xl border border-border p-4 transition-all duration-300 bg-card text-card-foreground group",
+        presentation.tone === "route" || presentation.tone === "stack"
+          ? "hover:border-emerald-500/50"
+          : "hover:border-border-active",
+        presentation.tone && TONE_CLASS[presentation.tone],
+        !presentation.tone && "hover:shadow-sm",
+        dragHandleProps?.isDragging &&
+          "cursor-grabbing border-primary shadow-lg scale-105 z-10",
       )}
     >
-      {presentation.tone && (
-        <div
-          aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute inset-0 bg-gradient-to-r to-transparent",
-            presentation.tone === "route" || presentation.tone === "stack"
-              ? "from-emerald-500/10"
-              : "from-blue-500/10",
-          )}
-        />
-      )}
+      <div
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-0 bg-gradient-to-r to-transparent transition-opacity duration-500 pointer-events-none",
+          presentation.tone === "route" || presentation.tone === "stack"
+            ? "from-emerald-500/10"
+            : "from-blue-500/10",
+          presentation.tone ? "opacity-100" : "opacity-0",
+        )}
+      />
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {dragHandleProps ? (
@@ -353,18 +390,23 @@ export function ProviderCard({
             </button>
           ) : null}
 
-          <ProviderIconBox
-            icon={resolveProviderIcon(appId, provider.icon, provider.iconColor)}
-            name={provider.name}
-            color={provider.iconColor}
+          <div
             className={cn(
-              // 底色固定为白，图标颜色也要固定：单色（currentColor）图标和首字母
-              // fallback 不能继承深色模式下的浅色文字
-              "rounded-lg bg-white text-neutral-900 transition-transform duration-300 group-hover:scale-105",
+              "h-8 w-8 shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:scale-105 transition-transform duration-300",
               presentation.dim && "opacity-60",
             )}
-            fallbackClassName="bg-transparent text-neutral-600"
-          />
+          >
+            <ProviderIcon
+              icon={resolveProviderIcon(
+                appId,
+                provider.icon,
+                provider.iconColor,
+              )}
+              name={provider.name}
+              color={provider.iconColor}
+              size={20}
+            />
+          </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
@@ -389,7 +431,7 @@ export function ProviderCard({
             </div>
 
             {codexOfficialIdentity && codexOfficialIdentity !== "api_key" ? (
-              <div className="mt-0.5 flex min-w-0 items-center gap-2 text-caption text-fg-2">
+              <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
                 {codexOfficialIdentity === "native_login" ? (
                   <span className="min-w-0 truncate" title={manualNote}>
                     {manualNote ??
@@ -455,7 +497,7 @@ export function ProviderCard({
                 )}
               </div>
             ) : agyModel ? (
-              <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-caption text-fg-2">
+              <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
                 <span className="min-w-0 truncate" title={agyModel}>
                   {agyModel}
                 </span>

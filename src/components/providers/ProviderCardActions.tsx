@@ -5,24 +5,19 @@ import {
   ArrowUp,
   Activity,
   BarChart3,
+  Check,
   ChevronDown,
-  CircleDot,
   Copy,
-  ListMinus,
-  ListPlus,
+  Edit,
   Loader2,
   Minus,
   MoreHorizontal,
-  Pencil,
   Play,
   Plug,
   Plus,
-  Power,
-  PowerOff,
-  Route,
-  SquareTerminal,
-  Star,
+  Terminal,
   Trash2,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,30 +31,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { CardButton, CardPresentation, CardTone } from "./presentation";
-
-const DOT: Record<CardTone | "muted", string> = {
-  direct: "bg-direct",
-  route: "bg-route",
-  stack: "bg-stack",
-  neutral: "bg-fg-2",
-  muted: "bg-fg-3",
-};
+import type { CardButton, CardPresentation } from "./presentation";
 
 /** 操作含义由第四版的卡片呈现模型决定，这里只负责按钮的文字与图标。 */
 const BUTTON_ICON: Record<string, LucideIcon> = {
   switch: Play,
   exitAndUse: Plug,
-  routeHere: Route,
-  queueAdd: ListPlus,
-  queueRemove: ListMinus,
-  setDefault: Star,
+  routeHere: Play,
+  queueAdd: Plus,
+  queueRemove: Check,
+  setDefault: Zap,
   add: Plus,
   remove: Minus,
-  enable: Power,
-  use: Power,
-  disable: PowerOff,
-  openTerminal: SquareTerminal,
+  enable: Play,
+  use: Zap,
+  disable: Check,
+  openTerminal: Terminal,
 };
 
 interface ProviderCardActionsProps {
@@ -90,38 +77,41 @@ export function ProviderCardActions({
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
   const { status, buttons, move, menuItems = [] } = presentation;
+  const iconButtonClass = "h-8 w-8 p-1";
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 transition-opacity duration-200 sm:opacity-0 sm:pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto">
       {status && (
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-subtle px-3 py-2 text-sm font-medium text-fg-1">
-          <span
-            aria-hidden="true"
-            className={cn("h-1.5 w-1.5 rounded-full", DOT[status.dot])}
-          />
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled
+          className="min-w-[4.5rem] px-2.5 bg-gray-200 text-muted-foreground hover:bg-gray-200 hover:text-muted-foreground dark:bg-gray-700 dark:hover:bg-gray-700"
+        >
+          <Check className="h-4 w-4" aria-hidden="true" />
           {status.label}
-        </span>
+        </Button>
       )}
-      <div className="flex flex-wrap items-center justify-end gap-1 transition-opacity duration-200 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
-        {buttons.map((button) => (
-          <PrimaryButton key={button.key} button={button} />
-        ))}
-
+      {buttons.map((button) => (
+        <PrimaryButton key={button.key} button={button} />
+      ))}
+      <div className="flex flex-wrap items-center justify-end gap-1">
         {move && (
           <div className="flex items-center">
             <HoverTip
               content={t("providerCard.action.moveUp", { name: providerName })}
             >
               <Button
-                variant="quiet"
+                variant="ghost"
                 size="icon"
+                className={iconButtonClass}
                 aria-label={t("providerCard.action.moveUp", {
                   name: providerName,
                 })}
                 disabled={!move.onUp}
                 onClick={move.onUp}
               >
-                <ArrowUp className="h-4 w-4" strokeWidth={1.5} />
+                <ArrowUp className="h-4 w-4" aria-hidden="true" />
               </Button>
             </HoverTip>
             <HoverTip
@@ -130,15 +120,16 @@ export function ProviderCardActions({
               })}
             >
               <Button
-                variant="quiet"
+                variant="ghost"
                 size="icon"
+                className={iconButtonClass}
                 aria-label={t("providerCard.action.moveDown", {
                   name: providerName,
                 })}
                 disabled={!move.onDown}
                 onClick={move.onDown}
               >
-                <ArrowDown className="h-4 w-4" strokeWidth={1.5} />
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
               </Button>
             </HoverTip>
           </div>
@@ -149,12 +140,13 @@ export function ProviderCardActions({
           disabledReason={presentation.editDisabledReason}
         >
           <Button
-            variant="quiet"
+            variant="ghost"
             size="icon"
+            className={iconButtonClass}
             aria-label={t("providerCard.action.edit", { name: providerName })}
             onClick={onEdit}
           >
-            <Pencil className="h-4 w-4" strokeWidth={1.5} />
+            <Edit className="h-4 w-4" aria-hidden="true" />
           </Button>
         </IconAction>
 
@@ -163,10 +155,11 @@ export function ProviderCardActions({
             <Button
               variant="ghost"
               size="icon"
+              className={iconButtonClass}
               aria-label={t("provider.duplicate")}
               onClick={onDuplicate}
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-4 w-4" aria-hidden="true" />
             </Button>
           </HoverTip>
         )}
@@ -175,14 +168,15 @@ export function ProviderCardActions({
             <Button
               variant="ghost"
               size="icon"
+              className={iconButtonClass}
               aria-label={t("provider.connectivityCheck")}
               disabled={isTesting}
               onClick={onTest}
             >
               {isTesting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Activity className="h-4 w-4" />
+                <Activity className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
           </HoverTip>
@@ -192,10 +186,11 @@ export function ProviderCardActions({
             <Button
               variant="ghost"
               size="icon"
+              className={iconButtonClass}
               aria-label={t("provider.configureUsage")}
               onClick={onConfigureUsage}
             >
-              <BarChart3 className="h-4 w-4" />
+              <BarChart3 className="h-4 w-4" aria-hidden="true" />
             </Button>
           </HoverTip>
         )}
@@ -206,9 +201,12 @@ export function ProviderCardActions({
               size="icon"
               aria-label={t("provider.openTerminal")}
               onClick={onOpenTerminal}
-              className="hover:text-emerald-600 dark:hover:text-emerald-400"
+              className={cn(
+                iconButtonClass,
+                "hover:text-emerald-600 dark:hover:text-emerald-400",
+              )}
             >
-              <SquareTerminal className="h-4 w-4" />
+              <Terminal className="h-4 w-4" aria-hidden="true" />
             </Button>
           </HoverTip>
         )}
@@ -221,9 +219,13 @@ export function ProviderCardActions({
             size="icon"
             aria-label={t("common.delete")}
             onClick={onDelete}
-            className="hover:text-red-500 dark:hover:text-red-400"
+            className={cn(
+              iconButtonClass,
+              !presentation.deleteDisabledReason &&
+                "hover:text-red-500 dark:hover:text-red-400",
+            )}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
           </Button>
         </IconAction>
 
@@ -232,13 +234,14 @@ export function ProviderCardActions({
             <HoverTip content={t("common.more")}>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="quiet"
+                  variant="ghost"
                   size="icon"
+                  className={iconButtonClass}
                   aria-label={t("providerCard.action.more", {
                     name: providerName,
                   })}
                 >
-                  <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                  <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
             </HoverTip>
@@ -287,30 +290,36 @@ function IconAction({
 }
 
 function PrimaryButton({ button }: { button: CardButton }) {
-  const Icon = BUTTON_ICON[button.key] ?? CircleDot;
-  const icon = <Icon className="h-4 w-4" strokeWidth={1.5} />;
+  const Icon = BUTTON_ICON[button.key] ?? Play;
+  const icon = <Icon className="h-4 w-4" aria-hidden="true" />;
+  const secondary = ["remove", "queueRemove", "disable"].includes(button.key);
   const className = cn(
-    "h-8 min-w-[4.5rem] rounded-lg px-2.5",
-    (button.key === "routeHere" || button.key === "queueAdd") &&
+    "min-w-[4.5rem] px-2.5",
+    (button.key === "routeHere" || button.key === "add") &&
       "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700",
-    (button.key === "remove" ||
-      button.key === "queueRemove" ||
-      button.key === "disable") &&
+    button.key === "remove" &&
       "bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-900/70",
+    button.key === "queueRemove" &&
+      "bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/70",
+    button.key === "disable" &&
+      "bg-gray-200 text-muted-foreground hover:bg-gray-200 hover:text-muted-foreground dark:bg-gray-700 dark:hover:bg-gray-700",
   );
   if (button.menu && !button.disabledReason) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="default"
+            variant={secondary ? "secondary" : "default"}
             size="sm"
             aria-label={button.label}
             className={className}
           >
             {icon}
             {button.label}
-            <ChevronDown className="h-3 w-3 opacity-70" />
+            <ChevronDown
+              className="h-3.5 w-3.5 opacity-70"
+              aria-hidden="true"
+            />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -339,7 +348,7 @@ function PrimaryButton({ button }: { button: CardButton }) {
   return (
     <DisabledReason reason={button.disabledReason} align="end">
       <Button
-        variant="default"
+        variant={secondary ? "secondary" : "default"}
         size="sm"
         className={className}
         aria-label={button.label}

@@ -259,7 +259,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                 presentation: {
                   tone: "direct",
                   status: {
-                    label: t("providerCard.status.inUse"),
+                    label: t("provider.inUse"),
                     dot: "direct",
                   },
                   chips,
@@ -274,7 +274,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                 buttons: [
                   {
                     key: "switch",
-                    label: t("providerCard.action.switch"),
+                    label: t("provider.enable"),
                     onClick: () =>
                       providerNeedsRouting(app, p)
                         ? actions.needsRouteDialog(p)
@@ -317,7 +317,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
           key: "all",
           items: providers.map((p) => {
             if (blockedFromRouting(app, p))
-              return blocked(p, t("providerCard.action.routeHere"), noRoute);
+              return blocked(p, t("provider.enable"), noRoute);
             const chips = officialOnly(p);
             if (p.id === routeId) {
               return {
@@ -325,7 +325,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                 presentation: {
                   tone: "route",
                   status: {
-                    label: t("providerCard.status.routing"),
+                    label: t("provider.inUse"),
                     dot: "route",
                   },
                   chips,
@@ -340,7 +340,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                 buttons: [
                   {
                     key: "routeHere",
-                    label: t("providerCard.action.routeHere"),
+                    label: t("provider.enable"),
                     onClick: () => actions.routeTo(p),
                   },
                 ],
@@ -369,7 +369,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
               tone: current ? "route" : undefined,
               status: current
                 ? {
-                    label: t("providerCard.status.routing"),
+                    label: t("provider.inUse"),
                     dot: "route" as const,
                   }
                 : undefined,
@@ -378,13 +378,16 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                   key: "priority",
                   label: `P${index + 1}`,
                   tone: "outline" as const,
+                  title: t("failover.priority.tooltip", {
+                    priority: index + 1,
+                  }),
                 },
               ],
               showHealth: input.serviceRunning,
               buttons: [
                 {
                   key: "queueRemove",
-                  label: t("providerCard.action.removeFromQueue"),
+                  label: t("failover.inQueue"),
                   onClick: () => actions.queueRemove(p),
                 },
               ],
@@ -403,12 +406,12 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
         .filter((p) => !queue.includes(p.id))
         .map((p) => {
           if (blockedFromRouting(app, p))
-            return blocked(p, t("providerCard.action.addToQueue"), noRoute);
+            return blocked(p, t("failover.addQueue"), noRoute);
           // Codex 官方账号卡能路由，但后端不让它进队列（靠客户端自己的登录，不能和别家轮换）
           if (!supportsFailover(app, p))
             return blocked(
               p,
-              t("providerCard.action.addToQueue"),
+              t("failover.addQueue"),
               t("providerCard.reason.noFailover"),
             );
           return {
@@ -418,7 +421,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
               buttons: [
                 {
                   key: "queueAdd",
-                  label: t("providerCard.action.addToQueue"),
+                  label: t("failover.addQueue"),
                   onClick: () => actions.queueAdd(p),
                 },
               ],
@@ -521,7 +524,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
             tone: on ? ("stack" as const) : undefined,
             status: on
               ? {
-                  label: t("providerCard.status.currentDefault"),
+                  label: t("provider.isDefault"),
                   dot: "stack" as const,
                 }
               : {
@@ -727,7 +730,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         ? p.id === input.currentOmoId
         : p.id === input.currentOmoSlimId;
       if (enabled) {
-        // 分组标题已经写了「已添加」，按钮是「停用」，卡上不再重复写状态
+        // 沿用第三版可点击的「使用中」按钮，点击仍停用当前插件。
         added.push({
           provider: p,
           presentation: {
@@ -735,7 +738,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
             buttons: [
               {
                 key: "disable",
-                label: t("providerCard.action.disable"),
+                label: t("provider.inUse"),
                 onClick: () => actions.disableOmo(p),
               },
             ],
@@ -749,7 +752,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
             buttons: [
               {
                 key: "enable",
-                label: t("providerCard.action.enable"),
+                label: t("provider.enable"),
                 onClick: () => actions.add(p),
               },
             ],
@@ -784,9 +787,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
             {
               key: "add",
               label:
-                app === "pi"
-                  ? t("providerCard.action.enable")
-                  : t("providerCard.action.add"),
+                app === "pi" ? t("provider.enable") : t("provider.addToConfig"),
               onClick: () => actions.add(p),
               disabledReason: piBlocked,
             },
@@ -806,7 +807,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
     if (app === "openclaw" || app === "opencode") {
       isDefault = input.defaultModel?.providerId === p.id;
       if (isDefault) {
-        status = { label: t("providerCard.status.default"), dot: "muted" };
+        status = { label: t("provider.isDefault"), dot: "muted" };
         chips.push({
           key: "defaultModel",
           label: t("providerCard.chip.defaultModel", {
@@ -823,7 +824,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         if (app === "openclaw" || models.length > 0) {
           buttons.push({
             key: "setDefault",
-            label: t("providerCard.action.setDefault"),
+            label: t("provider.setAsDefault"),
             onClick: () => actions.setDefault(p, models[0]?.id),
             menu:
               models.length > 1
@@ -848,12 +849,12 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
     if (app === "hermes") {
       if (p.id === input.hermesCurrentId) {
         isDefault = true;
-        status = { label: t("providerCard.status.current"), dot: "muted" };
+        status = { label: t("provider.inUse"), dot: "muted" };
         removeReason = t("providerCard.reason.currentCannotRemove");
       } else {
         buttons.push({
           key: "use",
-          label: t("providerCard.action.enable"),
+          label: t("provider.enable"),
           onClick: () => actions.setDefault(p),
           disabledReason: readOnlyReason,
         });
@@ -862,7 +863,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
 
     buttons.push({
       key: "remove",
-      label: t("providerCard.action.remove"),
+      label: t("provider.removeFromConfig"),
       onClick: () => actions.remove(p),
       disabledReason: removeReason ?? readOnlyReason,
     });
