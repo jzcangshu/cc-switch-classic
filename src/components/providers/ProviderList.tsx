@@ -111,13 +111,6 @@ export function ProviderList({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const focusSearch = useCallback(() => {
-    const input = searchInputRef.current;
-    if (input) {
-      input.focus();
-      input.select();
-    }
-  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -134,7 +127,6 @@ export function ProviderList({
         }
         event.preventDefault();
         setIsSearchOpen(true);
-        focusSearch();
         return;
       }
       if (event.key === "Escape" && isSearchOpen) {
@@ -144,7 +136,26 @@ export function ProviderList({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focusSearch, isSearchOpen]);
+  }, [isSearchOpen]);
+
+  // 面板打开后输入框才挂载，等下一帧再聚焦（keydown 里同步聚焦时 ref 还是 null）
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const frame = requestAnimationFrame(() => {
+      const input = searchInputRef.current;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isSearchOpen]);
+
+  // 切换应用时收起面板并清空搜索词，避免上一个应用的过滤词污染新列表
+  useEffect(() => {
+    setIsSearchOpen(false);
+    setSearchTerm("");
+  }, [appId]);
 
   const { sortedProviders, sensors, handleDragEnd } = useDragSort(
     providers,
@@ -482,15 +493,19 @@ export function ProviderList({
     <div className="space-y-4">
       <AnimatePresence>
         {isSearchOpen && (
+          // 外层只做定位：framer-motion 的动画 transform 会覆盖 Tailwind 的
+          // -translate-x-1/2，导致窄屏下面板偏移，所以动画放在内层容器上
           <motion.div
             key="provider-search"
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed left-1/2 top-[6.5rem] z-40 w-[min(90vw,26rem)] -translate-x-1/2 sm:right-6 sm:left-auto sm:translate-x-0"
           >
-            <div className="space-y-3 rounded-2xl border border-border bg-surface/95 p-4 shadow-md backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="space-y-3 rounded-2xl border border-border bg-surface/95 p-4 shadow-md backdrop-blur-md"
+            >
               <div className="relative flex items-center gap-2">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3" />
                 <Input
@@ -530,7 +545,7 @@ export function ProviderList({
                 <span>{t("provider.searchScopeHint")}</span>
                 <span>{t("provider.searchCloseHint")}</span>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

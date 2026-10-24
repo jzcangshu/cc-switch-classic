@@ -303,6 +303,8 @@ describe("ProviderList Component", () => {
 
     fireEvent.keyDown(window, { key: "f", ctrlKey: true });
     const input = await screen.findByLabelText("provider.searchAriaLabel");
+    // 首次唤起就要聚焦（输入框挂载后下一帧 focus）
+    await waitFor(() => expect(input).toHaveFocus());
     fireEvent.change(input, { target: { value: "alpha" } });
 
     await waitFor(() =>
@@ -319,6 +321,54 @@ describe("ProviderList Component", () => {
         screen.queryByLabelText("provider.searchAriaLabel"),
       ).not.toBeInTheDocument(),
     );
+    expect(screen.getByTestId("provider-card-b")).toBeInTheDocument();
+  });
+
+  it("closes the floating search and clears the filter when switching apps", async () => {
+    const providerA = createProvider({ id: "a", name: "Alpha 中转" });
+    const providerB = createProvider({ id: "b", name: "Beta 官方" });
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [providerA, providerB],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+
+    const view = renderWithQueryClient(
+      <ProviderList
+        {...baseProps}
+        providers={{ a: providerA, b: providerB }}
+        appId="claude"
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: "f", ctrlKey: true });
+    const input = await screen.findByLabelText("provider.searchAriaLabel");
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.change(input, { target: { value: "alpha" } });
+    await waitFor(() =>
+      expect(screen.queryByTestId("provider-card-b")).not.toBeInTheDocument(),
+    );
+
+    // 切到 codex：面板收起，过滤词清空，卡片全部回来
+    view.rerender(
+      <QueryClientProvider
+        client={new QueryClient({
+          defaultOptions: { queries: { retry: false } },
+        })}
+      >
+        <ProviderList
+          {...baseProps}
+          providers={{ a: providerA, b: providerB }}
+          appId="codex"
+        />
+      </QueryClientProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText("provider.searchAriaLabel"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("provider-card-a")).toBeInTheDocument();
     expect(screen.getByTestId("provider-card-b")).toBeInTheDocument();
   });
 
