@@ -7,7 +7,6 @@ import {
   buildAdditiveSections,
   buildLaunchSections,
   buildSwitchSections,
-  queueMoveSortUpdates,
   type ProviderSection,
   type SwitchModeInput,
 } from "@/components/providers/presentation";
@@ -38,7 +37,6 @@ function actions() {
     routeTo: vi.fn(),
     queueAdd: vi.fn(),
     queueRemove: vi.fn(),
-    queueMove: vi.fn(),
     stackAdd: vi.fn(),
     stackRemove: vi.fn(),
     stackSetDefault: vi.fn(),
@@ -79,17 +77,8 @@ const button = (sections: ProviderSection[], id: string, key: string) => {
   return found;
 };
 
-/** 「更多」菜单里的「设为默认」 */
-const setDefaultItem = (sections: ProviderSection[], id: string) => {
-  const found = item(sections, id).menuItems?.find(
-    (m) => m.key === "setDefault",
-  );
-  if (!found) throw new Error(`no setDefault menu item on ${id}`);
-  return found;
-};
-
 describe("buildSwitchSections — direct", () => {
-  it("labels blocked official subscriptions differently from routable Codex accounts", () => {
+  it("keeps the no-routing badge on blocked official subscriptions and no badge on routable Codex accounts", () => {
     const claude = build({ active: "direct", view: "direct" });
     expect(item(claude.sections, "official").chips[0].label).toBe(
       "provider.noRoutingSupport",
@@ -105,9 +94,8 @@ describe("buildSwitchSections — direct", () => {
         }),
       ],
     });
-    expect(item(codex.sections, "official").chips[0].label).toBe(
-      "providerCard.chip.official",
-    );
+    // 第三版没有「官方」徽章，能路由的官方账号不加徽标
+    expect(item(codex.sections, "official").chips).toEqual([]);
   });
 
   it("marks the direct provider in use and asks before switching to one that needs routing", () => {
@@ -217,7 +205,6 @@ describe("buildSwitchSections — route", () => {
     expect(input.actions.routeTo).toHaveBeenCalledWith(relay);
     // 路由页上没有跟直连那家有关的操作，不标「直连时使用」
     expect(item(sections, "relay").chips).toEqual([]);
-    expect(item(sections, "official").dim).toBe(true);
     expect(item(sections, "official").chips[0].label).toBe(
       "provider.noRoutingSupport",
     );
@@ -248,10 +235,6 @@ describe("buildSwitchSections — route", () => {
     expect(item(sections, "relay").buttons.map((button) => button.key)).toEqual(
       ["queueRemove"],
     );
-    expect(item(sections, "relay").move?.onUp).toBeUndefined();
-    item(sections, "relay").move?.onDown?.();
-    expect(input.actions.queueMove).toHaveBeenCalledWith(relay, 1);
-    expect(item(sections, "backup").move?.onDown).toBeUndefined();
 
     button(sections, "converted", "queueAdd").onClick();
     expect(button(sections, "converted", "queueAdd").label).toBe(
@@ -279,8 +262,8 @@ describe("buildSwitchSections — route", () => {
   });
 
   it("numbers the queue by its full order and marks the recorded route, not the first visible card", () => {
-    // 搜索把 P1 过滤掉了：剩下的卡序号、上下移仍按完整队列算
-    const { sections, input } = build({
+    // 队列里有的供应商还没渲染时：剩下的卡序号仍按完整队列算
+    const { sections } = build({
       active: "route",
       view: "route",
       routeId: "backup",
@@ -302,9 +285,6 @@ describe("buildSwitchSections — route", () => {
       "priority",
       "needsRoute",
     ]);
-    item(sections, "backup").move?.onUp?.();
-    expect(input.actions.queueMove).toHaveBeenCalledWith(backup, -1);
-    expect(item(sections, "converted").move?.onDown).toBeUndefined();
 
     // 转移成功后后端记下的路由是 backup：绿色高亮在它身上，不在队首。
     expect(item(sections, "backup")).toMatchObject({
@@ -347,7 +327,6 @@ describe("buildSwitchSections — route", () => {
       providers: [relay, backup, managed],
     });
 
-    expect(item(sections, "managed").dim).toBe(true);
     expect(button(sections, "managed", "blocked").disabledReason).toBe(
       "providerCard.reason.noFailover",
     );
@@ -372,9 +351,8 @@ describe("buildSwitchSections — route", () => {
       expect(item(sections, id).hoverTone).toBe("route");
       expect(item(sections, id).menuItems).toBeUndefined();
     }
-    // 不能路由的官方订阅没有按钮可挂原因，原因在「官方」徽标上
+    // 不能路由的官方订阅没有按钮可挂原因，原因在「不支持路由」徽标上
     expect(item(sections, "official")).toMatchObject({
-      dim: true,
       buttons: [],
       chips: [
         {
@@ -414,23 +392,24 @@ describe("buildSwitchSections — stack", () => {
       key: "models",
       tone: "warning",
     });
-    // 行上只有名单的移除 / 添加；「设为默认」在「更多」菜单里
+    // 「设为默认」是卡上常驻按钮，排在名单操作前面
     expect(item(sections, "backup").buttons.map((b) => b.key)).toEqual([
+      "setDefault",
       "remove",
     ]);
     button(sections, "backup", "remove").onClick();
     expect(input.actions.stackRemove).toHaveBeenCalledWith(backup);
-    expect(setDefaultItem(sections, "backup")).toMatchObject({
+    expect(button(sections, "backup", "setDefault")).toMatchObject({
       label: "providerCard.action.setDefault",
       disabledReason: undefined,
     });
-    setDefaultItem(sections, "backup").onSelect();
+    button(sections, "backup", "setDefault").onClick();
     expect(input.actions.stackSetDefault).toHaveBeenCalledWith(backup);
 
     button(sections, "converted", "add").onClick();
     expect(input.actions.stackAdd).toHaveBeenCalledWith(converted);
     // 还没添加的也能直接设为默认
-    setDefaultItem(sections, "converted").onSelect();
+    button(sections, "converted", "setDefault").onClick();
     expect(input.actions.stackSetDefault).toHaveBeenCalledWith(converted);
     // 默认那家自己没有这一项
     expect(item(sections, "relay").menuItems).toBeUndefined();
@@ -456,11 +435,13 @@ describe("buildSwitchSections — stack", () => {
       status: { label: "providerCard.status.defaultAfterSwitch" },
     });
     expect(item(sections, "relay").status?.icon).toBeUndefined();
-    // 行上没有会切模式的按钮，只有名单的添加 / 移除
+    // 行上没有会切模式的按钮，只有常驻的「设为默认」和名单的添加 / 移除
     expect(item(sections, "backup").buttons.map((b) => b.key)).toEqual([
+      "setDefault",
       "remove",
     ]);
     expect(item(sections, "converted").buttons.map((b) => b.key)).toEqual([
+      "setDefault",
       "add",
     ]);
     button(sections, "converted", "add").onClick();
@@ -468,9 +449,11 @@ describe("buildSwitchSections — stack", () => {
     button(sections, "backup", "remove").onClick();
     expect(input.actions.stackRemove).toHaveBeenCalledWith(backup);
     expect(input.actions.stackSetDefault).not.toHaveBeenCalled();
-    // 「设为默认」在「更多」菜单里：直连时能点（只记下选择）
-    expect(setDefaultItem(sections, "backup").disabledReason).toBeUndefined();
-    setDefaultItem(sections, "converted").onSelect();
+    // 直连时「设为默认」能点（只记下选择）
+    expect(
+      button(sections, "backup", "setDefault").disabledReason,
+    ).toBeUndefined();
+    button(sections, "converted", "setDefault").onClick();
     expect(input.actions.stackSetDefault).toHaveBeenCalledWith(converted);
   });
 
@@ -485,7 +468,7 @@ describe("buildSwitchSections — stack", () => {
 
     expect(item(sections, "relay").section).toBe("default");
     for (const id of ["backup", "converted"]) {
-      expect(setDefaultItem(sections, id).disabledReason).toBe(
+      expect(button(sections, id, "setDefault").disabledReason).toBe(
         "providerCard.reason.defaultWhileRouting",
       );
     }
@@ -505,13 +488,16 @@ describe("buildSwitchSections — stack", () => {
 
     expect(item(sections, "account").section).toBe("available");
     expect(item(sections, "account").buttons.map((b) => b.key)).toEqual([
+      "setDefault",
       "add",
     ]);
     expect(button(sections, "account", "add").disabledReason).toBe(
       "providerCard.reason.officialStack",
     );
     // 它能做默认
-    expect(setDefaultItem(sections, "account").disabledReason).toBeUndefined();
+    expect(
+      button(sections, "account", "setDefault").disabledReason,
+    ).toBeUndefined();
   });
 
   it("never lets ChatGPT accounts be added in Codex Stack mode, even legacy cards without a category", () => {
@@ -534,13 +520,12 @@ describe("buildSwitchSections — stack", () => {
       stackMembers: new Map([["relay", 1]]),
     });
 
-    expect(item(sections, "managed").chips.map((c) => c.key)).toContain(
-      "official",
-    );
+    // 第三版没有「官方」徽章
+    expect(item(sections, "managed").chips).toEqual([]);
     expect(button(sections, "managed", "add").disabledReason).toBe(
       "providerCard.reason.officialStack",
     );
-    setDefaultItem(sections, "managed").onSelect();
+    button(sections, "managed", "setDefault").onClick();
     expect(input.actions.stackSetDefault).toHaveBeenCalledWith(managed);
   });
 });
@@ -756,7 +741,6 @@ describe("buildAdditiveSections", () => {
     expect(item(sections, "relay").status?.icon).toBe("default");
     expect(item(sections, "managed").tone).toBeUndefined();
     expect(item(sections, "managed")).toMatchObject({
-      dim: true,
       editDisabledReason: "provider.managedByHermesHint",
       deleteDisabledReason: "provider.managedByHermesHint",
     });
@@ -785,67 +769,6 @@ describe("buildAdditiveSections", () => {
   });
 });
 
-describe("queueMoveSortUpdates", () => {
-  it("swaps the two positions of a sorted queue", () => {
-    expect(
-      queueMoveSortUpdates(
-        [
-          { providerId: "a", sortIndex: 1 },
-          { providerId: "b", sortIndex: 4 },
-        ],
-        {},
-        "b",
-        -1,
-      ),
-    ).toEqual([
-      { id: "b", sortIndex: 1 },
-      { id: "a", sortIndex: 4 },
-    ]);
-  });
-
-  it("keeps positions distinct when sort indexes tie", () => {
-    expect(
-      queueMoveSortUpdates(
-        [
-          { providerId: "a", sortIndex: 2 },
-          { providerId: "b", sortIndex: 2 },
-        ],
-        {},
-        "b",
-        -1,
-      ),
-    ).toEqual([
-      { id: "b", sortIndex: 2 },
-      { id: "a", sortIndex: 3 },
-    ]);
-  });
-
-  it("keeps positions distinct when an unsorted provider falls back onto a used index", () => {
-    // b 没有 sortIndex，用下标 1 兜底，正好撞上 a 的 1
-    expect(
-      queueMoveSortUpdates(
-        [{ providerId: "a", sortIndex: 1 }, { providerId: "b" }],
-        {},
-        "b",
-        -1,
-      ),
-    ).toEqual([
-      { id: "b", sortIndex: 1 },
-      { id: "a", sortIndex: 2 },
-    ]);
-  });
-
-  it("returns null when the move would leave the queue", () => {
-    const items = [
-      { providerId: "a", sortIndex: 0 },
-      { providerId: "b", sortIndex: 1 },
-    ];
-    expect(queueMoveSortUpdates(items, {}, "a", -1)).toBeNull();
-    expect(queueMoveSortUpdates(items, {}, "b", 1)).toBeNull();
-    expect(queueMoveSortUpdates(items, {}, "x", 1)).toBeNull();
-  });
-});
-
 describe("buildLaunchSections", () => {
   it("gives every Antigravity card Open Terminal instead of enable or in use", () => {
     const openTerminal = vi.fn();
@@ -870,9 +793,8 @@ describe("buildLaunchSections", () => {
       presentation.buttons[0].onClick();
       expect(openTerminal).toHaveBeenLastCalledWith(p);
     }
-    expect(section.items[0].presentation.chips.map((chip) => chip.key)).toEqual(
-      ["official"],
-    );
+    // 第三版没有「官方」徽章
+    expect(section.items[0].presentation.chips).toEqual([]);
     expect(section.items[1].presentation.chips).toEqual([]);
   });
 });

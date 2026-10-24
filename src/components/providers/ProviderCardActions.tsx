@@ -1,8 +1,6 @@
 import type * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowDown,
-  ArrowUp,
   Activity,
   BarChart3,
   Check,
@@ -76,7 +74,7 @@ export function ProviderCardActions({
   onOpenTerminal,
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
-  const { status, buttons, move, menuItems = [] } = presentation;
+  const { status, buttons, menuItems = [] } = presentation;
   const iconButtonClass = "h-8 w-8 p-1";
 
   return (
@@ -100,45 +98,6 @@ export function ProviderCardActions({
         <PrimaryButton key={button.key} button={button} />
       ))}
       <div className="flex flex-wrap items-center justify-end gap-1">
-        {move && (
-          <div className="flex items-center">
-            <HoverTip
-              content={t("providerCard.action.moveUp", { name: providerName })}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className={iconButtonClass}
-                aria-label={t("providerCard.action.moveUp", {
-                  name: providerName,
-                })}
-                disabled={!move.onUp}
-                onClick={move.onUp}
-              >
-                <ArrowUp className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </HoverTip>
-            <HoverTip
-              content={t("providerCard.action.moveDown", {
-                name: providerName,
-              })}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className={iconButtonClass}
-                aria-label={t("providerCard.action.moveDown", {
-                  name: providerName,
-                })}
-                disabled={!move.onDown}
-                onClick={move.onDown}
-              >
-                <ArrowDown className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </HoverTip>
-          </div>
-        )}
-
         <IconAction
           tip={t("common.edit")}
           disabledReason={presentation.editDisabledReason}
@@ -302,6 +261,9 @@ function PrimaryButton({ button }: { button: CardButton }) {
     "min-w-[4.5rem] px-2.5",
     (button.key === "routeHere" || button.key === "add") &&
       "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+    // 第三版的「加入」是蓝色底，「已加入」保持浅蓝
+    button.key === "queueAdd" &&
+      "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
     button.key === "remove" &&
       "bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-900/70",
     button.key === "queueRemove" &&

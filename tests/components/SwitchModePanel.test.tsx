@@ -26,7 +26,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// 只关心模式层：卡片画成按钮，按 presentation 的 key 找；「更多」菜单里的项加 menu- 前缀
+// 只关心模式层：卡片画成按钮，按 presentation 的 key 找
 vi.mock("@/components/providers/ProviderCard", () => ({
   ProviderCard: ({ provider, presentation }: any) => (
     <div data-testid={`card-${provider.id}`}>
@@ -38,16 +38,6 @@ vi.mock("@/components/providers/ProviderCard", () => ({
           onClick={button.onClick}
         >
           {button.label}
-        </button>
-      ))}
-      {(presentation.menuItems ?? []).map((item: any) => (
-        <button
-          key={item.key}
-          data-testid={`menu-${item.key}-${provider.id}`}
-          disabled={Boolean(item.disabledReason)}
-          onClick={item.onSelect}
-        >
-          {item.label}
         </button>
       ))}
     </div>
@@ -655,11 +645,11 @@ describe("SwitchModePanel — mode layer", () => {
     await user.click(
       await screen.findByRole("button", { name: /mode\.names\.stack/ }),
     );
-    // 行上只有名单的添加，「设为默认」在「更多」菜单里；没有会切模式的按钮
+    // 行上是常驻的「设为默认」和名单的添加；没有会切模式的按钮
     const row = await screen.findByTestId("card-kimi");
     expect(
       Array.from(row.querySelectorAll("button")).map((b) => b.dataset.testid),
-    ).toEqual(["add-kimi", "menu-setDefault-kimi"]);
+    ).toEqual(["setDefault-kimi", "add-kimi"]);
     expect(screen.getByTestId("add-kimi")).not.toBeDisabled();
 
     await user.click(
@@ -685,7 +675,7 @@ describe("SwitchModePanel — mode layer", () => {
     );
   });
 
-  it("records the Stack default from the card menu while direct, without entering the mode", async () => {
+  it("records the Stack default from the card button while direct, without entering the mode", async () => {
     const user = userEvent.setup();
     let route: string | null = null;
     const routeCalls: unknown[] = [];
@@ -722,7 +712,7 @@ describe("SwitchModePanel — mode layer", () => {
     await user.click(
       await screen.findByRole("button", { name: /mode\.names\.stack/ }),
     );
-    await user.click(await screen.findByTestId("menu-setDefault-kimi"));
+    await user.click(await screen.findByTestId("setDefault-kimi"));
 
     // 只记下选择：不进聚合、不走切换供应商
     await waitFor(() =>
@@ -737,10 +727,8 @@ describe("SwitchModePanel — mode layer", () => {
       ),
     );
     // 记下的那家成了「切换后的默认」：自己不再有「设为默认」，原来那家有了
-    await screen.findByTestId("menu-setDefault-a");
-    expect(
-      screen.queryByTestId("menu-setDefault-kimi"),
-    ).not.toBeInTheDocument();
+    await screen.findByTestId("setDefault-a");
+    expect(screen.queryByTestId("setDefault-kimi")).not.toBeInTheDocument();
 
     // 确认框预选它
     await user.click(
@@ -785,12 +773,10 @@ describe("SwitchModePanel — mode layer", () => {
     renderPanel("claude", { route: provider("route"), kimi, other }, onSwitch);
 
     // 已添加的、还没添加的都能直接设为默认，走的是切换供应商（当场生效）
-    fireEvent.click(await screen.findByTestId("menu-setDefault-kimi"));
-    fireEvent.click(screen.getByTestId("menu-setDefault-other"));
+    fireEvent.click(await screen.findByTestId("setDefault-kimi"));
+    fireEvent.click(screen.getByTestId("setDefault-other"));
     expect(onSwitch.mock.calls.map(([p]) => p)).toEqual([kimi, other]);
-    expect(
-      screen.queryByTestId("menu-setDefault-route"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("setDefault-route")).not.toBeInTheDocument();
     expect(routeCalls).toEqual([]);
   });
 
@@ -812,7 +798,7 @@ describe("SwitchModePanel — mode layer", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /mode\.names\.stack/ }));
     // 默认和路由目标是同一个指针：路由中改它就是当场换路由，只能在切换时的确认框里选
-    expect(await screen.findByTestId("menu-setDefault-kimi")).toBeDisabled();
+    expect(await screen.findByTestId("setDefault-kimi")).toBeDisabled();
   });
 
   it("warns that a Codex official account drops out of the Stack unless it is the default", async () => {

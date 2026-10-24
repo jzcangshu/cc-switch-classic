@@ -5,17 +5,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { useCallback, useMemo, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
@@ -40,13 +30,8 @@ import {
   useCurrentOmoProviderId,
   useCurrentOmoSlimProviderId,
 } from "@/lib/query/omo";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Notice } from "@/components/ui/notice";
-import { cn } from "@/lib/utils";
-import { isTextEditableTarget } from "@/utils/domUtils";
-import { extractProviderBaseUrl } from "@/utils/providerConfigUtils";
 import { usePiCurrentState } from "@/lib/query/pi";
 import { isHermesReadOnlyProvider } from "@/config/hermesProviderPresets";
 import {
@@ -86,14 +71,6 @@ interface ProviderListProps {
   /** 切换式应用必传：按模式 tab 算卡片 */
   switchMode?: SwitchModeProps;
   isLoading?: boolean;
-  /** 搜索面板开关由页头按钮控制时传入；不传则列表自己管（只能 ⌘F 打开） */
-  searchOpen?: boolean;
-  onSearchOpenChange?: (open: boolean) => void;
-  /**
-   * 模式行右端给搜索框留的位置（null＝位置还没挂上，先不画）；不传则放在列表第一行右端，
-   * 与第一个分组标题同行
-   */
-  searchSlot?: HTMLElement | null;
 }
 
 export function ProviderList({
@@ -114,9 +91,6 @@ export function ProviderList({
   onSetAsDefault,
   switchMode,
   isLoading = false,
-  searchOpen,
-  onSearchOpenChange,
-  searchSlot,
 }: ProviderListProps) {
   const { t } = useTranslation();
   const { checkProvider, isChecking } = useStreamCheck(appId);
@@ -239,91 +213,15 @@ export function ProviderList({
     },
   });
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [innerSearchOpen, setInnerSearchOpen] = useState(false);
-  const isSearchOpen = searchOpen ?? innerSearchOpen;
-  const setIsSearchOpen = onSearchOpenChange ?? setInnerSearchOpen;
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const focusSearch = useCallback(() => {
-    const input = searchInputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    input.select();
-    input.scrollIntoView?.({ block: "nearest" });
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-
-      const key = event.key.toLowerCase();
-      if ((event.metaKey || event.ctrlKey) && key === "f") {
-        // 正在输入框/可编辑区域中时不抢占 Ctrl+F（例如添加供应商表单里
-        // ProviderPresetSelector 的搜索框），避免与其同名快捷键冲突。
-        if (isTextEditableTarget(document.activeElement)) return;
-        event.preventDefault();
-        if (isSearchOpen) {
-          // The list-row field may have scrolled out of view since it was opened.
-          focusSearch();
-        } else {
-          setIsSearchOpen(true);
-        }
-        return;
-      }
-
-      if (key === "escape") {
-        setIsSearchOpen(false);
-      }
-    };
-
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [setIsSearchOpen, isSearchOpen, focusSearch]);
-
-  useEffect(() => {
-    if (isSearchOpen) {
-      const frame = requestAnimationFrame(focusSearch);
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [isSearchOpen, focusSearch]);
-
-  // 每家可被搜到的文字：名称、备注、官网、请求地址（请求地址要解析配置，只随列表变化重算）
-  const searchIndex = useMemo(
-    () =>
-      sortedProviders.map((provider) => ({
-        provider,
-        text: [
-          provider.name,
-          provider.notes,
-          provider.websiteUrl,
-          extractProviderBaseUrl(provider.settingsConfig),
-        ]
-          .filter(Boolean)
-          .join("\n")
-          .toLowerCase(),
-      })),
-    [sortedProviders],
-  );
-
-  // 关掉面板就不再过滤：搜索词留着，下次打开还在，但列表不会悄悄少几家
-  const filteredProviders = useMemo(() => {
-    const keyword = isSearchOpen ? searchTerm.trim().toLowerCase() : "";
-    if (!keyword) return sortedProviders;
-    return searchIndex
-      .filter((entry) => entry.text.includes(keyword))
-      .map((entry) => entry.provider);
-  }, [isSearchOpen, searchTerm, searchIndex, sortedProviders]);
-
   const sections = useMemo<ProviderSection[]>(() => {
     if (switchMode) {
-      // 队列按没过滤的全部供应商剔掉已不存在的 id：序号和上下移要按完整队列算，
-      // 搜索只决定画哪些卡
+      // 队列剔掉已不存在的 id：序号要按完整队列算
       const known = new Set(sortedProviders.map((p) => p.id));
       return buildSwitchSections({
         ...switchMode,
         app: appId,
         t,
-        providers: filteredProviders,
+        providers: sortedProviders,
         queue: switchMode.queue.filter((id) => known.has(id)),
       });
     }
@@ -331,7 +229,7 @@ export function ProviderList({
       return buildLaunchSections({
         app: appId,
         t,
-        providers: filteredProviders,
+        providers: sortedProviders,
         openTerminal: (provider) => onOpenTerminal?.(provider),
       });
     }
@@ -345,7 +243,7 @@ export function ProviderList({
     return buildAdditiveSections({
       app: appId,
       t,
-      providers: filteredProviders,
+      providers: sortedProviders,
       isInConfig,
       currentOmoId,
       currentOmoSlimId,
@@ -391,7 +289,6 @@ export function ProviderList({
     appId,
     t,
     sortedProviders,
-    filteredProviders,
     onSwitch,
     onOpenTerminal,
     openclawDefaultModel?.primary,
@@ -489,63 +386,6 @@ export function ProviderList({
     />
   );
 
-  // 搜索框放在列表上方第一行的最右端，不盖住卡片、打开时卡片也不下移
-  const searchField = (
-    <AnimatePresence>
-      {isSearchOpen && (
-        <motion.div
-          key="provider-search"
-          initial={{ opacity: 0, x: 8 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 8 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className="relative flex w-64 min-w-[10rem] shrink items-center"
-        >
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3" />
-          <Input
-            ref={searchInputRef}
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder={t("provider.searchPlaceholder", {
-              defaultValue: "Search name, notes, or URL...",
-            })}
-            aria-label={t("provider.searchAriaLabel", {
-              defaultValue: "Search providers",
-            })}
-            title={`${t("provider.searchScopeHint", {
-              defaultValue:
-                "Matches provider name, notes, website, and API address.",
-            })} ${t("provider.searchCloseHint", {
-              defaultValue: "Press Esc to close",
-            })}`}
-            className={searchTerm ? "pe-[5.5rem] ps-8" : "pe-9 ps-8"}
-          />
-          {searchTerm && (
-            <Button
-              variant="quiet"
-              size="compact"
-              className="absolute end-8 top-1/2 h-6 -translate-y-1/2 px-1.5"
-              onClick={() => setSearchTerm("")}
-            >
-              {t("common.clear", { defaultValue: "Clear" })}
-            </Button>
-          )}
-          <Button
-            variant="quiet"
-            size="icon-compact"
-            className="absolute end-1 top-1/2 h-6 w-6 -translate-y-1/2"
-            onClick={() => setIsSearchOpen(false)}
-            aria-label={t("provider.searchCloseAriaLabel", {
-              defaultValue: "Close provider search",
-            })}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
   const renderSectionTitle = (section: ProviderSection) => (
     <div className="flex items-center gap-1 text-caption font-semibold text-fg-2">
       <h2 className="m-0 text-caption font-semibold">{section.title}</h2>
@@ -555,74 +395,52 @@ export function ProviderList({
     </div>
   );
 
-  // 没有模式行的应用：第一个分组标题和搜索框同一行。这一行一直在（搜不到结果时只剩搜索框），
-  // 输入框在树里的位置不变，打字中途不会因为结果清空被重新挂载而丢焦点
-  const hostedSearch = searchSlot !== undefined;
+  // 切换式应用的第一个分组标题跟在模式行下面原位渲染；其他应用把标题提到列表第一行
   const leadSection = sections[0];
-  const liftLeadTitle =
-    !hostedSearch &&
-    Boolean(leadSection?.title) &&
-    filteredProviders.length > 0;
-  const showListHeader =
-    !hostedSearch && (Boolean(leadSection?.title) || isSearchOpen);
+  const liftLeadTitle = !switchMode && Boolean(leadSection?.title);
 
   // 卡片列表铺满主区域，和页头同宽
   return (
     <div className="space-y-4">
       {piStateErrorNotice}
-      {searchSlot && createPortal(searchField, searchSlot)}
-      {showListHeader && (
-        <div
-          className={cn(
-            "flex min-h-8 items-center gap-3",
-            liftLeadTitle && "-mb-2",
-          )}
-        >
+      {liftLeadTitle && (
+        <div className="flex min-h-8 items-center gap-3 -mb-2">
           <div className="min-w-0 flex-1">
-            {liftLeadTitle && renderSectionTitle(leadSection)}
+            {renderSectionTitle(leadSection)}
           </div>
-          {searchField}
         </div>
       )}
 
-      {filteredProviders.length === 0 ? (
-        <div className="rounded-panel border border-dashed border-border px-6 py-8 text-center text-body text-fg-2">
-          {t("provider.noSearchResults", {
-            defaultValue: "No providers match your search.",
-          })}
-        </div>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          modifiers={verticalDragModifiers}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          {sections.map((section, index) => (
-            <section key={section.key} className="space-y-3">
-              {section.title && !(index === 0 && liftLeadTitle) && (
-                <div className="pt-1">{renderSectionTitle(section)}</div>
-              )}
-              {section.items.length === 0 && section.emptyText ? (
-                <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
-                  {section.emptyText}
+      <DndContext
+        sensors={sensors}
+        modifiers={verticalDragModifiers}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        {sections.map((section, index) => (
+          <section key={section.key} className="space-y-3">
+            {section.title && !(index === 0 && liftLeadTitle) && (
+              <div className="pt-1">{renderSectionTitle(section)}</div>
+            )}
+            {section.items.length === 0 && section.emptyText ? (
+              <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                {section.emptyText}
+              </div>
+            ) : (
+              <SortableContext
+                items={section.items.map((item) => item.provider.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {section.items.map((item) =>
+                    renderCard(item.provider, item.presentation),
+                  )}
                 </div>
-              ) : (
-                <SortableContext
-                  items={section.items.map((item) => item.provider.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {section.items.map((item) =>
-                      renderCard(item.provider, item.presentation),
-                    )}
-                  </div>
-                </SortableContext>
-              )}
-            </section>
-          ))}
-        </DndContext>
-      )}
+              </SortableContext>
+            )}
+          </section>
+        ))}
+      </DndContext>
     </div>
   );
 }

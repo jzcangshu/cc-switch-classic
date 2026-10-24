@@ -65,13 +65,9 @@ export interface CardPresentation {
   /** 主操作位换成状态文字（使用中 / 路由中 / 当前默认 / 已添加…） */
   status?: { label: string; dot: CardTone | "muted"; icon?: "default" };
   buttons: CardButton[];
-  /** 「更多」菜单最前面、跟当前模式有关的操作（聚合页的「设为默认」） */
+  /** 「更多」菜单里跟当前模式有关的操作（没有就整卡不画 ⋯） */
   menuItems?: CardMenuItem[];
   chips: CardChip[];
-  /** 整卡淡一些（不能用于当前模式的官方订阅、Hermes 托管） */
-  dim?: boolean;
-  /** 故障转移队列里的上移 / 下移（键盘也能排序） */
-  move?: { onUp?: () => void; onDown?: () => void };
   /** 在队列里且路由服务在跑时显示健康状态 */
   showHealth?: boolean;
   /** 编辑 / 删除不可用的原因（当前那家不能删、Hermes 托管只能在 Web UI 改…） */
@@ -97,35 +93,6 @@ export function blockedFromRouting(app: AppId, provider: Provider): boolean {
 
 // ─── 切换式应用（Claude Code / Codex / Gemini CLI / Grok Build）──────────────
 
-/**
- * 故障转移队列里把一家上移 / 下移一格后，各家要写回的 sortIndex。队列顺序就是供应商的排序：
- * 按队列成员原来占着的位置重新分配。位置必须两两不同，否则换位后并列、顺序看起来没动——
- * 两家 sortIndex 相同，或新加的供应商没有 sortIndex、拿下标兜底时撞上别家的值，都会这样。
- * 移不动（不在队列 / 已到头）返回 null。
- */
-export function queueMoveSortUpdates(
-  items: { providerId: string; sortIndex?: number }[],
-  providers: Record<string, Pick<Provider, "sortIndex">>,
-  providerId: string,
-  delta: -1 | 1,
-): { id: string; sortIndex: number }[] | null {
-  const index = items.findIndex((item) => item.providerId === providerId);
-  const target = index + delta;
-  if (index < 0 || target < 0 || target >= items.length) return null;
-  const order = items.map((item) => item.providerId);
-  order.splice(index, 1);
-  order.splice(target, 0, providerId);
-  const slots = items
-    .map(
-      (item, i) => item.sortIndex ?? providers[item.providerId]?.sortIndex ?? i,
-    )
-    .sort((a, b) => a - b);
-  for (let i = 1; i < slots.length; i++) {
-    if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 1;
-  }
-  return order.map((id, i) => ({ id, sortIndex: slots[i] }));
-}
-
 export interface SwitchModeInput {
   app: AppId;
   t: TFunction;
@@ -149,7 +116,6 @@ export interface SwitchModeInput {
     routeTo: (provider: Provider) => void;
     queueAdd: (provider: Provider) => void;
     queueRemove: (provider: Provider) => void;
-    queueMove: (provider: Provider, delta: -1 | 1) => void;
     stackAdd: (provider: Provider) => void;
     stackRemove: (provider: Provider) => void;
     stackSetDefault: (provider: Provider) => void;
@@ -205,11 +171,10 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
   const official = (p: Provider) => isOfficialAccount(app, p);
 
   const chip = {
-    official: (p: Provider): CardChip => ({
+    // 第三版没有「官方」徽章；只有不能路由的 Claude 官方订阅按第三版标「不支持路由」
+    noRouting: (): CardChip => ({
       key: "official",
-      label: blockedFromRouting(app, p)
-        ? t("provider.noRoutingSupport")
-        : t("providerCard.chip.official"),
+      label: t("provider.noRoutingSupport"),
       tone: "outline",
     }),
     needsRoute: (p: Provider): CardChip => ({
@@ -229,16 +194,16 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
   };
   const base = (p: Provider) => {
     const chips: CardChip[] = [];
-    if (official(p)) chips.push(chip.official(p));
+    if (blockedFromRouting(app, p)) chips.push(chip.noRouting());
     if (providerNeedsRouting(app, p)) chips.push(chip.needsRoute(p));
     return chips;
   };
-  const officialOnly = (p: Provider) => (official(p) ? [chip.official(p)] : []);
+  const officialOnly = (p: Provider) =>
+    blockedFromRouting(app, p) ? [chip.noRouting()] : [];
   const blocked = (p: Provider, label: string, reason: string) => ({
     provider: p,
     presentation: {
       chips: officialOnly(p),
-      dim: true,
       buttons: [
         {
           key: "blocked",
@@ -356,9 +321,8 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
     }
 
     if (active === "route") {
-      // 故障转移开着：队列 + 不在队列。P 序号和上下移按完整队列算，`providers`
-      // 可能被搜索过滤过、只决定画哪些卡；「路由中」是后端记下的那家（转移成功后
-      // 会换），不一定是队首
+      // 故障转移开着：队列 + 不在队列。P 序号按完整队列算，「路由中」是后端记下的那家
+      // （转移成功后会换），不一定是队首
       const byId = new Map(providers.map((p) => [p.id, p]));
       const routing =
         routeId !== null && queue.includes(routeId) ? routeId : queue[0];
@@ -390,13 +354,6 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                   onClick: () => actions.queueRemove(p),
                 },
               ],
-              move: {
-                onUp: index > 0 ? () => actions.queueMove(p, -1) : undefined,
-                onDown:
-                  index < queue.length - 1
-                    ? () => actions.queueMove(p, 1)
-                    : undefined,
-              },
             } satisfies CardPresentation,
           },
         ];
@@ -457,8 +414,7 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
             return {
               provider: p,
               presentation: {
-                chips: [{ ...chip.official(p), title: noRoute }],
-                dim: true,
+                chips: [{ ...chip.noRouting(), title: noRoute }],
                 buttons: [],
               } satisfies CardPresentation,
             };
@@ -482,20 +438,18 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
     return p && !blockedFromRouting(app, p) ? p.id : null;
   })();
   const defaultProvider = providers.find((p) => p.id === defaultId);
-  // 行上的主操作只有名单的添加 / 移除；「设为默认」在「更多」菜单里：进了聚合当场生效，
+  // 「设为默认」恢复第三版的卡上常驻 Zap 按钮（不用点开「更多」）：进了聚合当场生效，
   // 在直连时只记下选择（切换时的确认框里还能改）。正在路由时不能点：默认和路由目标是同一个
   // 指针，改了就是当场换路由
-  const setDefaultItems = (p: Provider): CardMenuItem[] => [
-    {
-      key: "setDefault",
-      label: t("providerCard.action.setDefault"),
-      disabledReason:
-        active === "route"
-          ? t("providerCard.reason.defaultWhileRouting")
-          : undefined,
-      onSelect: () => actions.stackSetDefault(p),
-    },
-  ];
+  const setDefaultButton = (p: Provider): CardButton => ({
+    key: "setDefault",
+    label: t("providerCard.action.setDefault"),
+    onClick: () => actions.stackSetDefault(p),
+    disabledReason:
+      active === "route"
+        ? t("providerCard.reason.defaultWhileRouting")
+        : undefined,
+  });
   const memberIds = providers
     .filter((p) => p.id !== defaultId && stackMembers.has(p.id))
     .map((p) => p.id);
@@ -536,7 +490,6 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
                 label: t("providerCard.chip.default"),
                 tone: on ? ("outline" as const) : ("stack" as const),
               },
-              ...officialOnly(defaultProvider),
             ],
             buttons: [],
           } satisfies CardPresentation,
@@ -550,8 +503,8 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
       provider: p,
       presentation: {
         chips: [modelsChip(p)],
-        menuItems: setDefaultItems(p),
         buttons: [
+          setDefaultButton(p),
           {
             key: "remove",
             label: t("providerCard.action.remove"),
@@ -576,9 +529,9 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
         return {
           provider: p,
           presentation: {
-            chips: [chip.official(p)],
-            menuItems: setDefaultItems(p),
+            chips: [],
             buttons: [
+              setDefaultButton(p),
               {
                 key: "add",
                 label: t("providerCard.action.add"),
@@ -593,9 +546,8 @@ function buildSwitchSectionsByView(input: SwitchModeInput): ProviderSection[] {
         provider: p,
         presentation: {
           chips: providerNeedsRouting(app, p) ? [chip.needsRoute(p)] : [],
-          // 还没添加的也能直接设为默认：后端会把默认那家一起加进名单
-          menuItems: setDefaultItems(p),
           buttons: [
+            setDefaultButton(p),
             {
               key: "add",
               label: t("providerCard.action.add"),
@@ -651,22 +603,14 @@ export interface LaunchInput {
  * `agy`，所以没有「启用 / 使用中」，每张卡的主操作就是「打开终端」，哪张都能删。
  */
 export function buildLaunchSections(input: LaunchInput): ProviderSection[] {
-  const { app, t, providers, openTerminal } = input;
+  const { t, providers, openTerminal } = input;
   return [
     {
       key: "all",
       items: providers.map((p) => ({
         provider: p,
         presentation: {
-          chips: isOfficialAccount(app, p)
-            ? [
-                {
-                  key: "official",
-                  label: t("providerCard.chip.official"),
-                  tone: "outline",
-                },
-              ]
-            : [],
+          chips: [],
           buttons: [
             {
               key: "openTerminal",
@@ -780,7 +724,6 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         provider: p,
         presentation: {
           chips,
-          dim: managed,
           editDisabledReason: readOnlyReason,
           deleteDisabledReason: readOnlyReason ?? piBlocked,
           buttons: [
@@ -882,7 +825,6 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
             : undefined,
         status,
         chips,
-        dim: managed,
         editDisabledReason: readOnlyReason,
         deleteDisabledReason: readOnlyReason ?? piBlocked,
         buttons,

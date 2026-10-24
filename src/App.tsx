@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
 import { invoke } from "@tauri-apps/api/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Plus, Search } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Provider, VisibleApps } from "@/types";
 import { type AppTypeFilter } from "@/types/usage";
@@ -101,7 +101,6 @@ import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
 import { WhatsNewNotice } from "@/components/WhatsNewDialog";
 import { Button } from "@/components/ui/button";
-import { HoverTip } from "@/components/ui/hover-tip";
 import { PageTabs } from "@/components/ui/page-tabs";
 import { SessionManagerPage } from "@/components/sessions/SessionManagerPage";
 import {
@@ -154,11 +153,6 @@ function App() {
     PROMPT_APP_IDS.includes(sharedFeatureApp) ? sharedFeatureApp : "claude",
   );
   const [isAddOpen, setIsAddOpen] = useState(false);
-  // 供应商搜索面板：页头按钮和 ⌘F 都能打开；换应用或离开供应商页就收起
-  const [providerSearchOpen, setProviderSearchOpen] = useState(false);
-  useEffect(() => {
-    setProviderSearchOpen(false);
-  }, [activeApp, currentView]);
   // 供应商页顶部正在看的那格（直连 / 路由 / 聚合），由 SwitchModePanel 报上来。打开新增、
   // 编辑时记下当时那格，表单按它选布局：在聚合那格打开就是聚合的简化表单。
   const [providerModeView, setProviderModeView] = useState<{
@@ -1123,25 +1117,6 @@ function App() {
                 <ExternalLink className="h-3.5 w-3.5" />
               </Button>
             )}
-            {currentView === "providers" &&
-              (settingsData?.showProviderSearch ?? true) && (
-                <HoverTip
-                  content={t("provider.searchButtonTip", {
-                    shortcut: isMac() ? "⌘F" : "Ctrl+F",
-                  })}
-                >
-                  <Button
-                    variant="quiet"
-                    size="icon-compact"
-                    className="h-8 w-8"
-                    aria-label={t("provider.searchAriaLabel")}
-                    aria-pressed={providerSearchOpen}
-                    onClick={() => setProviderSearchOpen((open) => !open)}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </HoverTip>
-              )}
             {currentView === "providers" && (
               <Button
                 variant="default"
@@ -1181,8 +1156,6 @@ function App() {
         ? setTerminalProvider
         : undefined,
     onCreate: () => openAddProvider(currentModeView),
-    searchOpen: providerSearchOpen,
-    onSearchOpenChange: setProviderSearchOpen,
   };
 
   const renderProviderList = () => {

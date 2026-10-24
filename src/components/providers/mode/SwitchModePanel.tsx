@@ -7,7 +7,6 @@ import type { AppMode, StartupAttachFailure } from "@/types/proxy";
 import type { ModeAppId } from "@/config/appConfig";
 import { isProxyAppId, isStackAppId } from "@/config/appConfig";
 import { settingsApi } from "@/lib/api";
-import { providersApi } from "@/lib/api/providers";
 import { proxyApi } from "@/lib/api/proxy";
 import { useSettingsQuery } from "@/lib/query";
 import {
@@ -35,10 +34,7 @@ import { Notice } from "@/components/ui/notice";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ProviderList } from "@/components/providers/ProviderList";
 import { CodexStaleClientsNotice } from "@/components/providers/CodexStaleClientsNotice";
-import {
-  blockedFromRouting,
-  queueMoveSortUpdates,
-} from "@/components/providers/presentation";
+import { blockedFromRouting } from "@/components/providers/presentation";
 import { APP_DISPLAY_NAME } from "@/components/shell/AppGlyph";
 import { ModeTabs } from "./ModeTabs";
 import { ModeDialog, type ModeDialogState } from "./ModeDialog";
@@ -61,8 +57,6 @@ type ListCallbacks = Pick<
   | "onOpenWebsite"
   | "onOpenTerminal"
   | "onCreate"
-  | "searchOpen"
-  | "onSearchOpenChange"
 >;
 
 interface SwitchModePanelProps extends ListCallbacks {
@@ -121,7 +115,6 @@ export function SwitchModePanel({
 
   // 离开页面再回来、或生效的模式变了，一律落在生效的那格（「查看中」不持久化）
   const [view, setView] = useState<AppMode>(active);
-  const [searchSlot, setSearchSlot] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     setView(active);
   }, [app, active]);
@@ -190,29 +183,6 @@ export function SwitchModePanel({
   const exitAndUse = (provider: Provider) =>
     setDialog({ kind: "exit", useProviderId: provider.id });
 
-  const queueMove = async (provider: Provider, delta: -1 | 1) => {
-    const updates = queueMoveSortUpdates(
-      queue ?? [],
-      providers,
-      provider.id,
-      delta,
-    );
-    if (!updates) return;
-    const target = updates.findIndex((update) => update.id === provider.id);
-    try {
-      await providersApi.updateSortOrder(updates, app);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["failoverQueue", app] }),
-        queryClient.invalidateQueries({ queryKey: ["providers", app] }),
-      ]);
-      toast.success(
-        t("mode.queueMoved", { name: provider.name, position: target + 1 }),
-      );
-    } catch (error) {
-      toast.error(extractErrorMessage(error) || t("provider.sortUpdateFailed"));
-    }
-  };
-
   const rememberDefault = async (provider: Provider) => {
     try {
       const result = await proxyApi.setProxyRoute(app, provider.id);
@@ -254,8 +224,6 @@ export function SwitchModePanel({
         addToQueue.mutate({ appType: app, providerId: provider.id }),
       queueRemove: (provider: Provider) =>
         removeFromQueue.mutate({ appType: app, providerId: provider.id }),
-      queueMove: (provider: Provider, delta: -1 | 1) =>
-        void queueMove(provider, delta),
       stackAdd: (provider: Provider) => {
         setStackMember.mutate({
           appType: app,
@@ -532,7 +500,6 @@ export function SwitchModePanel({
             ? () => setStackSettingsOpen(true)
             : undefined
         }
-        searchSlotRef={setSearchSlot}
       />
       <div
         ref={scrollRef}
@@ -552,7 +519,6 @@ export function SwitchModePanel({
           isLoading={isLoading}
           onSwitch={(provider) => void onSwitch(provider)}
           switchMode={switchMode}
-          searchSlot={searchSlot}
         />
       </div>
 

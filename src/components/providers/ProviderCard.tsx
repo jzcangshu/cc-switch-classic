@@ -392,12 +392,7 @@ export function ProviderCard({
             </button>
           ) : null}
 
-          <div
-            className={cn(
-              "h-8 w-8 shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:scale-105 transition-transform duration-300",
-              presentation.dim && "opacity-60",
-            )}
-          >
+          <div className="h-8 w-8 shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:scale-105 transition-transform duration-300">
             <ProviderIcon
               icon={resolveProviderIcon(
                 appId,
@@ -413,10 +408,7 @@ export function ProviderCard({
           <div className="min-w-0 flex-1">
             <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
               <h3
-                className={cn(
-                  "m-0 min-w-0 truncate text-base font-semibold leading-none",
-                  presentation.dim ? "text-fg-2" : "text-fg-1",
-                )}
+                className="m-0 min-w-0 truncate text-base font-semibold leading-none text-fg-1"
                 title={provider.name}
               >
                 {provider.name}

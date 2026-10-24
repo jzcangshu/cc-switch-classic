@@ -36,7 +36,6 @@ function switchCards(overrides: Partial<SwitchModeInput> = {}) {
       routeTo: vi.fn(),
       queueAdd: vi.fn(),
       queueRemove: vi.fn(),
-      queueMove: vi.fn(),
       stackAdd: vi.fn(),
       stackRemove: vi.fn(),
       stackSetDefault: vi.fn(),
@@ -356,16 +355,14 @@ describe("ProviderCardActions — mode items in the more menu", () => {
     expect(onTest).not.toHaveBeenCalled();
   });
 
-  it("keeps model selection and failover queue movement wired to their exact handlers", async () => {
+  it("keeps model selection on the set-default button wired to its exact handler", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
-    const onDown = vi.fn();
     render(
       <ProviderCardActions
         providerName="Kimi"
         presentation={{
           chips: [],
-          move: { onDown },
           buttons: [
             {
               key: "setDefault",
@@ -389,13 +386,6 @@ describe("ProviderCardActions — mode items in the more menu", () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole("button", { name: "providerCard.action.moveUp" }),
-    ).toBeDisabled();
-    await user.click(
-      screen.getByRole("button", { name: "providerCard.action.moveDown" }),
-    );
-    expect(onDown).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: "Set default" }));
     await user.click(
       await screen.findByRole("menuitem", { name: "Model A model-a" }),
