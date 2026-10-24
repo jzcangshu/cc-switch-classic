@@ -15,16 +15,14 @@ interface UpdateBadgeProps {
 export function UpdateBadge({ className = "", onClick }: UpdateBadgeProps) {
   const { hasUpdate, updateInfo } = useUpdate();
   const { t } = useTranslation();
-  const isActive = hasUpdate && updateInfo;
-  const title = isActive
-    ? t("settings.updateAvailable", {
-        version: updateInfo?.availableVersion ?? "",
-      })
-    : t("settings.checkForUpdates");
 
-  if (!isActive) {
+  if (!hasUpdate || !updateInfo) {
     return null;
   }
+
+  const title = t("settings.updateAvailable", {
+    version: updateInfo.availableVersion ?? "",
+  });
 
   return (
     <Button
@@ -36,7 +34,7 @@ export function UpdateBadge({ className = "", onClick }: UpdateBadgeProps) {
       onClick={onClick}
       className={`
         relative h-8 w-8 rounded-full
-        ${isActive ? "text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10" : "text-muted-foreground hover:bg-muted/60"}
+        text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10
         ${className}
       `}
     >

@@ -431,9 +431,14 @@ export const SessionReaderHeader = memo(function SessionReaderHeader({
                 ? t("sessionManager.deleteTooltip", {
                     defaultValue: "永久删除此本地会话记录",
                   })
-                : t("sessionManager.mcodeDeleteHint", {
-                    defaultValue: "请在 MiniMax Code 中删除",
-                  })
+                : t(
+                    session.providerId === "agy"
+                      ? "sessionManager.agyDeleteHint"
+                      : "sessionManager.mcodeDeleteHint",
+                    {
+                      defaultValue: "请在 MiniMax Code 中删除",
+                    },
+                  )
             }
           >
             <Button
