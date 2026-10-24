@@ -403,6 +403,7 @@
   },
   "settings": {
     "title": "設定",
+    "coreVersion": "核心",
     "general": {
       "appearance": "外觀",
       "quotaDisplay": "額度顯示",

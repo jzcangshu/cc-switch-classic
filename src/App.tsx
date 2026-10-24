@@ -85,7 +85,6 @@ import { OpenTerminalDialog } from "@/components/providers/OpenTerminalDialog";
 import { discardUnsavedChanges, hasUnsavedChanges } from "@/lib/unsavedChanges";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
-import { AppsPage } from "@/components/apps/AppsPage";
 import { checkToolUpdatesInBackground } from "@/components/apps/useToolManagement";
 import { UsagePage } from "@/components/usage/UsagePage";
 import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
@@ -1346,8 +1345,6 @@ function App() {
             onOpenTerminalSettings={() => openSettings("general")}
           />
         );
-      case "apps":
-        return <AppsPage />;
       default:
         return null;
     }
@@ -1397,7 +1394,6 @@ function App() {
                 onUnsavedDirectoriesChange={onSettingsDraftChange}
                 appConfigScrollTarget={appConfigScrollTarget}
                 onImportSuccess={handleImportSuccess}
-                onOpenApps={() => openPage("apps")}
                 onOpenApp={selectApp}
               />
             </div>

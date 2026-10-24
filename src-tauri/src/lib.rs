@@ -1464,13 +1464,13 @@ pub fn run() {
             let settings = crate::settings::get_settings();
             if let Some(window) = app.get_webview_window("main") {
                 // 在窗口首次显示前同步装饰状态，避免前端加载后再切换导致标题栏闪烁
-                // Linux：由设置决定（解决 Wayland 下系统窗口按钮不可用的问题）
+                // 第三版行为：Linux 由设置决定（解决 Wayland 下系统窗口按钮不可用的问题）；
+                // Windows 用系统原生标题栏（应用内窗口按钮仅 Linux 可选），保留阴影和边缘缩放
                 #[cfg(target_os = "linux")]
                 let _ = window.set_decorations(!settings.use_app_window_controls);
-                // Windows：一律去掉系统标题栏，用页头里的应用内窗口按钮；保留阴影和边缘缩放
                 #[cfg(target_os = "windows")]
                 {
-                    let _ = window.set_decorations(false);
+                    let _ = window.set_decorations(true);
                     let _ = window.set_shadow(true);
                 }
                 if settings.silent_startup {
@@ -1558,6 +1558,7 @@ pub fn run() {
             commands::install_update_and_restart,
             commands::check_app_update_available,
             commands::check_for_updates,
+            commands::get_classic_update,
             commands::open_portable_update_download,
             commands::is_portable_mode,
             commands::copy_text_to_clipboard,

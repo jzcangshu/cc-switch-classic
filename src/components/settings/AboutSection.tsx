@@ -19,14 +19,14 @@ import { WhatsNewDialog } from "@/components/WhatsNewDialog";
 import { WHATS_NEW_ENTRIES, entriesUpTo } from "@/lib/whatsNew";
 import ccswitchLogo from "@/assets/icons/logo.svg";
 import { extractErrorMessage } from "@/utils/errorUtils";
+import { REPO_URL, RELEASES_URL } from "@/lib/repo";
+import { CLASSIC_VERSION } from "@/lib/classicVersion";
+import { AppsPage } from "@/components/apps/AppsPage";
 
-// 本项目仓库（V3 风味维护线），替代原作者仓库，避免用户混淆
-const REPO_URL = "https://github.com/jzcangshu/cc-switch-v3";
-const RELEASES_URL = `${REPO_URL}/releases`;
+// 仓库与版本常量统一来自 lib/repo.ts 与 lib/classicVersion.ts
 
 interface AboutSectionProps {
   isPortable: boolean;
-  onOpenApps: () => void;
 }
 
 // 应用自身版本（getVersion，本地毫秒级、无网络）也缓存一份，纯为重挂时免去 loading 闪烁。
@@ -36,7 +36,7 @@ let appVersionCache: string | null = null;
  * 设置 → 关于：第三版版式（标题 + 渐变版本卡 + Star 邀请 + 按钮行）。
  * 保留第四版的近期更新弹窗、便携版更新指引与本地环境检查入口。
  */
-export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
+export function AboutSection({ isPortable }: AboutSectionProps) {
   const { t } = useTranslation();
   // 惰性初始化自模块缓存：重挂时首帧即渲染上次的值，避免 loading 闪烁；首次挂载缓存
   // 为空则回退到原始初值（null / loading）。
@@ -47,8 +47,8 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const recentEntries = useMemo(
-    () => (version ? entriesUpTo(WHATS_NEW_ENTRIES, version) : []),
-    [version],
+    () => entriesUpTo(WHATS_NEW_ENTRIES, CLASSIC_VERSION),
+    [] as const,
   );
 
   const { hasUpdate, updateInfo, checkUpdate, resetDismiss, isChecking } =
@@ -188,11 +188,17 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
                   className="h-5 w-5"
                   draggable={false}
                 />
-                <h4 className="text-lg font-semibold text-fg-1">CC Switch</h4>
+                <h4 className="text-lg font-semibold text-fg-1">
+                  CC Switch Classic
+                </h4>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="gap-1.5 bg-surface/80">
                   <span className="text-fg-2">{t("common.version")}</span>
+                  <span className="font-medium tabular-nums">v{CLASSIC_VERSION}</span>
+                </Badge>
+                <Badge variant="outline" className="gap-1.5 bg-surface/80">
+                  <span className="text-fg-2">{t("settings.coreVersion")}</span>
                   {isLoadingVersion ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
@@ -313,15 +319,15 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
         </div>
       </div>
 
-      <section className="space-y-3 px-1">
-        <h3 className="text-sm font-medium">{t("settings.localEnvCheck")}</h3>
-        <p className="text-xs text-muted-foreground">
-          {t("settings.oneClickInstallHint")}
-        </p>
-        <Button type="button" size="sm" onClick={onOpenApps}>
-          <Download className="h-3.5 w-3.5" />
-          {t("appPage.installAndUpgrade")}
-        </Button>
+      {/* 本地环境检查（第三版形态）：应用安装与升级管理直接内嵌在本页 */}
+      <section className="rounded-panel border border-border">
+        <div className="px-5 pt-4">
+          <h3 className="m-0 text-sm font-medium">{t("settings.localEnvCheck")}</h3>
+          <p className="mb-2 text-xs text-muted-foreground">
+            {t("settings.oneClickInstallHint")}
+          </p>
+        </div>
+        <AppsPage embedded />
       </section>
 
       <WhatsNewDialog

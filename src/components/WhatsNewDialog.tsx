@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { getVersion } from "@tauri-apps/api/app";
 import { ChevronRight, ExternalLink, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNewLayoutNoticePending } from "@/components/shell/NewLayoutDialog";
 import { settingsApi } from "@/lib/api";
+import { CLASSIC_VERSION } from "@/lib/classicVersion";
 import { useSettingsQuery } from "@/lib/query";
 import {
   WHATS_NEW_ENTRIES,
@@ -159,11 +159,8 @@ export function WhatsNewNotice() {
   const queryClient = useQueryClient();
   const { data: settings } = useSettingsQuery();
   const newLayoutPending = useNewLayoutNoticePending(settings);
-  const { data: currentVersion } = useQuery({
-    queryKey: ["app-version"],
-    queryFn: () => getVersion(),
-    staleTime: Infinity,
-  });
+  // Classic 线的更新摘要按 Classic 主版本走（getVersion 返回的是内核版本）
+  const currentVersion = CLASSIC_VERSION;
   const [closed, setClosed] = useState(false);
   const stampedRef = useRef(false);
 

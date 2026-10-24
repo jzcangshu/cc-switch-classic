@@ -84,7 +84,7 @@ export function RoutingActivationBrand({
       )}
 
       <motion.a
-        href="https://github.com/jzcangshu/cc-switch-v3"
+        href="https://github.com/jzcangshu/cc-switch-classic"
         target="_blank"
         rel="noreferrer"
         className={cn(
@@ -121,7 +121,7 @@ export function RoutingActivationBrand({
             : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
         }
       >
-        CC Switch
+        CC Switch Classic
       </motion.a>
 
       {showBurst && (

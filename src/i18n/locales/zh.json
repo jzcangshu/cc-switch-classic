@@ -403,6 +403,7 @@
   },
   "settings": {
     "title": "设置",
+    "coreVersion": "内核",
     "general": {
       "appearance": "外观",
       "quotaDisplay": "额度显示",

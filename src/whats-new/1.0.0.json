@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "items": [
+    {
+      "type": "new",
+      "zh": "CC Switch Classic 首发版：V4.0.18 内核 + 完整第三版界面（33 项逐条恢复）",
+      "zh-TW": "CC Switch Classic 首發版：V4.0.18 核心 + 完整第三版介面（33 項逐條恢復）",
+      "en": "CC Switch Classic 1.0.0: the v4.0.18 core with the full V3 interface (33 items restored)",
+      "ja": "CC Switch Classic 初版：V4.0.18 コアに第三版インターフェースを完全復元（33 項目）"
+    },
+    {
+      "type": "new",
+      "zh": "更新与仓库独立：仅在 Classic 主版本更新时提示，更新日志只收录已跟进的内核变更（本版内核 v4.0.18）",
+      "zh-TW": "更新與倉庫獨立：僅在 Classic 主版本更新時提示，更新日誌只收錄已跟進的核心變更（本版核心 v4.0.18）",
+      "en": "Independent updates: prompts only for Classic releases; the changelog covers only adopted core updates (core v4.0.18 here)",
+      "ja": "更新は独立：Classic 主バージョンの更新時のみ通知。更新履歴は取り込んだコア変更のみ（本版コア v4.0.18）"
+    },
+    {
+      "type": "improve",
+      "zh": "供应商搜索回到第三版浮动面板（Ctrl+F），Windows 恢复系统原生标题栏",
+      "zh-TW": "供應商搜尋回到第三版浮動面板（Ctrl+F），Windows 恢復系統原生標題列",
+      "en": "Provider search returns as the V3 floating panel (Ctrl+F); Windows restores the native title bar",
+      "ja": "プロバイダー検索を第三版のフローティングパネル（Ctrl+F）へ戻し、Windows はネイティブタイトルバーを復元"
+    }
+  ]
+}

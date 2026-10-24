@@ -32,12 +32,25 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = Object.values(modules).sort(
   (a, b) => compareVersions(b.version, a.version),
 );
 
+/** 旧记录是内核版本（主版本 >= 4，上游 farion1231 体系）时，Classic 线还没看过 */
+function isKernelEraVersion(version: string | undefined): boolean {
+  if (!version) return false;
+  const major = Number.parseInt(version.replace(/^v/, "").split(".")[0] ?? "", 10);
+  return Number.isFinite(major) && major >= 4;
+}
+
+/** 已看版本换算到 Classic 纪元：内核纪元的记录视为未记录 */
+function classicSeen(seen: string | undefined): string | undefined {
+  return isKernelEraVersion(seen) ? undefined : seen;
+}
+
 /** 当前版本比记录的已看版本新（或从没记录过）：需要处理一次 */
 export function isNewerThanSeen(
   current: string,
   seen: string | undefined,
 ): boolean {
-  return !seen || compareVersions(current, seen) > 0;
+  const effective = classicSeen(seen);
+  return !effective || compareVersions(current, effective) > 0;
 }
 
 /**
@@ -49,11 +62,12 @@ export function entriesSince(
   seen: string | undefined,
   current: string,
 ): WhatsNewEntry[] {
+  const effective = classicSeen(seen);
   return entries.filter((entry) => {
     if (entry.items.length === 0) return false;
-    if (!seen) return entry.version === current;
+    if (!effective) return entry.version === current;
     return (
-      compareVersions(entry.version, seen) > 0 &&
+      compareVersions(entry.version, effective) > 0 &&
       compareVersions(entry.version, current) <= 0
     );
   });
@@ -90,10 +104,10 @@ export function resolveWhatsNewLanguage(language: string): WhatsNewLanguage {
 
 /** 官网更新日志：不带版本是列表页。官网只有 zh / en / ja，繁中用简中页面 */
 export function changelogUrl(
-  language: WhatsNewLanguage,
+  _language: WhatsNewLanguage,
   version?: string,
 ): string {
-  const siteLanguage = language === "zh-TW" ? "zh" : language;
-  const base = `https://ccswitch.io/${siteLanguage}/changelog`;
-  return version ? `${base}/${version}` : base;
+  // CC Switch Classic：更新日志只在新仓库；条目版本即 Classic 主版本
+  const base = "https://github.com/jzcangshu/cc-switch-classic/releases";
+  return version ? `${base}/tag/v${version}` : base;
 }

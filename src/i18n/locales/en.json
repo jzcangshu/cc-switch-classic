@@ -403,6 +403,7 @@
   },
   "settings": {
     "title": "Settings",
+    "coreVersion": "Core",
     "general": {
       "appearance": "Appearance",
       "quotaDisplay": "Quota display",

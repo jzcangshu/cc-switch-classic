@@ -99,7 +99,6 @@ const renderDialog = async (
       <Suspense fallback={<div data-testid="loading">loading</div>}>
         <SettingsPage
           section="data"
-          onOpenApps={() => {}}
           onOpenApp={() => {}}
           {...props}
         />

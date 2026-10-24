@@ -8,6 +8,11 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+/// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
+/// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
+const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
+const CLASSIC_VERSION: &str = "1.0.0";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -79,12 +84,54 @@ pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
     handle
         .opener()
         .open_url(
-            "https://github.com/jzcangshu/cc-switch-v3/releases/latest",
+            "https://github.com/jzcangshu/cc-switch-classic/releases/latest",
             None::<String>,
         )
         .map_err(|e| format!("打开更新页面失败: {e}"))?;
 
     Ok(true)
+}
+
+/// 检查 CC Switch Classic 主版本更新：读新仓库 latest release 的版本号（tag 去 v 前缀），
+/// 与本地 CLASSIC_VERSION 比较，更新才返回 Some（版本号、release 页链接）。
+/// 仓库未建/无 release/限流一律返回 None（无更新），不与上游 farion1231 仓库发生任何关联。
+#[tauri::command]
+pub async fn get_classic_update(
+) -> Result<Option<ClassicUpdateInfo>, String> {
+    let client = reqwest::Client::new();
+    let latest = fetch_github_latest_version(&client, CLASSIC_REPO).await;
+    let Some(latest) = latest else {
+        return Ok(None);
+    };
+    if !version_is_newer(&latest, CLASSIC_VERSION) {
+        return Ok(None);
+    }
+    Ok(Some(ClassicUpdateInfo {
+        version: latest,
+        release_url: format!("https://github.com/{CLASSIC_REPO}/releases/latest"),
+    }))
+}
+
+/// Classic 更新信息（serde 序列化给前端）
+#[derive(serde::Serialize)]
+pub struct ClassicUpdateInfo {
+    pub version: String,
+    pub release_url: String,
+}
+
+/// 语义版本比较：candidate 严格大于 current 才算更新（复用前端的偏序思想，
+/// 这里只处理 x.y.z 形态；解析失败视为无更新，宁可漏报不误报）。
+fn version_is_newer(candidate: &str, current: &str) -> bool {
+    let parse = |v: &str| -> Option<Vec<u64>> {
+        v.trim().trim_start_matches('v')
+            .split('.')
+            .map(|s| s.parse::<u64>().ok())
+            .collect::<Option<Vec<u64>>>()
+    };
+    match (parse(candidate), parse(current)) {
+        (Some(c), Some(cur)) => c > cur,
+        _ => false,
+    }
 }
 
 /// 便携版新版本压缩包的下载地址，命名与 release.yml 的「Prepare Windows Assets」一致：
@@ -100,7 +147,7 @@ fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
     }
     let suffix = if arm64 { "-arm64" } else { "" };
     Some(format!(
-        "https://github.com/jzcangshu/cc-switch-v3/releases/download/v{version}/CC-Switch-v{version}-Windows{suffix}-Portable.zip"
+        "https://github.com/{CLASSIC_REPO}/releases/download/v{version}/CC-Switch-Classic-v{version}-Windows{suffix}-Portable.zip"
     ))
 }
 
@@ -112,7 +159,7 @@ pub async fn open_portable_update_download(
     version: String,
 ) -> Result<bool, String> {
     let url = portable_zip_url(&version, cfg!(target_arch = "aarch64"))
-        .unwrap_or_else(|| "https://github.com/jzcangshu/cc-switch-v3/releases/latest".to_string());
+        .unwrap_or_else(|| format!("https://github.com/{CLASSIC_REPO}/releases/latest"));
     handle
         .opener()
         .open_url(url, None::<String>)
@@ -6102,11 +6149,11 @@ mod tests {
     fn portable_zip_url_matches_release_asset_names() {
         assert_eq!(
             portable_zip_url("4.0.12", false).as_deref(),
-            Some("https://github.com/jzcangshu/cc-switch-v3/releases/download/v4.0.12/CC-Switch-v4.0.12-Windows-Portable.zip")
+            Some("https://github.com/jzcangshu/cc-switch-classic/releases/download/v4.0.12/CC-Switch-Classic-v4.0.12-Windows-Portable.zip")
         );
         assert_eq!(
             portable_zip_url("v4.1.0-beta.1", true).as_deref(),
-            Some("https://github.com/jzcangshu/cc-switch-v3/releases/download/v4.1.0-beta.1/CC-Switch-v4.1.0-beta.1-Windows-arm64-Portable.zip")
+            Some("https://github.com/jzcangshu/cc-switch-classic/releases/download/v4.1.0-beta.1/CC-Switch-Classic-v4.1.0-beta.1-Windows-arm64-Portable.zip")
         );
         for bad in ["", "v", "latest", "4.0/../x", "4.0.0?x=1"] {
             assert!(portable_zip_url(bad, false).is_none(), "{bad}");
@@ -6139,6 +6186,11 @@ mod tests {
         }
     }
     use std::path::{Path, PathBuf};
+
+/// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
+/// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
+const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
+const CLASSIC_VERSION: &str = "1.0.0";
 
     #[tokio::test]
     async fn lifecycle_coordinator_serializes_writes_and_rejects_duplicate_tools() {

@@ -373,6 +373,7 @@
   },
   "settings": {
     "title": "Ayarlar",
+    "coreVersion": "Çekirdek",
     "general": {
       "appearance": "Görünüm",
       "quotaDisplay": "Kota gösterimi",

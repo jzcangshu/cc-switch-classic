@@ -112,7 +112,15 @@ function formatCheckedAt(timestamp: number, locale: string): string {
  * （手动命令、来源与路径、卸载）在卡片右上角。
  * 隐藏一个应用只影响界面（侧栏、MCP / Skills 的列、提示词和会话的下拉），配置照常同步。
  */
-export function AppsPage() {
+interface AppsPageProps {
+  /**
+   * 关于页内嵌形态（第三版本地环境检查）：不渲染独立页头，
+   * 页头操作改为节内标题行，由「设置 → 关于」承载。
+   */
+  embedded?: boolean;
+}
+
+export function AppsPage({ embedded = false }: AppsPageProps = {}) {
   const { t, i18n } = useTranslation();
   const tools = useToolManagement();
   const { settings, updateSettings, autoSaveSettings } = useSettings();
@@ -186,18 +194,8 @@ export function AppsPage() {
       })
     : t("appsPage.neverChecked");
 
-  return (
+  const headerActions = (
     <>
-      <AppPageHeader
-        icon={<LayoutGrid className="h-5 w-5" strokeWidth={1.5} />}
-        title={t("nav.apps")}
-        titleExtra={
-          <HelpTip title={t("appsPage.helpTitle")}>
-            {t("appsPage.helpBody")}
-          </HelpTip>
-        }
-        actions={
-          <>
             <span className="whitespace-nowrap text-caption text-fg-3">
               {lastChecked}
             </span>
@@ -271,12 +269,41 @@ export function AppsPage() {
                 </span>
               </span>
             </Button>
-          </>
-        }
-      />
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        /* 关于页内嵌：节内标题行（第三版本地环境检查形态），操作沿用页头同一组 */
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pt-4">
+          <div className="flex min-w-0 items-center gap-0.5">
+            <h3 className="m-0 truncate text-strong font-semibold text-fg-1">
+              {t("nav.apps")}
+            </h3>
+            <HelpTip title={t("appsPage.helpTitle")}>
+              {t("appsPage.helpBody")}
+            </HelpTip>
+          </div>
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            {headerActions}
+          </div>
+        </div>
+      ) : (
+        <AppPageHeader
+          icon={<LayoutGrid className="h-5 w-5" strokeWidth={1.5} />}
+          title={t("nav.apps")}
+          titleExtra={
+            <HelpTip title={t("appsPage.helpTitle")}>
+              {t("appsPage.helpBody")}
+            </HelpTip>
+          }
+          actions={headerActions}
+        />
+      )}
 
       <div
-        id="main-content"
+        id={embedded ? undefined : "main-content"}
         className="min-h-0 flex-1 overflow-y-auto scroll-stable"
       >
         <div className="grid gap-3 px-6 pb-10 pt-4 sm:grid-cols-2 xl:grid-cols-3">

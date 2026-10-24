@@ -403,6 +403,7 @@
   },
   "settings": {
     "title": "設定",
+    "coreVersion": "コア",
     "general": {
       "appearance": "外観",
       "quotaDisplay": "残量の表示",
