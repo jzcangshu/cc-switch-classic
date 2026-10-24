@@ -48,7 +48,7 @@ import {
 } from "@/utils/errorUtils";
 import { isTextEditableTarget } from "@/utils/domUtils";
 import { deepClone } from "@/utils/deepClone";
-import { isLinux, isMac, isWindows } from "@/lib/platform";
+import { isLinux, isMac } from "@/lib/platform";
 import {
   APP_STORAGE_KEY,
   appPageBelongsTo,
@@ -187,9 +187,9 @@ function App() {
   }, [currentView]);
 
   const { data: settingsData } = useSettingsQuery();
-  // Windows 一律去掉系统标题栏，用页头里的应用内窗口按钮；Linux 由设置决定
+  // 第三版行为：Windows 用系统原生标题栏；应用内窗口按钮仅 Linux 且设置开启时使用
   const useAppWindowControls =
-    isWindows() || (isLinux() && (settingsData?.useAppWindowControls ?? false));
+    isLinux() && (settingsData?.useAppWindowControls ?? false);
   const visibleApps = useMemo<VisibleApps>(
     () => ({
       ...DEFAULT_VISIBLE_APPS,
