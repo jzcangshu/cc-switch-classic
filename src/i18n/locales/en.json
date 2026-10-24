@@ -431,7 +431,7 @@
     "tabProxy": "Routing",
     "authCenter": {
       "title": "OAuth Authentication Center",
-      "description": "Use your other subscriptions in Claude Code — please be mindful of compliance risks.",
+      "description": "Use your GitHub Copilot, ChatGPT and xAI subscriptions as providers. Credentials are injected by the routing service, so these providers must be used in routing mode; the Antigravity account is used to switch agy's official sign-in.",
       "beta": "Beta",
       "copilotDescription": "Manage GitHub Copilot accounts",
       "codexOauthDescription": "Manage ChatGPT accounts",
@@ -959,10 +959,8 @@
     "releaseNotes": "Release Notes",
     "viewReleaseNotes": "View release notes for this version",
     "viewCurrentReleaseNotes": "View current version release notes",
-    "officialWebsite": "Official Website",
     "github": "GitHub",
     "starPrompt": "If CC Switch has helped you, please star us on GitHub — it means a lot to us",
-    "starOnGithub": "Star on GitHub",
     "manualInstallCommands": "Manual Install Commands",
     "manualUninstallCommands": "Manual uninstall commands",
     "manualUninstallHint": "Each app’s environment is detected automatically by default, and you can select a different environment manually. Select the original installation method, then copy the command for the app you want to remove and run it in a terminal. Click “Check for updates” afterwards to refresh its status.",
@@ -2239,6 +2237,7 @@
     "requestsLabel": "requests",
     "costLabel": "total cost",
     "appFilter": {
+      "agy": "Antigravity",
       "all": "All",
       "claude": "Claude Code",
       "codex": "Codex",
@@ -4275,13 +4274,6 @@
       "saveFailed": "Failed to save: {{error}}"
     },
     "queueMoved": "{{name}} moved to position {{position}}.",
-    "status": {
-      "directLead": "Direct is active · connected to",
-      "routeLead": "Routing is active",
-      "byQueue": "by queue",
-      "stackLead": "Aggregation is active · default",
-      "stackValue": "{{name}} · {{count}} more with {{models}} models"
-    },
     "activate": {
       "viewing": "You're viewing “{{view}}”. {{app}} is currently on {{active}}.",
       "route": "Start routing",
@@ -4888,13 +4880,11 @@
     },
     "addAccount": "Add account",
     "groupMenu": "More actions for {{service}}",
-    "accountMenu": "More actions for {{login}}",
     "removeAll": "Delete all accounts",
     "removeAccount": "Delete account",
     "removeAccountTitle": "Remove account",
     "setDefault": "Set as default",
     "reauth": "Sign in again",
-    "busyHint": "Finish or cancel the sign-in in progress first",
     "default": "Default",
     "needsReauth": "Sign-in needed",
     "empty": "No {{service}} account signed in yet.",

@@ -431,7 +431,7 @@
     "tabProxy": "路由",
     "authCenter": {
       "title": "OAuth 认证中心",
-      "description": "在 Claude Code 中使用您的其他订阅，请注意合规风险。",
+      "description": "把 GitHub Copilot、ChatGPT、xAI 订阅当作供应商用。凭据由路由服务注入，相关供应商要在路由模式下使用；Antigravity 账号用于切换 agy 的官方登录。",
       "beta": "Beta",
       "copilotDescription": "管理 GitHub Copilot 账号",
       "codexOauthDescription": "管理 ChatGPT 账号",
@@ -959,10 +959,8 @@
     "releaseNotes": "更新日志",
     "viewReleaseNotes": "查看该版本更新日志",
     "viewCurrentReleaseNotes": "查看当前版本更新日志",
-    "officialWebsite": "官方网站",
     "github": "GitHub",
     "starPrompt": "如果 CC Switch 帮到了你，请在 GitHub 点个 Star，这对我们意义重大",
-    "starOnGithub": "去点 Star",
     "manualInstallCommands": "手动安装命令",
     "manualUninstallCommands": "手动卸载命令",
     "manualUninstallHint": "默认自动侦测各应用的运行环境，也可手动切换。请选择安装时使用的方式，再复制所需应用的命令到终端执行。完成后点击“检查更新”刷新安装状态。",
@@ -2239,6 +2237,7 @@
     "requestsLabel": "次请求",
     "costLabel": "总成本",
     "appFilter": {
+      "agy": "Antigravity",
       "all": "全部",
       "claude": "Claude Code",
       "codex": "Codex",
@@ -4275,13 +4274,6 @@
       "saveFailed": "保存失败：{{error}}"
     },
     "queueMoved": "{{name}} 移到第 {{position}} 位。",
-    "status": {
-      "directLead": "直连生效中 · 直接连接",
-      "routeLead": "路由生效中",
-      "byQueue": "按队列",
-      "stackLead": "聚合生效中 · 默认",
-      "stackValue": "{{name}} · 另有 {{count}} 家共 {{models}} 个模型"
-    },
     "activate": {
       "viewing": "你在查看「{{view}}」，{{app}} 目前是{{active}}。",
       "route": "开始路由",
@@ -4888,13 +4880,11 @@
     },
     "addAccount": "添加账号",
     "groupMenu": "{{service}} 的更多操作",
-    "accountMenu": "{{login}} 的更多操作",
     "removeAll": "删除全部账号",
     "removeAccount": "删除账号",
     "removeAccountTitle": "移除账号",
     "setDefault": "设为默认",
     "reauth": "重新登录",
-    "busyHint": "先完成或取消正在进行的登录",
     "default": "默认",
     "needsReauth": "需要重新登录",
     "empty": "还没有登录 {{service}} 账号。",

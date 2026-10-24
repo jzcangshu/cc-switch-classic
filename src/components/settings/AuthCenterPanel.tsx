@@ -75,7 +75,7 @@ export function AuthCenterPanel({
             <p className="m-0 max-w-[700px] text-body text-fg-2">
               {t("settings.authCenter.description", {
                 defaultValue:
-                  "在 Claude Code 中使用您的其他订阅，请注意合规风险。",
+                  "把 GitHub Copilot、ChatGPT、xAI 订阅当作供应商用。凭据由路由服务注入，相关供应商要在路由模式下使用；Antigravity 账号用于切换 agy 的官方登录。",
               })}
             </p>
           </div>

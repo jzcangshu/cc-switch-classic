@@ -431,7 +431,7 @@
     "tabProxy": "ルーティング",
     "authCenter": {
       "title": "OAuth 認証センター",
-      "description": "Claude Code で他のサブスクリプションをご利用いただけます。コンプライアンスリスクにご注意ください。",
+      "description": "GitHub Copilot・ChatGPT・xAI のサブスクリプションをプロバイダーとして利用します。認証情報はルーティングサービスによって注入されるため、該当するプロバイダーはルーティングモードで使用してください。Antigravity アカウントは agy の公式ログインの切り替えに使用します。",
       "beta": "Beta",
       "copilotDescription": "GitHub Copilot アカウントを管理します",
       "codexOauthDescription": "ChatGPT アカウントを管理します",
@@ -959,10 +959,8 @@
     "releaseNotes": "リリースノート",
     "viewReleaseNotes": "このバージョンのリリースノートを見る",
     "viewCurrentReleaseNotes": "現在のバージョンのリリースノートを見る",
-    "officialWebsite": "公式サイト",
     "github": "GitHub",
     "starPrompt": "CC Switch がお役に立てたなら、GitHub でスターをお願いします。私たちにとって大きな励みになります",
-    "starOnGithub": "GitHub でスター",
     "manualInstallCommands": "手動インストールコマンド",
     "manualUninstallCommands": "手動アンインストールコマンド",
     "manualUninstallHint": "各アプリの実行環境は既定で自動検出されます。手動で別の環境に切り替えることもできます。インストール時に使用した方法を選び、削除したいアプリのコマンドをコピーしてターミナルで実行してください。完了後に「更新を確認」をクリックすると状態が更新されます。",
@@ -2239,6 +2237,7 @@
     "requestsLabel": "リクエスト",
     "costLabel": "合計コスト",
     "appFilter": {
+      "agy": "Antigravity",
       "all": "すべて",
       "claude": "Claude Code",
       "codex": "Codex",
@@ -4275,13 +4274,6 @@
       "saveFailed": "保存に失敗しました：{{error}}"
     },
     "queueMoved": "{{name}} を {{position}} 番目に移動しました。",
-    "status": {
-      "directLead": "直接接続が有効 · 接続先",
-      "routeLead": "ルーティングが有効",
-      "byQueue": "キュー順",
-      "stackLead": "集約が有効 · 既定",
-      "stackValue": "{{name}} · ほか {{count}} 社、{{models}} モデル"
-    },
     "activate": {
       "viewing": "「{{view}}」を表示中です。{{app}} は現在{{active}}です。",
       "route": "ルーティングを開始",
@@ -4888,13 +4880,11 @@
     },
     "addAccount": "アカウントを追加",
     "groupMenu": "{{service}} のその他の操作",
-    "accountMenu": "{{login}} のその他の操作",
     "removeAll": "すべてのアカウントを削除",
     "removeAccount": "アカウントを削除",
     "removeAccountTitle": "アカウントを削除",
     "setDefault": "デフォルトに設定",
     "reauth": "再ログイン",
-    "busyHint": "進行中のログインを完了するかキャンセルしてください",
     "default": "デフォルト",
     "needsReauth": "再ログインが必要",
     "empty": "{{service}} アカウントにまだログインしていません。",
