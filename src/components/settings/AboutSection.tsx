@@ -3,13 +3,10 @@ import {
   Download,
   ExternalLink,
   Github,
-  Globe,
   Info,
   Loader2,
   RefreshCw,
   Sparkles,
-  Star,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -23,6 +20,10 @@ import { WHATS_NEW_ENTRIES, entriesUpTo } from "@/lib/whatsNew";
 import ccswitchLogo from "@/assets/icons/logo.svg";
 import { extractErrorMessage } from "@/utils/errorUtils";
 
+// 本项目仓库（V3 风味维护线），替代原作者仓库，避免用户混淆
+const REPO_URL = "https://github.com/jzcangshu/cc-switch-v3";
+const RELEASES_URL = `${REPO_URL}/releases`;
+
 interface AboutSectionProps {
   isPortable: boolean;
   onOpenApps: () => void;
@@ -31,20 +32,9 @@ interface AboutSectionProps {
 // 应用自身版本（getVersion，本地毫秒级、无网络）也缓存一份，纯为重挂时免去 loading 闪烁。
 let appVersionCache: string | null = null;
 
-// 邀 Star 条关掉后记在本机（纯界面偏好，不进库、不随云同步）
-const STAR_PROMPT_DISMISSED_KEY = "ccswitch:about:starPromptDismissed";
-
-function readStarPromptDismissed(): boolean {
-  try {
-    return localStorage.getItem(STAR_PROMPT_DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 /**
- * 设置 → 关于：版本、便携模式、检查更新 / 安装并重启、项目链接。
- * 本地环境检查入口承载应用安装与升级管理。
+ * 设置 → 关于：第三版版式（标题 + 渐变版本卡 + Star 邀请 + 按钮行）。
+ * 保留第四版的近期更新弹窗、便携版更新指引与本地环境检查入口。
  */
 export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   const { t } = useTranslation();
@@ -56,9 +46,6 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   );
   const [isDownloading, setIsDownloading] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
-  const [starPromptDismissed, setStarPromptDismissed] = useState(
-    readStarPromptDismissed,
-  );
   const recentEntries = useMemo(
     () => (version ? entriesUpTo(WHATS_NEW_ENTRIES, version) : []),
     [version],
@@ -103,15 +90,10 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
           ? `v${targetVersion}`
           : "";
 
-      if (!displayVersion) {
-        await settingsApi.openExternal(
-          "https://github.com/farion1231/cc-switch/releases",
-        );
-        return;
-      }
-
       await settingsApi.openExternal(
-        `https://github.com/farion1231/cc-switch/releases/tag/${displayVersion}`,
+        displayVersion
+          ? `${RELEASES_URL}/tag/${displayVersion}`
+          : RELEASES_URL,
       );
     } catch (error) {
       console.error("[AboutSection] Failed to open release notes", error);
@@ -120,16 +102,7 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   }, [t, updateInfo?.availableVersion, version]);
 
   const handleOpenGithub = useCallback(() => {
-    void settingsApi.openExternal("https://github.com/farion1231/cc-switch");
-  }, []);
-
-  const handleDismissStarPrompt = useCallback(() => {
-    setStarPromptDismissed(true);
-    try {
-      localStorage.setItem(STAR_PROMPT_DISMISSED_KEY, "1");
-    } catch {
-      // 存不下就只在本次会话里隐藏
-    }
+    void settingsApi.openExternal(REPO_URL);
   }, []);
 
   const handleCheckUpdate = useCallback(async () => {
@@ -196,139 +169,60 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
   const displayVersion = version ?? t("common.unknown");
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
-      <div className="flex flex-wrap items-center gap-4 px-5 py-4">
-        <img
-          src={ccswitchLogo}
-          alt=""
-          draggable={false}
-          className="h-10 w-10 shrink-0 p-1"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="text-title text-fg-1">CC Switch</div>
-          <div className="flex flex-wrap items-center gap-2 text-caption text-fg-2">
-            {isLoadingVersion ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <span className="tabular-nums">{`${t("common.version")} v${displayVersion}`}</span>
-            )}
-            {isPortable && (
-              <Badge
-                variant="secondary"
-                className="gap-1 px-1.5 py-0 text-badge"
-              >
-                <Info className="h-3 w-3" />
-                {t("settings.portableMode")}
-              </Badge>
-            )}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h3 className="text-sm font-medium">{t("common.about")}</h3>
+        <p className="text-xs text-muted-foreground">
+          {t("settings.aboutHint")}
+        </p>
+      </header>
+
+      <div className="space-y-5 rounded-panel border border-border bg-gradient-to-br from-surface to-transparent p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2">
+                <img
+                  src={ccswitchLogo}
+                  alt="CC Switch"
+                  className="h-5 w-5"
+                  draggable={false}
+                />
+                <h4 className="text-lg font-semibold text-fg-1">CC Switch</h4>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="gap-1.5 bg-surface/80">
+                  <span className="text-fg-2">{t("common.version")}</span>
+                  {isLoadingVersion ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <span className="font-medium tabular-nums">{`v${displayVersion}`}</span>
+                  )}
+                </Badge>
+                {isPortable && (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <Info className="h-3 w-3" />
+                    {t("settings.portableMode")}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-        <Button
-          type="button"
-          variant={hasUpdate ? "solid" : "neutral"}
-          size="regular"
-          onClick={handleCheckUpdate}
-          disabled={isChecking || isDownloading}
-        >
-          {isDownloading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {t("settings.updating")}
-            </>
-          ) : hasUpdate ? (
-            <>
-              <Download className="h-3.5 w-3.5" />
-              {t("settings.updateTo", {
-                version: updateInfo?.availableVersion ?? "",
-              })}
-            </>
-          ) : isChecking ? (
-            <>
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              {t("settings.checking")}
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-3.5 w-3.5" />
-              {t("settings.checkForUpdates")}
-            </>
-          )}
-        </Button>
-      </div>
 
-      {hasUpdate && updateInfo && (
-        <div className="space-y-1 px-5 py-4 text-body">
-          <p className="font-medium text-fg-1">
-            {t("settings.updateAvailable", {
-              version: updateInfo.availableVersion,
-            })}
-          </p>
-          {updateInfo.notes && (
-            <p className="line-clamp-3 text-fg-2">{updateInfo.notes}</p>
-          )}
-          {isPortable && (
-            <p className="text-fg-2">{t("settings.portableUpdateHint")}</p>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 px-5 py-4">
-        {starPromptDismissed && (
-          <Button
-            type="button"
-            variant="neutral"
-            size="compact"
-            onClick={handleOpenGithub}
-          >
-            <Github className="h-3.5 w-3.5" />
-            {t("settings.github")}
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="neutral"
-          size="compact"
-          onClick={() => settingsApi.openExternal("https://ccswitch.io")}
-        >
-          <Globe className="h-3.5 w-3.5" />
-          {t("settings.officialWebsite")}
-        </Button>
-        <Button
-          type="button"
-          variant="neutral"
-          size="compact"
-          onClick={handleOpenReleaseNotes}
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          {t("settings.releaseNotes")}
-        </Button>
-        {recentEntries.length > 0 && (
-          <Button
-            type="button"
-            variant="neutral"
-            size="compact"
-            onClick={() => setWhatsNewOpen(true)}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {t("whatsNew.recentTitle")}
-          </Button>
-        )}
-      </div>
-
-      {/* 下载与更新都走 ccswitch.io，用户不再经过仓库页，邀 Star 单独占一行；按钮即 GitHub 入口。
-          关掉后链接行补回 GitHub 按钮 */}
-      {!starPromptDismissed && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-action-soft py-3.5 ps-5 pe-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Star
-              aria-hidden="true"
-              className="h-5 w-5 shrink-0 animate-[spin_6s_linear_infinite] fill-amber-500 text-amber-500 motion-reduce:animate-none"
-            />
-            <p className="min-w-0 text-body text-fg-1">
+          <p className="min-w-0 flex-1 text-xs leading-relaxed sm:text-right">
+            <button
+              type="button"
+              onClick={handleOpenGithub}
+              className="font-medium text-primary hover:underline"
+            >
               {t("settings.starPrompt")}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
+            </button>
+            <span aria-hidden="true" className="ml-1.5">
+              👉
+            </span>
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="neutral"
@@ -336,25 +230,94 @@ export function AboutSection({ isPortable, onOpenApps }: AboutSectionProps) {
               onClick={handleOpenGithub}
             >
               <Github className="h-3.5 w-3.5" />
-              {t("settings.starOnGithub")}
+              {t("settings.github")}
+              <span
+                aria-hidden="true"
+                className="inline-block animate-[spin_4s_linear_infinite] motion-reduce:animate-none"
+              >
+                ⭐
+              </span>
             </Button>
             <Button
               type="button"
-              variant="quiet"
-              size="icon-compact"
-              onClick={handleDismissStarPrompt}
-              aria-label={t("common.close")}
-              title={t("common.close")}
+              variant="neutral"
+              size="compact"
+              onClick={handleOpenReleaseNotes}
             >
-              <X className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3.5 w-3.5" />
+              {t("settings.releaseNotes")}
             </Button>
+            {recentEntries.length > 0 && (
+              <Button
+                type="button"
+                variant="neutral"
+                size="compact"
+                onClick={() => setWhatsNewOpen(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {t("whatsNew.recentTitle")}
+              </Button>
+            )}
           </div>
         </div>
-      )}
 
-      <section className="space-y-3 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 space-y-1 text-body">
+            {hasUpdate && updateInfo && (
+              <>
+                <p className="font-medium text-fg-1">
+                  {t("settings.updateAvailable", {
+                    version: updateInfo.availableVersion,
+                  })}
+                </p>
+                {updateInfo.notes && (
+                  <p className="line-clamp-3 text-fg-2">{updateInfo.notes}</p>
+                )}
+                {isPortable && (
+                  <p className="text-fg-2">{t("settings.portableUpdateHint")}</p>
+                )}
+              </>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant={hasUpdate ? "solid" : "neutral"}
+            size="regular"
+            onClick={handleCheckUpdate}
+            disabled={isChecking || isDownloading}
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {t("settings.updating")}
+              </>
+            ) : hasUpdate ? (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                {t("settings.updateTo", {
+                  version: updateInfo?.availableVersion ?? "",
+                })}
+              </>
+            ) : isChecking ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                {t("settings.checking")}
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-3.5 w-3.5" />
+                {t("settings.checkForUpdates")}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <section className="space-y-3 px-1">
         <h3 className="text-sm font-medium">{t("settings.localEnvCheck")}</h3>
-        <p className="text-xs text-muted-foreground">{t("settings.oneClickInstallHint")}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("settings.oneClickInstallHint")}
+        </p>
         <Button type="button" size="sm" onClick={onOpenApps}>
           <Download className="h-3.5 w-3.5" />
           {t("appPage.installAndUpgrade")}
