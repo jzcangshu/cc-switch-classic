@@ -19,14 +19,21 @@ import { PROMPT_APP_IDS } from "@/lib/query/prompts";
 import { sharedFeatureAppOf } from "@/lib/navigation";
 import { AppSwitcher } from "@/components/AppSwitcher";
 import { McpIcon } from "@/components/BrandIcons";
+import { RoutingActivationBrand } from "@/components/proxy/RoutingActivationBrand";
 import { Button } from "@/components/ui/button";
 import { HoverTip } from "@/components/ui/hover-tip";
 
 import { WindowControlsContext } from "./AppPageHeader";
 import { DRAG_REGION_ATTR, DRAG_REGION_STYLE } from "@/lib/platform";
 
+const NO_DRAG = { WebkitAppRegion: "no-drag" } as React.CSSProperties;
+
 interface ClassicHeaderProps {
   activeApp: AppId;
+  /** 品牌字动效：当前应用是否处于路由接管 */
+  brandActive: boolean;
+  /** 品牌字动效：路由状态是否已加载（避免首帧误判） */
+  brandReady: boolean;
   visibleApps: VisibleApps;
   onSelectApp: (app: AppId) => void;
   onSelectPage: (page: GlobalPage | "settings") => void;
@@ -39,6 +46,8 @@ interface ClassicHeaderProps {
 
 export function ClassicHeader({
   activeApp,
+  brandActive,
+  brandReady,
   visibleApps,
   onSelectApp,
   onSelectPage,
@@ -74,11 +83,12 @@ export function ClassicHeader({
         {t("nav.skipToContent")}
       </a>
       <div className="flex shrink-0 items-center gap-1">
-        <span
-          className="select-none whitespace-nowrap text-xl font-semibold text-primary"
-          {...DRAG_REGION_ATTR}
-        >
-          CC Switch
+        <span style={NO_DRAG}>
+          <RoutingActivationBrand
+            active={brandActive}
+            contextKey={activeApp}
+            ready={brandReady}
+          />
         </span>
         <div className="relative">
           {tool(t("common.settings"), <Settings className="h-4 w-4" />, () =>

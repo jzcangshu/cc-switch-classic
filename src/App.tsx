@@ -1094,6 +1094,8 @@ function App() {
     currentView === "providers" ? (
       <ClassicHeader
         activeApp={activeApp}
+        brandActive={isProxyRunning && isCurrentAppTakeoverActive}
+        brandReady={takeoverStatus !== undefined}
         visibleApps={visibleApps}
         onSelectApp={selectApp}
         onSelectPage={openPageFromNav}
