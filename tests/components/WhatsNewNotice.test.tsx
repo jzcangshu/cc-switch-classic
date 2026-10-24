@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   getAll: vi.fn(),
   save: vi.fn(),
   openExternal: vi.fn(),
-  version: "4.0.4",
+  version: "1.0.4",
   settings: undefined as
     | {
         firstRunNoticeConfirmed?: boolean;
@@ -32,7 +32,13 @@ vi.mock("@/lib/query", () => ({
   useSettingsQuery: () => ({ data: mocks.settings }),
 }));
 vi.mock("@tauri-apps/api/app", () => ({
-  getVersion: async () => mocks.version,
+  getVersion: async () => "4.0.18",
+}));
+// WhatsNewNotice 按 Classic 主版本走；场景版本经此注入
+vi.mock("@/lib/classicVersion", () => ({
+  get CLASSIC_VERSION() {
+    return mocks.version;
+  },
 }));
 vi.mock("@/lib/whatsNew", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/whatsNew")>()),
@@ -75,18 +81,18 @@ const settle = () =>
 
 describe("WhatsNewNotice", () => {
   beforeEach(() => {
-    mocks.version = "4.0.4";
+    mocks.version = "1.0.4";
     mocks.settings = {
       firstRunNoticeConfirmed: true,
       newLayoutNoticeConfirmed: true,
-      whatsNewSeenVersion: "4.0.1",
+      whatsNewSeenVersion: "1.0.1",
     };
     mocks.entries = [
       entry("4.1.0", "未来版本"),
-      entry("4.0.4", "第四版甲", "第四版乙"),
-      entry("4.0.3"),
-      entry("4.0.2", "第二版"),
-      entry("4.0.1", "第一版"),
+      entry("1.0.4", "第四版甲", "第四版乙"),
+      entry("1.0.3"),
+      entry("1.0.2", "第二版"),
+      entry("1.0.1", "第一版"),
     ];
     mocks.save.mockReset().mockResolvedValue(true);
     mocks.openExternal.mockReset().mockResolvedValue(undefined);
@@ -97,17 +103,17 @@ describe("WhatsNewNotice", () => {
     renderNotice();
     expect(await screen.findByText("whatsNew.updatedTo")).toBeInTheDocument();
     expect(screen.getByText("whatsNew.since")).toBeInTheDocument();
-    expect(screen.getByText("v4.0.4")).toBeInTheDocument();
+    expect(screen.getByText("v1.0.4")).toBeInTheDocument();
     expect(screen.getByText("第四版乙")).toBeInTheDocument();
-    expect(screen.getByText("v4.0.2")).toBeInTheDocument();
-    expect(screen.queryByText("v4.0.1")).not.toBeInTheDocument();
-    expect(screen.queryByText("v4.0.3")).not.toBeInTheDocument();
+    expect(screen.getByText("v1.0.2")).toBeInTheDocument();
+    expect(screen.queryByText("v1.0.1")).not.toBeInTheDocument();
+    expect(screen.queryByText("v1.0.3")).not.toBeInTheDocument();
     expect(screen.queryByText("v4.1.0")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "whatsNew.confirm" }));
     await waitFor(() => expect(title()).not.toBeInTheDocument());
     expect(mocks.save).toHaveBeenCalledWith(
-      expect.objectContaining({ whatsNewSeenVersion: "4.0.4" }),
+      expect.objectContaining({ whatsNewSeenVersion: "1.0.4" }),
     );
   });
 
@@ -117,13 +123,13 @@ describe("WhatsNewNotice", () => {
       newLayoutNoticeConfirmed: true,
     };
     renderNotice();
-    expect(await screen.findByText("v4.0.4")).toBeInTheDocument();
-    expect(screen.queryByText("v4.0.2")).not.toBeInTheDocument();
+    expect(await screen.findByText("v1.0.4")).toBeInTheDocument();
+    expect(screen.queryByText("v1.0.2")).not.toBeInTheDocument();
     expect(screen.queryByText("whatsNew.since")).not.toBeInTheDocument();
   });
 
   it("stays closed when the current version was already seen", async () => {
-    mocks.settings!.whatsNewSeenVersion = "4.0.4";
+    mocks.settings!.whatsNewSeenVersion = "1.0.4";
     renderNotice();
     await settle();
     expect(title()).not.toBeInTheDocument();
@@ -131,8 +137,8 @@ describe("WhatsNewNotice", () => {
   });
 
   it("stays closed after a downgrade and keeps the higher version", async () => {
-    mocks.version = "4.0.2";
-    mocks.settings!.whatsNewSeenVersion = "4.0.4";
+    mocks.version = "1.0.2";
+    mocks.settings!.whatsNewSeenVersion = "1.0.4";
     renderNotice();
     await settle();
     expect(title()).not.toBeInTheDocument();
@@ -140,12 +146,12 @@ describe("WhatsNewNotice", () => {
   });
 
   it("silently records the version when there is nothing to show", async () => {
-    mocks.version = "4.0.3";
-    mocks.settings!.whatsNewSeenVersion = "4.0.2";
+    mocks.version = "1.0.3";
+    mocks.settings!.whatsNewSeenVersion = "1.0.2";
     renderNotice();
     await waitFor(() =>
       expect(mocks.save).toHaveBeenCalledWith(
-        expect.objectContaining({ whatsNewSeenVersion: "4.0.3" }),
+        expect.objectContaining({ whatsNewSeenVersion: "1.0.3" }),
       ),
     );
     expect(title()).not.toBeInTheDocument();
@@ -162,7 +168,7 @@ describe("WhatsNewNotice", () => {
   it("waits while the new layout dialog is showing", async () => {
     mocks.settings = {
       firstRunNoticeConfirmed: true,
-      whatsNewSeenVersion: "4.0.1",
+      whatsNewSeenVersion: "1.0.1",
     };
     renderNotice();
     await waitFor(() => expect(mocks.getAll).toHaveBeenCalled());
@@ -174,7 +180,7 @@ describe("WhatsNewNotice", () => {
   it("shows when the new layout dialog does not apply", async () => {
     mocks.settings = {
       firstRunNoticeConfirmed: true,
-      whatsNewSeenVersion: "4.0.1",
+      whatsNewSeenVersion: "1.0.1",
     };
     mocks.getAll.mockResolvedValue({});
     renderNotice();
@@ -182,35 +188,35 @@ describe("WhatsNewNotice", () => {
   });
 
   it("collapses older versions and opens the changelog list", async () => {
-    mocks.settings!.whatsNewSeenVersion = "4.0.0";
+    mocks.settings!.whatsNewSeenVersion = "1.0.0";
     mocks.entries = [
-      entry("4.0.4", "第四版"),
-      entry("4.0.3", "第三版"),
-      entry("4.0.2", "第二版"),
-      entry("4.0.1", "第一版"),
+      entry("1.0.4", "第四版"),
+      entry("1.0.3", "第三版"),
+      entry("1.0.2", "第二版"),
+      entry("1.0.1", "第一版"),
     ];
     renderNotice();
-    await screen.findByText("v4.0.4");
-    expect(screen.queryByText("v4.0.1")).not.toBeInTheDocument();
+    await screen.findByText("v1.0.4");
+    expect(screen.queryByText("v1.0.1")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "whatsNew.showEarlier" }),
     );
-    expect(screen.getByText("v4.0.1")).toBeInTheDocument();
+    expect(screen.getByText("v1.0.1")).toBeInTheDocument();
 
     fireEvent.click(
       screen.getAllByRole("button", { name: "whatsNew.versionDetails" })[0],
     );
     expect(mocks.openExternal).toHaveBeenCalledWith(
-      "https://ccswitch.io/zh/changelog/4.0.4",
+      "https://github.com/jzcangshu/cc-switch-classic/releases/tag/v1.0.4",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "whatsNew.viewFull" }));
     expect(mocks.openExternal).toHaveBeenLastCalledWith(
-      "https://ccswitch.io/zh/changelog",
+      "https://github.com/jzcangshu/cc-switch-classic/releases",
     );
     await waitFor(() => expect(title()).not.toBeInTheDocument());
     expect(mocks.save).toHaveBeenCalledWith(
-      expect.objectContaining({ whatsNewSeenVersion: "4.0.4" }),
+      expect.objectContaining({ whatsNewSeenVersion: "1.0.4" }),
     );
   });
 });
