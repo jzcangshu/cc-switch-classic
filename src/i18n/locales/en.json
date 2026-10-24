@@ -422,7 +422,8 @@
     "tabAdvanced": "Advanced",
     "tabProxy": "Routing",
     "authCenter": {
-      "description": "Use GitHub Copilot, ChatGPT and xAI subscriptions as providers. The routing service injects their credentials, so these providers run in Routing mode (except Codex's official-login binding). Antigravity accounts switch agy's official sign-in.",
+      "title": "OAuth Authentication Center",
+      "description": "Use your other subscriptions in Claude Code — please be mindful of compliance risks.",
       "beta": "Beta",
       "copilotDescription": "Manage GitHub Copilot accounts",
       "codexOauthDescription": "Manage ChatGPT accounts",
@@ -1253,7 +1254,9 @@
       "copiedCommand": "Copied /{{slug}}",
       "templateDeletedUndo": "Deleted /{{slug}}; Pi no longer has this command",
       "templateDeletedSub": "Undo writes prompts/{{slug}}.md back as it was. ",
-      "templateRestored": "Wrote ~/.pi/agent/prompts/{{slug}}.md back"
+      "templateRestored": "Wrote ~/.pi/agent/prompts/{{slug}}.md back",
+      "deleteTemplateTitle": "Delete /{{slug}}?",
+      "deleteTemplateMessage": "This permanently deletes prompts/{{slug}}.md."
     }
   },
   "appSwitcher": {
@@ -4875,6 +4878,7 @@
     "accountMenu": "More actions for {{login}}",
     "removeAll": "Delete all accounts",
     "removeAccount": "Delete account",
+    "removeAccountTitle": "Remove account",
     "setDefault": "Set as default",
     "reauth": "Sign in again",
     "busyHint": "Finish or cancel the sign-in in progress first",

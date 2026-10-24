@@ -66,7 +66,7 @@ describe("AgyOAuthSection", () => {
     mocks.openExternal.mockReset();
   });
 
-  it("marks the account agy is signed in with and switches from the menu", async () => {
+  it("marks the account agy is signed in with and switches from its row button", async () => {
     const auth = baseAuth();
     auth.accounts = [
       account("a", "a@example.com"),
@@ -80,12 +80,22 @@ describe("AgyOAuthSection", () => {
     const current = screen.getByText("a@example.com").parentElement!;
     expect(within(current).getByText("agy 在用")).toBeInTheDocument();
 
-    // 当前那个号的菜单里没有「切换」，另一个号有
+    // 「切换 agy 到这个账号」是行尾常驻按钮；当前那个号的行里没有，另一个号有
+    const currentRow = screen
+      .getByText("a@example.com")
+      .closest('div[class*="min-h-"]');
+    expect(
+      within(currentRow as HTMLElement).queryByRole("button", {
+        name: "切换 agy 到这个账号",
+      }),
+    ).not.toBeInTheDocument();
+    const otherRow = screen
+      .getByText("b@example.com")
+      .closest('div[class*="min-h-"]');
     await userEvent.click(
-      screen.getByRole("button", { name: "b@example.com 的更多操作" }),
-    );
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "切换 agy 到这个账号" }),
+      within(otherRow as HTMLElement).getByRole("button", {
+        name: "切换 agy 到这个账号",
+      }),
     );
     expect(auth.setDefaultAccount).toHaveBeenCalledWith("b");
   });

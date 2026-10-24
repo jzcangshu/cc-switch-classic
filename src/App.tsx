@@ -1373,7 +1373,7 @@ function App() {
                 id="main-content"
                 className="min-h-0 flex-1 overflow-y-auto px-6 pb-8"
               >
-                <AuthCenterPanel showIntro={false} />
+                <AuthCenterPanel showIntro={true} />
               </div>
             )}
             {currentView === "usage" && (

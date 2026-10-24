@@ -446,7 +446,10 @@ export const CodexOAuthSection: React.FC<CodexOAuthSectionProps> = ({
   return (
     <ManagedAccountsGroup
       slug="chatgpt"
-      name="ChatGPT"
+      name="ChatGPT (Codex OAuth)"
+      description={t("settings.authCenter.codexOauthDescription", {
+        defaultValue: "管理 ChatGPT 账号",
+      })}
       iconName="openai"
       help={t("authCenter.group.chatgptHelp", {
         defaultValue:

@@ -559,7 +559,7 @@ describe("UnifiedMcpPanel", () => {
     });
     renderPanel();
     await userEvent.click(
-      screen.getAllByRole("button", { name: "mcpPage.importFromApps" })[0],
+      screen.getAllByRole("button", { name: "mcp.importExisting" })[0],
     );
     await waitFor(() =>
       expect(screen.getByText("mcpPage.import.title")).toBeInTheDocument(),
@@ -583,7 +583,7 @@ describe("UnifiedMcpPanel", () => {
     mocks.serversMap = { alpha: makeServer("alpha") };
     renderPanel(onBlocked);
     expect(onBlocked).toHaveBeenLastCalledWith(false);
-    await userEvent.click(screen.getByRole("button", { name: "mcpPage.add" }));
+    await userEvent.click(screen.getByRole("button", { name: "mcp.addMcp" }));
     expect(onBlocked).toHaveBeenLastCalledWith(false);
   });
 });

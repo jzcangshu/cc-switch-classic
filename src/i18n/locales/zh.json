@@ -422,7 +422,8 @@
     "tabAdvanced": "高级",
     "tabProxy": "路由",
     "authCenter": {
-      "description": "把 GitHub Copilot、ChatGPT、xAI 订阅当作供应商用。凭据由路由服务注入，相关供应商要在路由模式下使用（Codex 官方登录绑定除外）。Antigravity 账号用来切换 agy 的官方登录。",
+      "title": "OAuth 认证中心",
+      "description": "在 Claude Code 中使用您的其他订阅，请注意合规风险。",
       "beta": "Beta",
       "copilotDescription": "管理 GitHub Copilot 账号",
       "codexOauthDescription": "管理 ChatGPT 账号",
@@ -1253,7 +1254,9 @@
       "copiedCommand": "已复制 /{{slug}}",
       "templateDeletedUndo": "已删除 /{{slug}}，Pi 里不再有这个命令",
       "templateDeletedSub": "撤销会把 prompts/{{slug}}.md 原样写回。",
-      "templateRestored": "已写回 ~/.pi/agent/prompts/{{slug}}.md"
+      "templateRestored": "已写回 ~/.pi/agent/prompts/{{slug}}.md",
+      "deleteTemplateTitle": "删除 /{{slug}}？",
+      "deleteTemplateMessage": "此操作会永久删除 prompts/{{slug}}.md。"
     }
   },
   "appSwitcher": {
@@ -4875,6 +4878,7 @@
     "accountMenu": "{{login}} 的更多操作",
     "removeAll": "删除全部账号",
     "removeAccount": "删除账号",
+    "removeAccountTitle": "移除账号",
     "setDefault": "设为默认",
     "reauth": "重新登录",
     "busyHint": "先完成或取消正在进行的登录",

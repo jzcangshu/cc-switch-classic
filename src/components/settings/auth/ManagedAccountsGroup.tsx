@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -58,6 +59,8 @@ interface ManagedAccountsGroupProps {
   /** DOM id 前缀 */
   slug: string;
   name: string;
+  /** 组名下面的副标题（V3 的「管理 … 账号」一行；Antigravity 没有） */
+  description?: string;
   /** ProviderIcon 的图标名（githubcopilot / openai / xai） */
   iconName: string;
   /** 「?」里的说明：这个服务的账号用在哪些预设上、没指定账号时用哪个 */
@@ -95,13 +98,15 @@ const PILL =
   "inline-flex h-[18px] shrink-0 items-center rounded-full px-1.5 text-badge";
 
 /**
- * 授权中心的一个服务（v7 Auth 画板）：标题行（图标、名字、「?」、添加账号、⋯ 删除全部），
- * 每个账号一行（头像、名字 + 默认 / 需要重新登录、第二行、额度、⋯），空状态，
+ * 授权中心的一个服务：标题行（图标、组名 + 副标题、「?」、添加账号、⋯ 删除全部），
+ * 每个账号一行（头像、名字 + 默认 / 需要重新登录、第二行、额度，
+ * 行尾常驻「重新登录」「设为默认」和 × 移除按钮），空状态，
  * 登录等待块。删账号走确认框（列出受影响的供应商），由调用方传进 children。
  */
 export function ManagedAccountsGroup({
   slug,
   name,
+  description,
   iconName,
   help,
   helpSide,
@@ -215,19 +220,24 @@ export function ManagedAccountsGroup({
         >
           <ProviderIcon icon={iconName} name={name} size={20} />
         </span>
-        <div className="flex min-w-0 flex-1 items-center gap-0.5">
-          <h2 className="m-0 truncate text-strong font-semibold text-fg-1">
-            {name}
-          </h2>
-          <HelpTip
-            title={t("authCenter.group.helpTitle", {
-              defaultValue: "{{service}} 账号怎么用",
-              service: name,
-            })}
-            side={helpSide}
-          >
-            {help}
-          </HelpTip>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+          <div className="flex min-w-0 items-center gap-0.5">
+            <h2 className="m-0 truncate text-strong font-semibold text-fg-1">
+              {name}
+            </h2>
+            <HelpTip
+              title={t("authCenter.group.helpTitle", {
+                defaultValue: "{{service}} 账号怎么用",
+                service: name,
+              })}
+              side={helpSide}
+            >
+              {help}
+            </HelpTip>
+          </div>
+          {description && (
+            <p className="m-0 truncate text-caption text-fg-2">{description}</p>
+          )}
         </div>
         {ready && accounts.length > 0 && (
           <Button
@@ -599,76 +609,48 @@ function AccountRow({
 
       {!account.needsReauth && account.quota}
 
-      {account.needsReauth && canReauth && (
+      {canReauth && (
         <Button
           type="button"
-          variant="neutral"
+          variant="outline"
           size="compact"
-          aria-disabled={busy || undefined}
+          className="gap-1"
+          disabled={busy}
           aria-describedby={busy ? pendingId : subId}
           onClick={() => onReauth(account.id)}
         >
+          <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t("authCenter.reauth", { defaultValue: "重新登录" })}
         </Button>
       )}
 
-      <DropdownMenu>
-        <HoverTip content={t("common.more", { defaultValue: "更多" })}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="quiet"
-              size="icon-compact"
-              aria-label={t("authCenter.accountMenu", {
-                defaultValue: "{{login}} 的更多操作",
-                login: account.login,
-              })}
-            >
-              <MoreHorizontal className="h-[15px] w-[15px]" />
-            </Button>
-          </DropdownMenuTrigger>
-        </HoverTip>
-        <DropdownMenuContent
-          align="end"
-          className="min-w-[148px] rounded-panel bg-surface p-1 shadow-v7-md"
+      {canSetDefault && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="compact"
+          disabled={settingDefault}
+          onClick={() => onSetDefault(account.id)}
         >
-          {canSetDefault && (
-            <DropdownMenuItem
-              disabled={settingDefault}
-              onSelect={() => onSetDefault(account.id)}
-              className="h-[30px] rounded-control px-2.5 text-body"
-            >
-              {setDefaultLabel ??
-                t("authCenter.setDefault", { defaultValue: "设为默认" })}
-            </DropdownMenuItem>
-          )}
-          {canReauth && (
-            <DropdownMenuItem
-              disabled={busy}
-              onSelect={() => onReauth(account.id)}
-              className="min-h-[30px] flex-col items-start justify-center gap-0 rounded-control px-2.5 text-body data-[disabled]:opacity-100"
-            >
-              <span className={cn(busy && "text-fg-3")}>
-                {t("authCenter.reauth", { defaultValue: "重新登录" })}
-              </span>
-              {busy && (
-                <span className="text-caption text-fg-3">
-                  {t("authCenter.busyHint", {
-                    defaultValue: "先完成或取消正在进行的登录",
-                  })}
-                </span>
-              )}
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem
-            disabled={removing}
-            onSelect={() => onRemove(account.id, account.login)}
-            className="h-[30px] rounded-control px-2.5 text-body text-danger-text focus:text-danger-text"
-          >
-            {t("authCenter.removeAccount", { defaultValue: "删除账号…" })}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          {setDefaultLabel ??
+            t("authCenter.setDefault", { defaultValue: "设为默认" })}
+        </Button>
+      )}
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-compact"
+        className="text-fg-2 hover:text-danger-text"
+        title={t("authCenter.removeAccountTitle", { defaultValue: "移除账号" })}
+        aria-label={t("authCenter.removeAccountTitle", {
+          defaultValue: "移除账号",
+        })}
+        disabled={removing}
+        onClick={() => onRemove(account.id, account.login)}
+      >
+        <X className="h-4 w-4" strokeWidth={1.5} />
+      </Button>
     </div>
   );
 }

@@ -422,7 +422,8 @@
     "tabAdvanced": "詳細",
     "tabProxy": "ルーティング",
     "authCenter": {
-      "description": "GitHub Copilot、ChatGPT、xAI のサブスクリプションをプロバイダーとして使えます。認証情報はルーティングサービスが注入するため、これらのプロバイダーはルーティングモードで使います（Codex の公式ログインのバインドを除く）。Antigravity アカウントは agy の公式ログインの切り替えに使います。",
+      "title": "OAuth 認証センター",
+      "description": "Claude Code で他のサブスクリプションをご利用いただけます。コンプライアンスリスクにご注意ください。",
       "beta": "Beta",
       "copilotDescription": "GitHub Copilot アカウントを管理します",
       "codexOauthDescription": "ChatGPT アカウントを管理します",
@@ -1253,7 +1254,9 @@
       "copiedCommand": "/{{slug}} をコピーしました",
       "templateDeletedUndo": "/{{slug}} を削除しました。Pi からこのコマンドはなくなります",
       "templateDeletedSub": "元に戻すと prompts/{{slug}}.md をそのまま書き戻します。",
-      "templateRestored": "~/.pi/agent/prompts/{{slug}}.md を書き戻しました"
+      "templateRestored": "~/.pi/agent/prompts/{{slug}}.md を書き戻しました",
+      "deleteTemplateTitle": "/{{slug}} を削除しますか？",
+      "deleteTemplateMessage": "prompts/{{slug}}.md を完全に削除します。"
     }
   },
   "appSwitcher": {
@@ -4875,6 +4878,7 @@
     "accountMenu": "{{login}} のその他の操作",
     "removeAll": "すべてのアカウントを削除",
     "removeAccount": "アカウントを削除",
+    "removeAccountTitle": "アカウントを削除",
     "setDefault": "デフォルトに設定",
     "reauth": "再ログイン",
     "busyHint": "進行中のログインを完了するかキャンセルしてください",

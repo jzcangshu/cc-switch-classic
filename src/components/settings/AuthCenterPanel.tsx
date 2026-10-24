@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { CopilotAuthSection } from "@/components/providers/forms/CopilotAuthSection";
 import { CodexOAuthSection } from "@/components/providers/forms/CodexOAuthSection";
@@ -10,8 +11,8 @@ import type { ManagedAuthProvider } from "@/lib/api";
 interface AuthCenterPanelProps {
   authScrollTarget?: ManagedAuthProvider | null;
   /**
-   * 页头没有「?」说明时（供应商表单里打开的全屏「授权中心」）在最上面写一行说明；
-   * 侧栏「授权中心」页的页头已经有了，就不再显示。
+   * 顶部简介卡（ShieldCheck 图标 +「OAuth 认证中心」+ 合规提示）。
+   * 设置 → 认证 页签和供应商表单里打开的全屏「授权中心」都显示（默认 true）。
    */
   showIntro?: boolean;
 }
@@ -61,9 +62,24 @@ export function AuthCenterPanel({
   return (
     <div className="flex flex-col gap-3">
       {showIntro && (
-        <p className="m-0 max-w-[700px] text-caption text-fg-2">
-          {t("settings.authCenter.description")}
-        </p>
+        <section className="rounded-panel border border-border bg-surface p-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" />
+              <h3 className="m-0 text-base font-semibold text-fg-1">
+                {t("settings.authCenter.title", {
+                  defaultValue: "OAuth 认证中心",
+                })}
+              </h3>
+            </div>
+            <p className="m-0 max-w-[700px] text-body text-fg-2">
+              {t("settings.authCenter.description", {
+                defaultValue:
+                  "在 Claude Code 中使用您的其他订阅，请注意合规风险。",
+              })}
+            </p>
+          </div>
+        </section>
       )}
       <div ref={copilotSectionRef} className="scroll-mt-4">
         <CopilotAuthSection />

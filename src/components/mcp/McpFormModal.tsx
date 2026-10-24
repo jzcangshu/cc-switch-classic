@@ -205,6 +205,20 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
     setAttempted(false);
   };
 
+  // 「自定义」= 不套模板，清空表单直接手填（V3 presetSelector.custom）
+  const pickCustom = () => {
+    setTemplate(null);
+    setName("");
+    setConn(connectionOf({ type: "stdio" }));
+    setMeta(emptyMeta());
+    setBatch(null);
+    setPaste(null);
+    setPasteText("");
+    setTab("form");
+    setJsonError(null);
+    setAttempted(false);
+  };
+
   const handlePaste = (text: string) => {
     const result = recognizePaste(text);
     if (!result) {
@@ -628,6 +642,14 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
                   aria-labelledby="mcp-tpl-label"
                   className="flex flex-wrap gap-2"
                 >
+                  <button
+                    type="button"
+                    aria-pressed={template === null}
+                    onClick={pickCustom}
+                    className="h-7 whitespace-nowrap rounded-full border border-border-strong bg-surface px-3 text-body transition-colors hover:bg-subtle aria-pressed:bg-selected aria-pressed:font-medium"
+                  >
+                    {t("presetSelector.custom", { defaultValue: "自定义" })}
+                  </button>
                   {mcpPresets.map((preset) => (
                     <HoverTip
                       content={t(`mcp.presets.${preset.id}.description`)}

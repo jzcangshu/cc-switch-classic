@@ -406,6 +406,9 @@ export const CopilotAuthSection: React.FC<CopilotAuthSectionProps> = ({
     <ManagedAccountsGroup
       slug="copilot"
       name="GitHub Copilot"
+      description={t("settings.authCenter.copilotDescription", {
+        defaultValue: "管理 GitHub Copilot 账号",
+      })}
       iconName="githubcopilot"
       help={t("authCenter.group.copilotHelp", {
         defaultValue:

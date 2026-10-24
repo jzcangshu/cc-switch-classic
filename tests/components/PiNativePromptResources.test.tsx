@@ -24,7 +24,13 @@ const toastMocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    // 没有 defaultValue 时原样返回键名；有就套上插值，方便断言恢复的 V3 文案
+    t: (key: string, opts?: Record<string, unknown>) => {
+      const raw = typeof opts?.defaultValue === "string" ? opts.defaultValue : key;
+      return raw.replace(/\{\{(\w+)\}\}/g, (_match, name: string) =>
+        String(opts?.[name] ?? ""),
+      );
+    },
   }),
 }));
 
@@ -413,7 +419,7 @@ describe("Pi native prompt resources", () => {
     );
   });
 
-  it("deletes a template from its row menu and writes it back on undo", async () => {
+  it("deletes a template after the V3 confirm dialog and writes it back on undo", async () => {
     const remove = vi
       .spyOn(promptsApi, "deletePiPromptTemplate")
       .mockResolvedValue(true);
@@ -421,12 +427,19 @@ describe("Pi native prompt resources", () => {
     const user = userEvent.setup();
 
     await screen.findByText("/empty");
+    // 行尾直显的删除按钮（铅笔旁边），先过 V3 确认框
     await user.click(
-      screen.getByRole("button", { name: "prompts.rowMoreActions" }),
+      screen.getByRole("button", { name: "prompts.deleteAria" }),
     );
-    await user.click(
-      await screen.findByRole("menuitem", { name: "common.delete" }),
-    );
+    expect(
+      await screen.findByText("删除 /empty？"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("此操作会永久删除 prompts/empty.md。"),
+    ).toBeInTheDocument();
+    expect(remove).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "common.delete" }));
 
     await waitFor(() =>
       expect(remove).toHaveBeenCalledWith("empty", "empty-revision"),

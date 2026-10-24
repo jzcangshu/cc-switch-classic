@@ -133,8 +133,7 @@ describe("Auth Center account groups", () => {
     expect(auth.addAccount).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps Copilot re-login out of the account menu", async () => {
-    const user = userEvent.setup();
+  it("keeps Copilot re-login off the account row", async () => {
     mocks.useCopilotAuth.mockReturnValue({
       ...baseAuth(),
       hasAnyAccount: true,
@@ -147,18 +146,17 @@ describe("Auth Center account groups", () => {
     expect(
       screen.queryByRole("button", { name: "GitHub Copilot 的更多操作" }),
     ).not.toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "octocat 的更多操作" }),
-    );
+    // 账号行尾是常驻按钮：Copilot 没有「重新登录」，默认账号不显示「设为默认」，
+    // × 是移除入口（仍走确认弹窗）
     expect(
-      await screen.findByRole("menuitem", { name: "删除账号…" }),
+      screen.queryByRole("button", { name: "重新登录" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "设为默认" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "移除账号" }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "重新登录" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "设为默认" }),
-    ).not.toBeInTheDocument();
   });
 
   it("offers a retry when the account status fails to load", async () => {
@@ -217,7 +215,10 @@ describe("Auth Center account groups", () => {
     ).toBeInTheDocument();
 
     // xAI 不能指定账号重新登录：发起一次普通登录（同一个账号登录会替换旧凭据）
-    await user.click(screen.getByRole("button", { name: "重新登录" }));
+    // 两行账号都有常驻「重新登录」按钮，点第二行（已过期的 old@example.com）
+    const reauthButtons = screen.getAllByRole("button", { name: "重新登录" });
+    expect(reauthButtons).toHaveLength(2);
+    await user.click(reauthButtons[1]);
     expect(auth.addAccount).toHaveBeenCalledTimes(1);
   });
 

@@ -388,7 +388,8 @@
     "tabAdvanced": "Gelişmiş",
     "tabProxy": "Yönlendirme",
     "authCenter": {
-      "description": "Sağlayıcı olarak GitHub Copilot, ChatGPT ve xAI aboneliklerini kullanın. Yönlendirme hizmeti kimlik bilgilerini enjekte eder, böylece bu sağlayıcılar Yönlendirme modunda çalışır (Codex'nin resmi oturum açma bağlaması hariç).",
+      "title": "OAuth Kimlik Doğrulama Merkezi",
+      "description": "Diğer aboneliklerinizi Claude Code'da kullanın — uyumluluk risklerine dikkat edin.",
       "beta": "beta",
       "copilotDescription": "GitHub Copilot hesaplarını yönetin",
       "codexOauthDescription": "ChatGPT hesaplarını yönetin",
@@ -1218,7 +1219,9 @@
       "copiedCommand": "Kopyalandı /{{slug}}",
       "templateDeletedUndo": "Silindi /{{slug}}; Pi artık bu komuta sahip değil",
       "templateDeletedSub": "Geri al, istemleri/{{slug}}.md dosyasını olduğu gibi geri yazar.",
-      "templateRestored": "~/.pi/agent/prompts/{{slug}}.md geri yazdı"
+      "templateRestored": "~/.pi/agent/prompts/{{slug}}.md geri yazdı",
+      "deleteTemplateTitle": "/{{slug}} silinsin mi?",
+      "deleteTemplateMessage": "Bu işlem, prompts/{{slug}}.md dosyasını kalıcı olarak siler."
     }
   },
   "appSwitcher": {
@@ -4750,6 +4753,7 @@
     "accountMenu": "{{login}} için daha fazla eylem",
     "removeAll": "Tüm hesapları sil",
     "removeAccount": "Hesabı sil",
+    "removeAccountTitle": "Hesabı kaldır",
     "setDefault": "Varsayılan olarak ayarla",
     "reauth": "Tekrar oturum açın",
     "busyHint": "Öncelikle devam eden oturum açma işlemini tamamlayın veya iptal edin",

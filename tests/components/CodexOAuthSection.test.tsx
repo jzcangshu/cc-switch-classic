@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CodexOAuthSection } from "@/components/providers/forms/CodexOAuthSection";
@@ -172,12 +172,9 @@ describe("CodexOAuthSection", () => {
     );
     render(<CodexOAuthSection />);
 
-    // 删除收进账号行的 ⋯
+    // 删除是账号行尾常驻的 × 按钮（V3 形态），点击后仍走确认弹窗
     await user.click(
-      screen.getByRole("button", { name: "user@example.com 的更多操作" }),
-    );
-    await user.click(
-      await screen.findByRole("menuitem", { name: "删除账号…" }),
+      screen.getAllByRole("button", { name: "移除账号" })[0],
     );
     expect(authResult.removeAccount).not.toHaveBeenCalled();
 
@@ -209,7 +206,7 @@ describe("CodexOAuthSection", () => {
       screen.queryByRole("button", { name: /注销所有账号|删除全部/ }),
     ).not.toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: "ChatGPT 的更多操作" }),
+      screen.getByRole("button", { name: "ChatGPT (Codex OAuth) 的更多操作" }),
     );
     await user.click(
       await screen.findByRole("menuitem", { name: "删除全部账号…" }),
@@ -259,36 +256,36 @@ describe("CodexOAuthSection", () => {
     });
 
     render(<CodexOAuthSection />);
-    // 正常账号的「重新登录」在 ⋯ 里
-    expect(
-      screen.queryByRole("button", { name: "重新登录" }),
-    ).not.toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "user@example.com 的更多操作" }),
-    );
-    await user.click(await screen.findByRole("menuitem", { name: "重新登录" }));
+    // 常驻「重新登录」按钮直接在行尾（V3 形态）
+    await user.click(screen.getByRole("button", { name: "重新登录" }));
 
     expect(reauthAccount).toHaveBeenCalledWith("account-1");
   });
 
-  it("sets another account as default from its menu", async () => {
+  it("sets another account as default from its row button", async () => {
     const user = userEvent.setup();
     const authResult = mocks.useCodexOauth();
     render(<CodexOAuthSection />);
 
-    // 默认账号的 ⋯ 里没有「设为默认」
-    await user.click(
-      screen.getByRole("button", { name: "user@example.com 的更多操作" }),
-    );
+    // 「设为默认」是行尾常驻按钮；默认账号那一行没有
+    const defaultRow = screen
+      .getByText("user@example.com")
+      .closest('div[class*="min-h-"]');
+    const secondRow = screen
+      .getByText("second@example.com")
+      .closest('div[class*="min-h-"]');
+    expect(defaultRow).not.toBeNull();
+    expect(secondRow).not.toBeNull();
     expect(
-      screen.queryByRole("menuitem", { name: "设为默认" }),
+      within(defaultRow as HTMLElement).queryByRole("button", {
+        name: "设为默认",
+      }),
     ).not.toBeInTheDocument();
-    await user.keyboard("{Escape}");
-
     await user.click(
-      screen.getByRole("button", { name: "second@example.com 的更多操作" }),
+      within(secondRow as HTMLElement).getByRole("button", {
+        name: "设为默认",
+      }),
     );
-    await user.click(await screen.findByRole("menuitem", { name: "设为默认" }));
     expect(authResult.setDefaultAccount).toHaveBeenCalledWith("account-2");
   });
 
@@ -311,7 +308,7 @@ describe("CodexOAuthSection", () => {
     render(<CodexOAuthSection />);
 
     expect(
-      screen.getByText("添加 ChatGPT 账号 · 等待授权中…"),
+      screen.getByText("添加 ChatGPT (Codex OAuth) 账号 · 等待授权中…"),
     ).toBeInTheDocument();
     expect(screen.getByText("7KQP-3XRD")).toBeInTheDocument();
     // 同一组正在登录时，「添加账号」不能再点，原因指向等待块

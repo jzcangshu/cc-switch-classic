@@ -171,7 +171,10 @@ export const XaiOAuthSection: React.FC<XaiOAuthSectionProps> = ({
     return (
       <ManagedAccountsGroup
         slug="xai"
-        name="xAI"
+        name="xAI (Grok OAuth)"
+        description={t("settings.authCenter.xaiOauthDescription", {
+          defaultValue: "管理 xAI / Grok 账号",
+        })}
         iconName="xai"
         help={t("authCenter.group.xaiHelp", {
           defaultValue:

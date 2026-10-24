@@ -14,6 +14,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
@@ -24,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -766,6 +766,10 @@ export const PiPromptTemplates = forwardRef<
   const [editor, setEditor] = useState<
     { mode: "create" } | { mode: "edit"; template: PiPromptTemplate } | null
   >(null);
+  // 删除前先过 V3 的确认框
+  const [pendingDelete, setPendingDelete] = useState<PiPromptTemplate | null>(
+    null,
+  );
 
   const templates = usePiPromptTemplatesQuery();
 
@@ -777,12 +781,13 @@ export const PiPromptTemplates = forwardRef<
     await queryClient.invalidateQueries({ queryKey: promptTemplatesKey });
   };
 
-  // 删除不弹确认框：直接删，toast 给「撤销」（按 expectedRevision="missing" 原样写回）
+  // 删除前过 V3 确认框；确认后执行，toast 给「撤销」（按 expectedRevision="missing" 原样写回）
   const remove = useMutation({
     mutationFn: (template: PiPromptTemplate) =>
       promptsApi.deletePiPromptTemplate(template.slug, template.revision),
     onSuccess: async (_removed, template) => {
       setEditor(null);
+      setPendingDelete(null);
       await refresh();
       showPromptToast(t, {
         title: t("pi.prompts.templateDeletedUndo", { slug: template.slug }),
@@ -949,6 +954,20 @@ export const PiPromptTemplates = forwardRef<
                     <Pencil className="h-[15px] w-[15px]" strokeWidth={1.5} />
                   </Button>
                 </HoverTip>
+                <Button
+                  type="button"
+                  variant="quiet"
+                  size="icon-compact"
+                  className="hover:text-danger-text"
+                  title={t("common.delete")}
+                  aria-label={t("prompts.deleteAria", {
+                    name: `/${template.slug}`,
+                  })}
+                  disabled={remove.isPending}
+                  onClick={() => setPendingDelete(template)}
+                >
+                  <Trash2 className="h-[15px] w-[15px]" strokeWidth={1.5} />
+                </Button>
                 <DropdownMenu modal={false}>
                   <HoverTip content={t("common.more")}>
                     <DropdownMenuTrigger asChild>
@@ -989,17 +1008,6 @@ export const PiPromptTemplates = forwardRef<
                     >
                       {t("pi.prompts.copyCommand")}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="mx-1.5 my-1 bg-border" />
-                    <DropdownMenuItem
-                      disabled={remove.isPending}
-                      className={cn(
-                        promptMenuItemClass,
-                        "text-danger-text focus:text-danger-text",
-                      )}
-                      onSelect={() => remove.mutate(template)}
-                    >
-                      {t("common.delete")}
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -1021,6 +1029,23 @@ export const PiPromptTemplates = forwardRef<
           onChanged={refresh}
         />
       )}
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title={t("pi.prompts.deleteTemplateTitle", {
+          slug: pendingDelete?.slug,
+          defaultValue: "删除 /{{slug}}？",
+        })}
+        message={t("pi.prompts.deleteTemplateMessage", {
+          slug: pendingDelete?.slug,
+          defaultValue: "此操作会永久删除 prompts/{{slug}}.md。",
+        })}
+        confirmText={t("common.delete")}
+        pending={remove.isPending}
+        onConfirm={() => {
+          if (pendingDelete) remove.mutate(pendingDelete);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </>
   );
 });
