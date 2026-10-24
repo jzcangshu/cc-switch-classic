@@ -5,7 +5,16 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useCallback, useMemo, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
@@ -24,6 +33,9 @@ import {
   useHermesModelConfig,
 } from "@/hooks/useHermes";
 import { useStreamCheck } from "@/hooks/useStreamCheck";
+import { extractProviderBaseUrl } from "@/utils/providerConfigUtils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ProviderCard } from "@/components/providers/ProviderCard";
 import { ProviderEmptyState } from "@/components/providers/ProviderEmptyState";
 import {
@@ -94,10 +106,76 @@ export function ProviderList({
 }: ProviderListProps) {
   const { t } = useTranslation();
   const { checkProvider, isChecking } = useStreamCheck(appId);
+
+  // ─── 第三版浮动搜索面板：Ctrl/⌘+F 唤起，无页头按钮 ─────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const focusSearch = useCallback(() => {
+    const input = searchInputRef.current;
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        // 正在输入框/可编辑区域中时不抢占（例如添加供应商表单里）
+        const target = event.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        event.preventDefault();
+        setIsSearchOpen(true);
+        focusSearch();
+        return;
+      }
+      if (event.key === "Escape" && isSearchOpen) {
+        setIsSearchOpen(false);
+        setSearchTerm("");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [focusSearch, isSearchOpen]);
+
   const { sortedProviders, sensors, handleDragEnd } = useDragSort(
     providers,
     appId,
   );
+
+  // 范围沿用第四版口径：名称、备注、官网和请求地址
+  const searchIndex = useMemo(
+    () =>
+      sortedProviders.map((provider) => ({
+        provider,
+        text: [
+          provider.name,
+          provider.notes,
+          provider.websiteUrl,
+          extractProviderBaseUrl(provider.settingsConfig),
+        ]
+          .filter(Boolean)
+          .join("\n")
+          .toLowerCase(),
+      })),
+    [sortedProviders],
+  );
+
+  const searchNeedle = searchTerm.trim().toLowerCase();
+  const filteredProviders = useMemo(() => {
+    if (!searchNeedle) return sortedProviders;
+    return searchIndex
+      .filter((entry) => entry.text.includes(searchNeedle))
+      .map((entry) => entry.provider);
+  }, [searchNeedle, searchIndex, sortedProviders]);
 
   const { data: opencodeLiveIds, isPending: isOpencodeLiveIdsPending } =
     useQuery({
@@ -221,7 +299,7 @@ export function ProviderList({
         ...switchMode,
         app: appId,
         t,
-        providers: sortedProviders,
+        providers: filteredProviders,
         queue: switchMode.queue.filter((id) => known.has(id)),
       });
     }
@@ -229,7 +307,7 @@ export function ProviderList({
       return buildLaunchSections({
         app: appId,
         t,
-        providers: sortedProviders,
+        providers: filteredProviders,
         openTerminal: (provider) => onOpenTerminal?.(provider),
       });
     }
@@ -243,7 +321,7 @@ export function ProviderList({
     return buildAdditiveSections({
       app: appId,
       t,
-      providers: sortedProviders,
+      providers: filteredProviders,
       isInConfig,
       currentOmoId,
       currentOmoSlimId,
@@ -288,7 +366,7 @@ export function ProviderList({
     switchMode,
     appId,
     t,
-    sortedProviders,
+    filteredProviders,
     onSwitch,
     onOpenTerminal,
     openclawDefaultModel?.primary,
@@ -402,7 +480,68 @@ export function ProviderList({
   // 卡片列表铺满主区域，和页头同宽
   return (
     <div className="space-y-4">
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            key="provider-search"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed left-1/2 top-[6.5rem] z-40 w-[min(90vw,26rem)] -translate-x-1/2 sm:right-6 sm:left-auto sm:translate-x-0"
+          >
+            <div className="space-y-3 rounded-2xl border border-border bg-surface/95 p-4 shadow-md backdrop-blur-md">
+              <div className="relative flex items-center gap-2">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3" />
+                <Input
+                  ref={searchInputRef}
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={t("provider.searchPlaceholder")}
+                  aria-label={t("provider.searchAriaLabel")}
+                  className="pr-16 pl-9"
+                />
+                {searchTerm && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-11 top-1/2 -translate-y-1/2 text-xs"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    {t("common.clear")}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSearchTerm("");
+                  }}
+                  aria-label={t("provider.searchCloseAriaLabel")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-3">
+                <span>{t("provider.searchScopeHint")}</span>
+                <span>{t("provider.searchCloseHint")}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {piStateErrorNotice}
+      {/* 搜索无结果：整个分组列表让位给提示，避免出现空的「可添加 · 0」分区 */}
+      {searchNeedle && filteredProviders.length === 0 ? (
+        <div className="rounded-panel border border-dashed border-border px-6 py-8 text-center text-body text-fg-3">
+          {t("provider.noSearchResults")}
+        </div>
+      ) : (
+        <>
       {liftLeadTitle && (
         <div className="flex min-h-8 items-center gap-3 -mb-2">
           <div className="min-w-0 flex-1">
@@ -441,6 +580,8 @@ export function ProviderList({
           </section>
         ))}
       </DndContext>
+        </>
+      )}
     </div>
   );
 }

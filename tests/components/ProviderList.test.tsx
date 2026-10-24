@@ -277,6 +277,51 @@ describe("ProviderList Component", () => {
     );
   });
 
+  it("opens the V3 floating search with Ctrl+F and filters cards", async () => {
+    const providerA = createProvider({ id: "a", name: "Alpha 中转" });
+    const providerB = createProvider({ id: "b", name: "Beta 官方" });
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [providerA, providerB],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+
+    renderWithQueryClient(
+      <ProviderList
+        {...baseProps}
+        providers={{ a: providerA, b: providerB }}
+        appId="claude"
+      />,
+    );
+    expect(screen.getByTestId("provider-card-a")).toBeInTheDocument();
+    expect(screen.getByTestId("provider-card-b")).toBeInTheDocument();
+
+    // 无页头按钮：面板只由 Ctrl+F 唤起
+    expect(
+      screen.queryByLabelText("provider.searchAriaLabel"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "f", ctrlKey: true });
+    const input = await screen.findByLabelText("provider.searchAriaLabel");
+    fireEvent.change(input, { target: { value: "alpha" } });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("provider-card-b"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("provider-card-a")).toBeInTheDocument();
+
+    // Esc 关闭面板并清空过滤（AnimatePresence 退出动画后卸载）
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText("provider.searchAriaLabel"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("provider-card-b")).toBeInTheDocument();
+  });
+
   it("shows queue sections while failover is on", () => {
     const providerA = createProvider({ id: "a", name: "A" });
     const providerB = createProvider({ id: "b", name: "B" });
