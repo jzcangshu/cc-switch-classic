@@ -32,21 +32,17 @@ import { settingsApi, type AppId } from "@/lib/api";
 import { useSettingsQuery } from "@/lib/query";
 import type { SettingsSection } from "@/lib/navigation";
 import { AppPageHeader } from "@/components/shell/AppPageHeader";
-import { DirectoryInput } from "@/components/settings/DirectorySettings";
 import { ImportExportSection } from "@/components/settings/ImportExportSection";
 import { BackupListSection } from "@/components/settings/BackupListSection";
 import { WebdavSyncSection } from "@/components/settings/WebdavSyncSection";
 import { AboutSection } from "@/components/settings/AboutSection";
 import { RoutingSection } from "@/components/settings/sections/RoutingSection";
-import { GlobalProxySettings } from "@/components/settings/GlobalProxySettings";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { GeneralSection } from "@/components/settings/sections/GeneralSection";
 import { AppConfigSection } from "@/components/settings/sections/AppConfigSection";
 import {
   SettingsBlock,
   SettingsBody,
-  SettingsCard,
-  SettingsRow,
 } from "@/components/settings/SettingsLayout";
 import { useSettings } from "@/hooks/useSettings";
 import { DIRECTORY_KEYS } from "@/hooks/useSettingsForm";
@@ -401,34 +397,20 @@ export function SettingsPage({
           <AppConfigSection
             settings={settings}
             resolvedDirs={resolvedDirs}
+            appConfigDir={appConfigDir}
             onAutoSave={handleAutoSave}
+            onAppConfigChange={updateAppConfigDir}
+            onBrowseAppConfig={browseAppConfigDir}
+            onResetAppConfig={resetAppConfigDir}
             onDirectoryChange={updateDirectory}
             onBrowseDirectory={browseDirectory}
             onResetDirectory={resetDirectory}
           />
         );
       case "routing":
-        return (
-          <>
-            <RoutingSection onOpenApp={onOpenApp} />
-            {renderSection("network")}
-          </>
-        );
       case "network":
-        return (
-          <SettingsBlock
-            collapsible
-            title={t("settings.advanced.globalProxy.title")}
-            help={{
-              title: t("settings.advanced.globalProxy.title"),
-              body: t("settings.advanced.globalProxy.description"),
-            }}
-          >
-            <div className="rounded-panel border border-border bg-surface p-5">
-              <GlobalProxySettings />
-            </div>
-          </SettingsBlock>
-        );
+        // 全局出站代理已收进 RoutingSection 的手风琴（第三版形态）
+        return <RoutingSection onOpenApp={onOpenApp} />;
       case "data":
         return (
           <>
@@ -547,31 +529,12 @@ export function SettingsPage({
                   collapsible
                   initiallyOpen={section === "appConfig"}
                 >
-                  <SettingsCard>
-                    <SettingsRow
-                      label={t("settings.appConfigDir")}
-                      help={{
-                        title: t("settings.appConfigDir"),
-                        body: t("settings.appConfigDirDescription"),
-                      }}
-                    >
-                      <DirectoryInput
-                        label=""
-                        value={appConfigDir}
-                        resolvedValue={resolvedDirs.appConfig}
-                        placeholder={t("settings.browsePlaceholderApp")}
-                        onChange={updateAppConfigDir}
-                        onBrowse={browseAppConfigDir}
-                        onReset={resetAppConfigDir}
-                      />
-                    </SettingsRow>
-                  </SettingsCard>
                   {renderSection("appConfig")}
                 </SettingsBlock>
                 {renderSection("data")}
               </>
             ) : (
-              renderSection(section === "network" ? "routing" : section)
+              renderSection(section)
             )}
           </SettingsBody>
         )}

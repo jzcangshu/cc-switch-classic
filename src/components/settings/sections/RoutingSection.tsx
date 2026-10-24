@@ -3,7 +3,15 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useQueries } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
-import { ChevronRight, Loader2 } from "lucide-react";
+import {
+  Activity,
+  ArrowLeftRight,
+  ChevronRight,
+  Globe,
+  Loader2,
+  Server,
+  Zap,
+} from "lucide-react";
 import type { AppId } from "@/lib/api";
 import { proxyApi } from "@/lib/api/proxy";
 import { useProvidersQuery } from "@/lib/query";
@@ -20,17 +28,24 @@ import {
   PROXY_APP_IDS,
   type ProxyAppId,
 } from "@/config/appConfig";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HelpTip, DisabledReason } from "@/components/ui/help-tip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AutoFailoverConfigPanel } from "@/components/proxy/AutoFailoverConfigPanel";
+import { GlobalProxySettings } from "@/components/settings/GlobalProxySettings";
 import { RectifierConfigPanel } from "@/components/settings/RectifierConfigPanel";
 import { APP_DISPLAY_NAME, AppGlyph } from "@/components/shell/AppGlyph";
 import { MODE_TONE } from "@/components/providers/mode/ModeTabs";
 import {
-  SettingsBlock,
   SettingsCard,
   SettingsRow,
   SettingsSwitchRow,
@@ -87,8 +102,8 @@ function formatUptime(seconds: number, t: TFunction) {
 }
 
 /**
- * 设置 → 本地路由（v7）：服务（状态、统计、启停、监听地址、请求日志）→ 正在使用路由的应用
- * → 全部回到直连 → 故障转移参数 → 整流与优化。进出路由在各应用页的模式 tab 里。
+ * 设置 → 本地路由（第三版手风琴形态）：服务 → 正在使用路由的应用 → 自动故障转移
+ * → 整流器 → 全局出站代理，默认全部收起。进出路由在各应用页的模式 tab 里。
  */
 export function RoutingSection({ onOpenApp }: RoutingSectionProps) {
   const { t } = useTranslation();
@@ -197,264 +212,366 @@ export function RoutingSection({ onOpenApp }: RoutingSectionProps) {
 
   return (
     <>
-      <SettingsBlock title={t("routingSettings.service")}>
-        <SettingsCard>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3.5">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1 text-body font-medium text-fg-1">
-                {t("routingSettings.serviceName")}
-                <HelpTip title={t("routingSettings.serviceName")}>
-                  {t("routingSettings.serviceHelp")}
-                </HelpTip>
+      <Accordion type="multiple" defaultValue={[]} className="w-full space-y-4">
+        {/* 服务 */}
+        <AccordionItem
+          value="proxy"
+          className="rounded-xl glass-card overflow-hidden"
+        >
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Server className="h-5 w-5 text-green-500" />
+              <div className="text-left">
+                <h3 className="text-base font-semibold">
+                  {t("settings.advanced.proxy.title")}
+                </h3>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {t("settings.advanced.proxy.description")}
+                </p>
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-caption text-fg-2">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    running ? "bg-route" : "bg-fg-3",
-                  )}
+              <Badge
+                variant={running ? "default" : "secondary"}
+                className="gap-1.5 h-6 ml-auto mr-2"
+              >
+                <Activity
+                  className={cn("h-3 w-3", running ? "status-heartbeat" : "")}
                 />
                 {running
-                  ? t("routingSettings.runningFor", {
-                      uptime: formatUptime(status?.uptime_seconds ?? 0, t),
-                    })
-                  : t("routingSettings.stopped")}
+                  ? t("settings.advanced.proxy.running")
+                  : t("settings.advanced.proxy.stopped")}
+              </Badge>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
+            <SettingsCard>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 text-body font-medium text-fg-1">
+                    {t("routingSettings.serviceName")}
+                    <HelpTip title={t("routingSettings.serviceName")}>
+                      {t("routingSettings.serviceHelp")}
+                    </HelpTip>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-caption text-fg-2">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        running ? "bg-route" : "bg-fg-3",
+                      )}
+                    />
+                    {running
+                      ? t("routingSettings.runningFor", {
+                          uptime: formatUptime(status?.uptime_seconds ?? 0, t),
+                        })
+                      : t("routingSettings.stopped")}
+                  </div>
+                </div>
+                {running && (
+                  <dl className="flex gap-6 text-end">
+                    {[
+                      [
+                        t("routingSettings.totalRequests"),
+                        status?.total_requests ?? 0,
+                      ],
+                      [
+                        t("routingSettings.successRate"),
+                        `${(status?.success_rate ?? 0).toFixed(1)}%`,
+                      ],
+                      [
+                        t("routingSettings.activeConnections"),
+                        status?.active_connections ?? 0,
+                      ],
+                    ].map(([label, value]) => (
+                      <div key={String(label)}>
+                        <dt className="text-caption text-fg-2">{label}</dt>
+                        <dd className="m-0 text-strong font-semibold tabular-nums text-fg-1">
+                          {typeof value === "number"
+                            ? value.toLocaleString()
+                            : value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {running ? (
+                  <DisabledReason reason={stopReason} align="end">
+                    <Button
+                      variant="neutral"
+                      size="regular"
+                      disabled={isPending}
+                      onClick={() => void stopProxyServer()}
+                    >
+                      {t("routingSettings.stop")}
+                    </Button>
+                  </DisabledReason>
+                ) : (
+                  <Button
+                    variant="neutral"
+                    size="regular"
+                    disabled={isPending}
+                    onClick={() => void startProxyServer()}
+                  >
+                    {t("routingSettings.start")}
+                  </Button>
+                )}
+              </div>
+
+              <SettingsRow
+                label={t("routingSettings.listen")}
+                control={
+                  <div className="flex items-start gap-3">
+                    <label className="space-y-1">
+                      <span className="block text-caption font-medium text-fg-2">
+                        {t("routingSettings.address")}
+                      </span>
+                      <Input
+                        value={address}
+                        onChange={(event) => setAddress(event.target.value)}
+                        aria-invalid={addressError ? true : undefined}
+                        className="w-[150px]"
+                      />
+                      <span
+                        className={cn(
+                          "block text-caption",
+                          addressError ? "text-danger-text" : "text-fg-3",
+                        )}
+                      >
+                        {addressError ?? t("routingSettings.addressHint")}
+                      </span>
+                    </label>
+                    <label className="space-y-1">
+                      <span className="block text-caption font-medium text-fg-2">
+                        {t("routingSettings.port")}
+                      </span>
+                      <Input
+                        value={port}
+                        inputMode="numeric"
+                        onChange={(event) => setPort(event.target.value)}
+                        aria-invalid={portError ? true : undefined}
+                        className="w-[96px]"
+                      />
+                      <span
+                        className={cn(
+                          "block text-caption",
+                          portError ? "text-danger-text" : "text-fg-3",
+                        )}
+                      >
+                        {portError ?? "1024–65535"}
+                      </span>
+                    </label>
+                    <Button
+                      variant="neutral"
+                      size="regular"
+                      // 和输入框顶边对齐：上面的小标题 18 + 间距 4
+                      className="mt-[22px]"
+                      disabled={!listenDirty || updateConfig.isPending}
+                      onClick={() => void saveListen()}
+                    >
+                      {updateConfig.isPending && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      )}
+                      {t("routingSettings.saveAndRestart")}
+                    </Button>
+                  </div>
+                }
+              />
+              <SettingsRow
+                label={t("routingSettings.clientHost")}
+                help={{
+                  title: t("routingSettings.clientHost"),
+                  body: t("routingSettings.clientHostHelp"),
+                }}
+                control={
+                  <div className="flex items-start gap-3">
+                    <label className="space-y-1">
+                      <Input
+                        value={clientHost}
+                        placeholder={defaultClientHost(
+                          config?.listenAddress ?? "127.0.0.1",
+                        )}
+                        onChange={(event) => setClientHost(event.target.value)}
+                        aria-label={t("routingSettings.clientHost")}
+                        aria-invalid={clientHostError ? true : undefined}
+                        className="w-[262px]"
+                      />
+                      <span
+                        className={cn(
+                          "block text-caption",
+                          clientHostError ? "text-danger-text" : "text-fg-3",
+                        )}
+                      >
+                        {clientHostError ?? t("routingSettings.clientHostHint")}
+                      </span>
+                    </label>
+                    <Button
+                      variant="neutral"
+                      size="regular"
+                      disabled={
+                        savedClientHost === undefined ||
+                        saveClientHostMutation.isPending
+                      }
+                      onClick={() => void saveClientHost()}
+                    >
+                      {t("common.save")}
+                    </Button>
+                  </div>
+                }
+              />
+              <SettingsSwitchRow
+                label={t("routingSettings.logging")}
+                help={{
+                  title: t("routingSettings.logging"),
+                  body: t("routingSettings.loggingHelp"),
+                }}
+                checked={config?.enableLogging ?? false}
+                disabled={!config}
+                onCheckedChange={(value) => void toggleLogging(value)}
+              />
+            </SettingsCard>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 正在使用路由的应用 */}
+        <AccordionItem
+          value="usingApps"
+          className="rounded-xl glass-card overflow-hidden"
+        >
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <ArrowLeftRight className="h-5 w-5 text-blue-500" />
+              <div className="text-left">
+                <h3 className="text-base font-semibold">
+                  {t("routingSettings.usingApps", { count: usingCount })}
+                </h3>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {t("routingSettings.usingAppsDescription")}
+                </p>
               </div>
             </div>
-            {running && (
-              <dl className="flex gap-6 text-end">
-                {[
-                  [
-                    t("routingSettings.totalRequests"),
-                    status?.total_requests ?? 0,
-                  ],
-                  [
-                    t("routingSettings.successRate"),
-                    `${(status?.success_rate ?? 0).toFixed(1)}%`,
-                  ],
-                  [
-                    t("routingSettings.activeConnections"),
-                    status?.active_connections ?? 0,
-                  ],
-                ].map(([label, value]) => (
-                  <div key={String(label)}>
-                    <dt className="text-caption text-fg-2">{label}</dt>
-                    <dd className="m-0 text-strong font-semibold tabular-nums text-fg-1">
-                      {typeof value === "number"
-                        ? value.toLocaleString()
-                        : value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {running ? (
-              <DisabledReason reason={stopReason} align="end">
-                <Button
-                  variant="neutral"
-                  size="regular"
-                  disabled={isPending}
-                  onClick={() => void stopProxyServer()}
-                >
-                  {t("routingSettings.stop")}
-                </Button>
-              </DisabledReason>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
+            {usingCount === 0 ? (
+              <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                {t("routingSettings.noApps")}
+              </div>
             ) : (
-              <Button
-                variant="neutral"
-                size="regular"
-                disabled={isPending}
-                onClick={() => void startProxyServer()}
-              >
-                {t("routingSettings.start")}
-              </Button>
+              <SettingsCard>
+                {usingApps.map(({ app, mode, routeName }) => (
+                  <UsingAppRow
+                    key={app}
+                    app={app}
+                    modeLabel={t(`mode.names.${mode}`)}
+                    dotClass={MODE_TONE[mode].dot}
+                    detail={
+                      mode === "stack"
+                        ? t("routingSettings.stackDetail", { name: routeName })
+                        : t("routingSettings.routeDetail", { name: routeName })
+                    }
+                    onOpen={() => onOpenApp(app)}
+                  />
+                ))}
+              </SettingsCard>
             )}
-          </div>
-
-          <SettingsRow
-            label={t("routingSettings.listen")}
-            control={
-              <div className="flex items-start gap-3">
-                <label className="space-y-1">
-                  <span className="block text-caption font-medium text-fg-2">
-                    {t("routingSettings.address")}
-                  </span>
-                  <Input
-                    value={address}
-                    onChange={(event) => setAddress(event.target.value)}
-                    aria-invalid={addressError ? true : undefined}
-                    className="w-[150px]"
-                  />
-                  <span
-                    className={cn(
-                      "block text-caption",
-                      addressError ? "text-danger-text" : "text-fg-3",
-                    )}
-                  >
-                    {addressError ?? t("routingSettings.addressHint")}
-                  </span>
-                </label>
-                <label className="space-y-1">
-                  <span className="block text-caption font-medium text-fg-2">
-                    {t("routingSettings.port")}
-                  </span>
-                  <Input
-                    value={port}
-                    inputMode="numeric"
-                    onChange={(event) => setPort(event.target.value)}
-                    aria-invalid={portError ? true : undefined}
-                    className="w-[96px]"
-                  />
-                  <span
-                    className={cn(
-                      "block text-caption",
-                      portError ? "text-danger-text" : "text-fg-3",
-                    )}
-                  >
-                    {portError ?? "1024–65535"}
-                  </span>
-                </label>
+            {usingApps.length > 0 && (
+              <div className="pt-4">
                 <Button
                   variant="neutral"
                   size="regular"
-                  // 和输入框顶边对齐：上面的小标题 18 + 间距 4
-                  className="mt-[22px]"
-                  disabled={!listenDirty || updateConfig.isPending}
-                  onClick={() => void saveListen()}
+                  onClick={() => setConfirmExitAll(true)}
                 >
-                  {updateConfig.isPending && (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  )}
-                  {t("routingSettings.saveAndRestart")}
+                  {t("routingSettings.exitAll")}
                 </Button>
               </div>
-            }
-          />
-          <SettingsRow
-            label={t("routingSettings.clientHost")}
-            help={{
-              title: t("routingSettings.clientHost"),
-              body: t("routingSettings.clientHostHelp"),
-            }}
-            control={
-              <div className="flex items-start gap-3">
-                <label className="space-y-1">
-                  <Input
-                    value={clientHost}
-                    placeholder={defaultClientHost(
-                      config?.listenAddress ?? "127.0.0.1",
-                    )}
-                    onChange={(event) => setClientHost(event.target.value)}
-                    aria-label={t("routingSettings.clientHost")}
-                    aria-invalid={clientHostError ? true : undefined}
-                    className="w-[262px]"
-                  />
-                  <span
-                    className={cn(
-                      "block text-caption",
-                      clientHostError ? "text-danger-text" : "text-fg-3",
-                    )}
-                  >
-                    {clientHostError ?? t("routingSettings.clientHostHint")}
-                  </span>
-                </label>
-                <Button
-                  variant="neutral"
-                  size="regular"
-                  disabled={
-                    savedClientHost === undefined ||
-                    saveClientHostMutation.isPending
-                  }
-                  onClick={() => void saveClientHost()}
-                >
-                  {t("common.save")}
-                </Button>
-              </div>
-            }
-          />
-          <SettingsSwitchRow
-            label={t("routingSettings.logging")}
-            help={{
-              title: t("routingSettings.logging"),
-              body: t("routingSettings.loggingHelp"),
-            }}
-            checked={config?.enableLogging ?? false}
-            disabled={!config}
-            onCheckedChange={(value) => void toggleLogging(value)}
-          />
-        </SettingsCard>
-      </SettingsBlock>
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-      <SettingsBlock
-        title={t("routingSettings.usingApps", { count: usingCount })}
-      >
-        {usingCount === 0 ? (
-          <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
-            {t("routingSettings.noApps")}
-          </div>
-        ) : (
-          <SettingsCard>
-            {usingApps.map(({ app, mode, routeName }) => (
-              <UsingAppRow
-                key={app}
-                app={app}
-                modeLabel={t(`mode.names.${mode}`)}
-                dotClass={MODE_TONE[mode].dot}
-                detail={
-                  mode === "stack"
-                    ? t("routingSettings.stackDetail", { name: routeName })
-                    : t("routingSettings.routeDetail", { name: routeName })
-                }
-                onOpen={() => onOpenApp(app)}
+        {/* 自动故障转移 */}
+        <AccordionItem
+          value="failover"
+          className="rounded-xl glass-card overflow-hidden"
+        >
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Activity className="h-5 w-5 text-orange-500" />
+              <div className="text-left">
+                <h3 className="text-base font-semibold">
+                  {t("settings.advanced.failover.title")}
+                </h3>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {t("settings.advanced.failover.description")}
+                </p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
+            <div className="space-y-4 rounded-panel border border-border bg-surface p-5">
+              <SegmentedControl
+                size="sm"
+                aria-label={t("settings.advanced.failover.title")}
+                value={failoverApp}
+                onValueChange={setFailoverApp}
+                items={PROXY_APP_IDS.map((app) => ({
+                  value: app,
+                  label: APP_DISPLAY_NAME[app],
+                }))}
               />
-            ))}
-          </SettingsCard>
-        )}
-        {usingApps.length > 0 && (
-          <Button
-            variant="neutral"
-            size="regular"
-            onClick={() => setConfirmExitAll(true)}
-          >
-            {t("routingSettings.exitAll")}
-          </Button>
-        )}
-      </SettingsBlock>
+              <AutoFailoverConfigPanel key={failoverApp} appType={failoverApp} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      <SettingsBlock
-        title={t("settings.advanced.failover.title")}
-        help={{
-          title: t("settings.advanced.failover.title"),
-          body: t("routingSettings.failoverHelp"),
-        }}
-      >
-        <div className="space-y-4 rounded-panel border border-border bg-surface p-5">
-          <SegmentedControl
-            size="sm"
-            aria-label={t("settings.advanced.failover.title")}
-            value={failoverApp}
-            onValueChange={setFailoverApp}
-            items={PROXY_APP_IDS.map((app) => ({
-              value: app,
-              label: APP_DISPLAY_NAME[app],
-            }))}
-          />
-          <AutoFailoverConfigPanel key={failoverApp} appType={failoverApp} />
-        </div>
-      </SettingsBlock>
+        {/* 整流器 */}
+        <AccordionItem
+          value="rectifier"
+          className="rounded-xl glass-card overflow-hidden"
+        >
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Zap className="h-5 w-5 text-purple-500" />
+              <div className="text-left">
+                <h3 className="text-base font-semibold">
+                  {t("settings.advanced.rectifier.title")}
+                </h3>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {t("settings.advanced.rectifier.description")}
+                </p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
+            <div className="rounded-panel border border-border bg-surface p-5">
+              <RectifierConfigPanel />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      <SettingsBlock
-        title={t("settings.advanced.rectifier.title")}
-        help={{
-          title: t("settings.advanced.rectifier.title"),
-          body: t("settings.advanced.rectifier.description"),
-        }}
-      >
-        <div className="rounded-panel border border-border bg-surface p-5">
-          <RectifierConfigPanel />
-        </div>
-      </SettingsBlock>
+        {/* 全局出站代理 */}
+        <AccordionItem
+          value="globalProxy"
+          className="rounded-xl glass-card overflow-hidden"
+        >
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Globe className="h-5 w-5 text-cyan-500" />
+              <div className="text-left">
+                <h3 className="text-base font-semibold">
+                  {t("settings.advanced.globalProxy.title")}
+                </h3>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {t("settings.advanced.globalProxy.description")}
+                </p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
+            <div className="rounded-panel border border-border bg-surface p-5">
+              <GlobalProxySettings />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       {/* 可恢复的操作（路由目标、队列、聚合名单都保留），不用红色 */}
       <ConfirmDialog

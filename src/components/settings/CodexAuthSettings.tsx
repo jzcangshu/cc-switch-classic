@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Archive, History, KeyRound } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { SettingsFormState } from "@/hooks/useSettings";
-import { SettingsSwitchRow } from "@/components/settings/SettingsLayout";
+import { ToggleRow } from "@/components/ui/toggle-row";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { settingsApi } from "@/lib/api";
 import { formatBytes } from "@/components/settings/BackupStorageSection";
@@ -131,48 +132,50 @@ export function CodexAuthSettings({
     }
   };
 
-  // 设置 → 应用配置 → Codex 卡片里的三行（经典子 agent 开关在 Codex 聚合页签的「聚合设置」里）
+  // 设置 → 通用 →「Codex 应用增强」小节（第三版小节标题 + 内联灰色说明；经典子 agent
+  // 开关在 Codex 聚合页签的「聚合设置」里；压缩会话是第四版新增，说明同样内联）
   return (
-    <>
-      <SettingsSwitchRow
-        label={t("settings.preserveCodexOfficialAuthOnSwitch")}
-        help={{
-          title: t("settings.preserveCodexOfficialAuthOnSwitch"),
-          body: t("settings.preserveCodexOfficialAuthOnSwitchDescription"),
-        }}
+    <section className="space-y-4">
+      <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+        <KeyRound className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-medium">{t("settings.codexAuth")}</h3>
+      </div>
+
+      <ToggleRow
+        icon={<KeyRound className="h-4 w-4 text-emerald-500" />}
+        title={t("settings.preserveCodexOfficialAuthOnSwitch")}
+        description={t("settings.preserveCodexOfficialAuthOnSwitchDescription")}
         checked={settings.preserveCodexOfficialAuthOnSwitch ?? false}
         onCheckedChange={(value) =>
           onChange({ preserveCodexOfficialAuthOnSwitch: value })
         }
       />
 
-      <SettingsSwitchRow
-        label={t("settings.unifyCodexSessionHistory")}
-        help={{
-          title: t("settings.unifyCodexSessionHistory"),
-          body: t("settings.unifyCodexSessionHistoryDescription"),
-        }}
+      <ToggleRow
+        icon={<History className="h-4 w-4 text-sky-500" />}
+        title={t("settings.unifyCodexSessionHistory")}
+        description={t("settings.unifyCodexSessionHistoryDescription")}
         checked={settings.unifyCodexSessionHistory ?? false}
         onCheckedChange={handleUnifyHistoryChange}
       />
 
-      <SettingsSwitchRow
-        label={t("settings.codexSessionCompression")}
-        help={{
-          title: t("settings.codexSessionCompression"),
-          body: t("settings.codexSessionCompressionDescription"),
-        }}
-        description={
-          sessionsBytes === null
-            ? undefined
-            : t("settings.codexSessionCompressionUsage", {
-                size: formatBytes(sessionsBytes),
-              })
-        }
-        checked={sessionCompression}
-        disabled={sessionCompressionSaving}
-        onCheckedChange={(value) => void handleSessionCompressionChange(value)}
-      />
+      <div className="space-y-1">
+        <ToggleRow
+          icon={<Archive className="h-4 w-4 text-amber-500" />}
+          title={t("settings.codexSessionCompression")}
+          description={t("settings.codexSessionCompressionDescription")}
+          checked={sessionCompression}
+          disabled={sessionCompressionSaving}
+          onCheckedChange={(value) => void handleSessionCompressionChange(value)}
+        />
+        {sessionsBytes !== null && (
+          <p className="px-1 text-xs text-fg-3">
+            {t("settings.codexSessionCompressionUsage", {
+              size: formatBytes(sessionsBytes),
+            })}
+          </p>
+        )}
+      </div>
 
       <ConfirmDialog
         isOpen={showEnableConfirm}
@@ -200,6 +203,6 @@ export function CodexAuthSettings({
         onConfirm={(restoreBackup) => void handleDisableConfirm(restoreBackup)}
         onCancel={() => setShowDisableConfirm(false)}
       />
-    </>
+    </section>
   );
 }

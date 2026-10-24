@@ -504,7 +504,7 @@ pub struct AppSettings {
     pub common_config_confirmed: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
-    /// 按档的额度百分比写「剩余」还是「已用」（`"left"` / `"used"`，缺省为剩余）。卡片、
+    /// 按档的额度百分比写「剩余」还是「已用」（`"left"` / `"used"`，缺省为已用）。卡片、
     /// 授权中心和托盘一起变；余额、Credits、重置次数不受影响（#8024）
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quota_display: Option<String>,
@@ -688,9 +688,9 @@ impl Default for AppSettings {
 }
 
 impl AppSettings {
-    /// 额度百分比按「已用」写（默认按剩余）
+    /// 额度百分比按「已用」写（缺省按已用；只有显式设置 "left" 才按剩余）
     pub fn quota_shows_used(&self) -> bool {
-        self.quota_display.as_deref() == Some("used")
+        self.quota_display.as_deref() != Some("left")
     }
 
     fn settings_path() -> Option<PathBuf> {

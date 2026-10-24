@@ -1,9 +1,18 @@
 import { useTranslation } from "react-i18next";
-import { Monitor, Moon, Sun } from "lucide-react";
+import {
+  AppWindow,
+  ArrowLeftRight,
+  EyeOff,
+  Monitor,
+  Moon,
+  Power,
+  Sun,
+} from "lucide-react";
 import type { SettingsFormState } from "@/hooks/useSettings";
 import { useTheme } from "@/components/theme-provider";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Button } from "@/components/ui/button";
+import { ToggleRow } from "@/components/ui/toggle-row";
 import { isLinux } from "@/lib/platform";
 import { AppVisibilitySettings } from "@/components/settings/AppVisibilitySettings";
 import { TerminalSelect } from "@/components/settings/TerminalSettings";
@@ -13,7 +22,6 @@ import type { SkillStorageLocation } from "@/types";
 import {
   SettingsBlock,
   SettingsCard,
-  SettingsRow,
   SettingsSwitchRow,
 } from "@/components/settings/SettingsLayout";
 
@@ -34,6 +42,10 @@ interface GeneralSectionProps {
   onStorageMigrated: (location: SkillStorageLocation) => void;
 }
 
+/**
+ * 通用设置（第三版小节形态）：小节标题 + 灰色说明 + 控件。
+ * 语言、主题恢复横排按钮组；额度显示并入外观小节；托盘样式保留第四版新增。
+ */
 export function GeneralSection({
   settings,
   onAutoSave,
@@ -45,103 +57,134 @@ export function GeneralSection({
 
   return (
     <>
-      <SettingsBlock title={t("settings.general.appearance")}>
-        <SettingsCard>
-          <SettingsRow label={t("settings.language")}>
-            <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1">
-              {LANGUAGES.map((language) => (
-                <Button
-                  key={language.value}
-                  type="button"
-                  size="sm"
-                  variant={
-                    settings.language === language.value ? "default" : "ghost"
-                  }
-                  aria-pressed={settings.language === language.value}
-                  onClick={() => void onAutoSave({ language: language.value })}
-                  className="min-w-[96px]"
-                >
-                  {t(language.labelKey)}
-                </Button>
-              ))}
-            </div>
-          </SettingsRow>
-          <SettingsRow label={t("settings.theme")}>
-            <div
-              role="group"
-              aria-label={t("settings.theme")}
-              className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1"
+      {/* 界面语言 */}
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <h3 className="text-sm font-medium">{t("settings.language")}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.languageHint")}
+          </p>
+        </header>
+        <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1">
+          {LANGUAGES.map((language) => (
+            <Button
+              key={language.value}
+              type="button"
+              size="sm"
+              variant={
+                settings.language === language.value ? "default" : "ghost"
+              }
+              aria-pressed={settings.language === language.value}
+              onClick={() => void onAutoSave({ language: language.value })}
+              className="min-w-[96px]"
             >
-              {(
-                [
-                  {
-                    value: "light",
-                    label: t("settings.themeLight"),
-                    icon: Sun,
-                  },
-                  {
-                    value: "dark",
-                    label: t("settings.themeDark"),
-                    icon: Moon,
-                  },
-                  {
-                    value: "system",
-                    label: t("settings.themeSystem"),
-                    icon: Monitor,
-                  },
-                ] as const
-              ).map(({ value, label, icon: Icon }) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={theme === value ? "default" : "ghost"}
-                  aria-pressed={theme === value}
-                  className="min-w-[96px]"
-                  onClick={() => setTheme(value)}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </SettingsRow>
-          <SettingsRow
-            label={t("settings.general.quotaDisplay")}
-            help={{
-              title: t("settings.general.quotaDisplay"),
-              body: t("settings.general.quotaDisplayHelp"),
-            }}
-            control={
-              <SegmentedControl
-                size="sm"
-                aria-label={t("settings.general.quotaDisplay")}
-                value={settings.quotaDisplay ?? "left"}
-                onValueChange={(value) =>
-                  void onAutoSave({ quotaDisplay: value })
-                }
-                items={[
-                  {
-                    value: "left",
-                    label: t("settings.general.quotaDisplayLeft"),
-                  },
-                  {
-                    value: "used",
-                    label: t("settings.general.quotaDisplayUsed"),
-                  },
-                ]}
-              />
+              {t(language.labelKey)}
+            </Button>
+          ))}
+        </div>
+      </section>
+
+      {/* 外观主题（额度显示并入本小节） */}
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <h3 className="text-sm font-medium">{t("settings.theme")}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.themeHint")}
+          </p>
+        </header>
+        <div
+          role="group"
+          aria-label={t("settings.theme")}
+          className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-background p-1"
+        >
+          {(
+            [
+              {
+                value: "light",
+                label: t("settings.themeLight"),
+                icon: Sun,
+              },
+              {
+                value: "dark",
+                label: t("settings.themeDark"),
+                icon: Moon,
+              },
+              {
+                value: "system",
+                label: t("settings.themeSystem"),
+                icon: Monitor,
+              },
+            ] as const
+          ).map(({ value, label, icon: Icon }) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={theme === value ? "default" : "ghost"}
+              aria-pressed={theme === value}
+              className="min-w-[96px]"
+              onClick={() => setTheme(value)}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">
+              {t("settings.general.quotaDisplay")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("settings.general.quotaDisplayHelp")}
+            </p>
+          </div>
+          <SegmentedControl
+            size="sm"
+            aria-label={t("settings.general.quotaDisplay")}
+            value={settings.quotaDisplay ?? "used"}
+            onValueChange={(value) => void onAutoSave({ quotaDisplay: value })}
+            items={[
+              {
+                value: "left",
+                label: t("settings.general.quotaDisplayLeft"),
+              },
+              {
+                value: "used",
+                label: t("settings.general.quotaDisplayUsed"),
+              },
+            ]}
+          />
+        </div>
+      </section>
+
+      {/* 页头与应用管理 */}
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <h3 className="text-sm font-medium">
+            {t("settings.general.sidebarAndHeader")}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.general.sidebarAndHeaderDescription")}
+          </p>
+        </header>
+        <div className="space-y-3">
+          <ToggleRow
+            icon={<ArrowLeftRight className="h-4 w-4 text-blue-500" />}
+            title={t("settings.appVisibility.showProfileSwitcher")}
+            description={t("settings.appVisibility.showProfileSwitcherDescription")}
+            checked={settings.showProfileSwitcher ?? false}
+            onCheckedChange={(value) =>
+              void onAutoSave({ showProfileSwitcher: value })
             }
           />
-        </SettingsCard>
-      </SettingsBlock>
+          <AppVisibilitySettings
+            settings={settings}
+            onChange={(updates) => void onAutoSave(updates)}
+          />
+        </div>
+      </section>
 
-      <SettingsCard className="p-4">
-        <AppVisibilitySettings
-          settings={settings}
-          onChange={(updates) => void onAutoSave(updates)}
-        />
-      </SettingsCard>
       <SettingsCard className="p-4">
         <SkillsStorageSettings
           inline
@@ -150,29 +193,12 @@ export function GeneralSection({
           onMigrated={onStorageMigrated}
         />
       </SettingsCard>
-      <SettingsCard>
-        <CodexAuthSettings
-          settings={settings}
-          onChange={onAutoSave}
-          codexConfigDir={savedCodexConfigDir}
-        />
-      </SettingsCard>
 
-      <SettingsBlock title={t("settings.general.sidebarAndHeader")}>
-        <SettingsCard>
-          <SettingsSwitchRow
-            label={t("settings.appVisibility.showProfileSwitcher")}
-            help={{
-              title: t("settings.appVisibility.showProfileSwitcher"),
-              body: t("settings.appVisibility.showProfileSwitcherDescription"),
-            }}
-            checked={settings.showProfileSwitcher ?? false}
-            onCheckedChange={(value) =>
-              void onAutoSave({ showProfileSwitcher: value })
-            }
-          />
-        </SettingsCard>
-      </SettingsBlock>
+      <CodexAuthSettings
+        settings={settings}
+        onChange={onAutoSave}
+        codexConfigDir={savedCodexConfigDir}
+      />
 
       <SettingsBlock title={t("settings.general.updates")}>
         <SettingsCard>
@@ -190,34 +216,41 @@ export function GeneralSection({
         </SettingsCard>
       </SettingsBlock>
 
-      <SettingsBlock title={t("settings.general.windowAndTerminal")}>
-        <SettingsCard>
-          <SettingsSwitchRow
-            label={t("settings.launchOnStartup")}
+      {/* 窗口与终端（托盘样式是第四版新增，保留） */}
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <h3 className="text-sm font-medium">
+            {t("settings.general.windowAndTerminal")}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.general.windowAndTerminalDescription")}
+          </p>
+        </header>
+        <div className="space-y-3">
+          <ToggleRow
+            icon={<Power className="h-4 w-4 text-orange-500" />}
+            title={t("settings.launchOnStartup")}
+            description={t("settings.launchOnStartupDescription")}
             checked={!!settings.launchOnStartup}
             onCheckedChange={(value) =>
               void onAutoSave({ launchOnStartup: value })
             }
           />
           {settings.launchOnStartup && (
-            <SettingsSwitchRow
-              label={t("settings.silentStartup")}
-              help={{
-                title: t("settings.silentStartup"),
-                body: t("settings.silentStartupDescription"),
-              }}
+            <ToggleRow
+              icon={<EyeOff className="h-4 w-4 text-green-500" />}
+              title={t("settings.silentStartup")}
+              description={t("settings.silentStartupDescription")}
               checked={!!settings.silentStartup}
               onCheckedChange={(value) =>
                 void onAutoSave({ silentStartup: value })
               }
             />
           )}
-          <SettingsSwitchRow
-            label={t("settings.minimizeToTray")}
-            help={{
-              title: t("settings.minimizeToTray"),
-              body: t("settings.general.minimizeToTrayHelp"),
-            }}
+          <ToggleRow
+            icon={<AppWindow className="h-4 w-4 text-blue-500" />}
+            title={t("settings.minimizeToTray")}
+            description={t("settings.minimizeToTrayDescription")}
             checked={settings.minimizeToTrayOnClose}
             onCheckedChange={(value) =>
               void onAutoSave({ minimizeToTrayOnClose: value })
@@ -225,65 +258,65 @@ export function GeneralSection({
           />
           {/* Linux（AppIndicator）只能出原生菜单，没得选 */}
           {!isLinux() && (
-            <SettingsRow
-              label={t("settings.general.trayStyle")}
-              help={{
-                title: t("settings.general.trayStyle"),
-                body: t("settings.general.trayStyleHelp"),
-              }}
-              control={
-                <SegmentedControl
-                  size="sm"
-                  aria-label={t("settings.general.trayStyle")}
-                  value={settings.nativeTrayMenu ? "menu" : "panel"}
-                  onValueChange={(value) =>
-                    void onAutoSave({ nativeTrayMenu: value === "menu" })
-                  }
-                  items={[
-                    {
-                      value: "panel",
-                      label: t("settings.general.trayStylePanel"),
-                    },
-                    {
-                      value: "menu",
-                      label: t("settings.general.trayStyleMenu"),
-                    },
-                  ]}
-                />
-              }
-            />
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">
+                  {t("settings.general.trayStyle")}
+                </p>
+                <p className="text-xs text-fg-2">
+                  {t("settings.general.trayStyleHelp")}
+                </p>
+              </div>
+              <SegmentedControl
+                size="sm"
+                aria-label={t("settings.general.trayStyle")}
+                value={settings.nativeTrayMenu ? "menu" : "panel"}
+                onValueChange={(value) =>
+                  void onAutoSave({ nativeTrayMenu: value === "menu" })
+                }
+                items={[
+                  {
+                    value: "panel",
+                    label: t("settings.general.trayStylePanel"),
+                  },
+                  {
+                    value: "menu",
+                    label: t("settings.general.trayStyleMenu"),
+                  },
+                ]}
+              />
+            </div>
           )}
           {isLinux() && (
-            <SettingsSwitchRow
-              label={t("settings.useAppWindowControls")}
-              help={{
-                title: t("settings.useAppWindowControls"),
-                body: t("settings.useAppWindowControlsDescription"),
-              }}
+            <ToggleRow
+              icon={<AppWindow className="h-4 w-4 text-amber-500" />}
+              title={t("settings.useAppWindowControls")}
+              description={t("settings.useAppWindowControlsDescription")}
               checked={!!settings.useAppWindowControls}
               onCheckedChange={(value) =>
                 void onAutoSave({ useAppWindowControls: value })
               }
             />
           )}
-          <SettingsRow
-            label={t("settings.terminal.title")}
-            help={{
-              title: t("settings.terminal.title"),
-              body: t("settings.general.terminalHelp"),
-            }}
-            control={
-              <TerminalSelect
-                className="h-8 w-[160px]"
-                value={settings.preferredTerminal}
-                onChange={(terminal) =>
-                  void onAutoSave({ preferredTerminal: terminal })
-                }
-              />
-            }
-          />
-        </SettingsCard>
-      </SettingsBlock>
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {t("settings.terminal.title")}
+              </p>
+              <p className="text-xs text-fg-2">
+                {t("settings.general.terminalHelp")}
+              </p>
+            </div>
+            <TerminalSelect
+              className="h-8 w-[160px]"
+              value={settings.preferredTerminal}
+              onChange={(terminal) =>
+                void onAutoSave({ preferredTerminal: terminal })
+              }
+            />
+          </div>
+        </div>
+      </section>
     </>
   );
 }

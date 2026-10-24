@@ -160,9 +160,6 @@ vi.mock("@/components/settings/sections/RoutingSection", () => ({
 vi.mock("@/components/skills/SkillsStorageSheet", () => ({
   SkillsStorageSettings: () => <div>skills-storage-settings</div>,
 }));
-vi.mock("@/components/settings/GlobalProxySettings", () => ({
-  GlobalProxySettings: () => <div>global-proxy-settings</div>,
-}));
 vi.mock("@/components/settings/CodexAuthSettings", () => ({
   CodexAuthSettings: () => <div>codex-auth-settings</div>,
 }));
@@ -230,12 +227,13 @@ describe("SettingsPage", () => {
         name: "settings.sections.network",
       }),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", {
+    // 全局出站代理已收进 RoutingSection 的手风琴，由该组件自带
+    expect(screen.getByText("routing-section")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
         name: "settings.advanced.globalProxy.title",
       }),
-    );
-    expect(screen.getByText("global-proxy-settings")).toBeInTheDocument();
+    ).not.toBeInTheDocument();
   });
 
   it("saves general switches immediately and links to the Apps page from about", async () => {
@@ -283,16 +281,19 @@ describe("SettingsPage", () => {
     expect(screen.queryByText("codex-auth-settings")).not.toBeInTheDocument();
   });
 
-  it("places outbound proxy beside routing and keeps it out of advanced", () => {
+  it("keeps the outbound proxy out of the page body; RoutingSection owns it", () => {
     const view = renderSettingsPage({ section: "routing" });
     expect(screen.getByText("routing-section")).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", {
+    // 手风琴在 RoutingSection 内部，SettingsPage 不再单独渲染出站代理块
+    expect(
+      screen.queryByRole("button", {
         name: "settings.advanced.globalProxy.title",
       }),
-    );
-    expect(screen.getByText("global-proxy-settings")).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     view.rerenderWith({ section: "data" });
+    expect(
+      screen.getByRole("button", { name: "settings.advanced.cloudSync.title" }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", {
         name: "settings.advanced.globalProxy.title",
