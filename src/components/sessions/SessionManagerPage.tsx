@@ -950,7 +950,7 @@ export function SessionManagerPage({
       {
         <AppPageHeader
           icon={<History className="h-5 w-5" strokeWidth={1.5} />}
-          title={t("nav.sessions", { defaultValue: "会话" })}
+          title={t("sessionManager.title", { defaultValue: "会话管理" })}
           titleExtra={
             <HelpTip
               title={t("sessionManager.helpTitle", {

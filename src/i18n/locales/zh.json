@@ -1285,6 +1285,7 @@
     "routeOnlySettingsHint": "以下两项只在路由模式下生效。"
   },
   "sessionManager": {
+    "title": "会话管理",
     "readerRegion": "会话阅读",
     "selectSession": "请选择会话查看详情",
     "searchPlaceholder": "搜索标题、目录、首末消息或会话 ID",
@@ -2852,6 +2853,7 @@
     }
   },
   "prompts": {
+    "title": "{{appName}} 提示词管理",
     "add": "添加提示词",
     "addTitle": "添加 {{appName}} 提示词",
     "editTitle": "编辑 {{appName}} 提示词",
@@ -3199,6 +3201,7 @@
       "launchFailed": "打开终端失败"
     },
     "memory": {
+      "title": "记忆管理",
       "disabledHint": "在重新启用前 Hermes 会跳过此记忆",
       "toggleFailed": "切换记忆状态失败",
       "saveSuccess": "记忆已保存，Hermes 下次启动或新建会话时生效。",

@@ -936,7 +936,7 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
         ) : undefined
       }
       icon={<SkillsIcon size={20} />}
-      title={view === "discover" ? t("skills.discover") : t("skills.manage")}
+      title={view === "discover" ? t("skills.discover") : t("skills.title")}
       titleExtra={
         <>
           <HelpTip title={t("skillsPage.helpTitle")}>

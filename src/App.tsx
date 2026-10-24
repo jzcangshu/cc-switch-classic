@@ -156,8 +156,6 @@ function App() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // 供应商搜索面板：页头按钮和 ⌘F 都能打开；换应用或离开供应商页就收起
   const [providerSearchOpen, setProviderSearchOpen] = useState(false);
-  const [connectionStatusSlot, setConnectionStatusSlot] =
-    useState<HTMLDivElement | null>(null);
   useEffect(() => {
     setProviderSearchOpen(false);
   }, [activeApp, currentView]);
@@ -1103,13 +1101,9 @@ function App() {
         onOpenClawConfig={(tab) => {
           selectAppPage("openclawConfig", () => setOpenclawConfigTab(tab));
         }}
-        status={
-          <div
-            ref={setConnectionStatusSlot}
-            className="flex min-w-0 items-center"
-          />
-        }
-        hasUpdate={hasUpdate}
+        usageActive={isProxyRunning && isCurrentAppTakeoverActive}
+        onOpenUsage={() => openPage("usage")}
+        onOpenAbout={() => openSettings("about")}
         actions={
           <>
             {currentView === "providers" &&
@@ -1152,10 +1146,12 @@ function App() {
               <Button
                 variant="default"
                 size="icon"
-                aria-label={t("provider.addProvider")}
+                className="w-8 h-8 rounded-full bg-orange-500 hover:bg-orange-600 dark:bg-orange-500 dark:hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 dark:shadow-orange-500/40"
+                aria-label={t("provider.addNewProvider")}
+                title={t("provider.addNewProvider")}
                 onClick={() => openAddProvider(currentModeView)}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="w-5 h-5" />
               </Button>
             )}
           </>
@@ -1198,7 +1194,6 @@ function App() {
         <SwitchModePanel
           key={modeAppId}
           app={modeAppId}
-          statusSlot={connectionStatusSlot}
           providers={providers}
           currentProviderId={currentProviderId}
           isLoading={isLoading}

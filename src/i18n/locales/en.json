@@ -1285,6 +1285,7 @@
     "routeOnlySettingsHint": "The two settings below only apply in routing mode."
   },
   "sessionManager": {
+    "title": "Session Manager",
     "readerRegion": "Session reader",
     "selectSession": "Select a session to view details",
     "searchPlaceholder": "Search titles, folders, first/last messages or session IDs",
@@ -2852,6 +2853,7 @@
     }
   },
   "prompts": {
+    "title": "{{appName}} Prompt Management",
     "add": "Add Prompt",
     "addTitle": "Add {{appName}} Prompt",
     "editTitle": "Edit {{appName}} Prompt",
@@ -3199,6 +3201,7 @@
       "launchFailed": "Failed to open terminal"
     },
     "memory": {
+      "title": "Memory",
       "disabledHint": "Hermes will skip this memory until re-enabled",
       "toggleFailed": "Failed to toggle memory",
       "saveSuccess": "Memory saved. Takes effect when Hermes restarts or starts a new session.",

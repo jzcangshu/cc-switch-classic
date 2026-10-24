@@ -1,6 +1,7 @@
 import { useContext, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  BarChart2,
   Book,
   Brain,
   Cpu,
@@ -20,6 +21,7 @@ import { sharedFeatureAppOf } from "@/lib/navigation";
 import { AppSwitcher } from "@/components/AppSwitcher";
 import { McpIcon } from "@/components/BrandIcons";
 import { RoutingActivationBrand } from "@/components/proxy/RoutingActivationBrand";
+import { UpdateBadge } from "@/components/UpdateBadge";
 import { Button } from "@/components/ui/button";
 import { HoverTip } from "@/components/ui/hover-tip";
 
@@ -40,8 +42,11 @@ interface ClassicHeaderProps {
   onSelectAppPage: (page: AppPage) => void;
   onOpenClawConfig: (tab: "env" | "tools" | "agents") => void;
   actions: ReactNode;
-  status: ReactNode;
-  hasUpdate: boolean;
+  /** 用量入口：当前应用处于路由接管时显示（第三版页头的用量按钮） */
+  usageActive: boolean;
+  onOpenUsage: () => void;
+  /** 有新版本时点更新徽章进设置 → 关于 */
+  onOpenAbout: () => void;
 }
 
 export function ClassicHeader({
@@ -54,8 +59,9 @@ export function ClassicHeader({
   onSelectAppPage,
   onOpenClawConfig,
   actions,
-  status,
-  hasUpdate,
+  usageActive,
+  onOpenUsage,
+  onOpenAbout,
 }: ClassicHeaderProps) {
   const { t } = useTranslation();
   const windowControls = useContext(WindowControlsContext);
@@ -90,16 +96,13 @@ export function ClassicHeader({
             ready={brandReady}
           />
         </span>
-        <div className="relative">
-          {tool(t("common.settings"), <Settings className="h-4 w-4" />, () =>
-            onSelectPage("settings"),
-          )}
-          {hasUpdate && (
-            <span className="pointer-events-none absolute right-1 top-1 h-2 w-2 rounded-full bg-green-500" />
-          )}
-        </div>
+        {tool(t("common.settings"), <Settings className="h-4 w-4" />, () =>
+          onSelectPage("settings"),
+        )}
+        <UpdateBadge onClick={onOpenAbout} />
+        {usageActive &&
+          tool(t("usage.title"), <BarChart2 className="h-4 w-4" />, onOpenUsage)}
       </div>
-      <div className="flex min-w-0 max-w-36 items-center">{status}</div>
       <div className="flex min-w-[100px] flex-1 items-center justify-end overflow-hidden">
         <AppSwitcher
           activeApp={activeApp}

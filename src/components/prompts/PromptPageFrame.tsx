@@ -95,7 +95,7 @@ export function PromptPageFrame({
     <>
       <AppPageHeader
         icon={<BookOpen className="h-[18px] w-[18px]" strokeWidth={2} />}
-        title={t("nav.prompts")}
+        title={t("prompts.title", { appName: t(`apps.${app}`) })}
         titleExtra={
           <HelpTip title={help.title}>{renderSegs(help.text)}</HelpTip>
         }

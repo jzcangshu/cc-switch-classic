@@ -1250,6 +1250,7 @@
     "routeOnlySettingsHint": "Aşağıdaki iki ayar yalnızca yönlendirme modunda geçerlidir."
   },
   "sessionManager": {
+    "title": "Oturum Yönetimi",
     "readerRegion": "Oturum okuyucu",
     "selectSession": "İçeriğini görmek için bir oturum seçin",
     "searchPlaceholder": "Başlıkları, klasörleri, ilk/son mesajları veya oturum kimliklerini arayın",
@@ -2767,6 +2768,7 @@
     }
   },
   "prompts": {
+    "title": "{{appName}} İstem Yönetimi",
     "add": "İstem Ekle",
     "addTitle": "İstem ekle · {{appName}}",
     "editTitle": "{{appName}} istemini düzenle",
@@ -3112,6 +3114,7 @@
       "launchFailed": "Terminal açılamadı"
     },
     "memory": {
+      "title": "Bellek Yönetimi",
       "disabledHint": "Hermes yeniden etkinleştirilene kadar bu belleği atlayacak",
       "toggleFailed": "Bellek değiştirilemedi",
       "saveSuccess": "Bellek kaydedildi. Hermes yeniden başlatıldığında veya yeni bir oturum başlatıldığında etkili olur.",

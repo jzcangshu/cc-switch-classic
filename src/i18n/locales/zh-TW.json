@@ -1286,6 +1286,7 @@
     "routeOnlySettingsHint": "以下兩項只在路由模式下生效。"
   },
   "sessionManager": {
+    "title": "工作階段管理",
     "readerRegion": "對話閱讀",
     "selectSession": "請選擇工作階段檢視詳情",
     "searchPlaceholder": "搜尋標題、目錄、首末訊息或工作階段 ID",
@@ -2853,6 +2854,7 @@
     }
   },
   "prompts": {
+    "title": "{{appName}} 提示詞管理",
     "add": "新增提示詞",
     "addTitle": "新增 {{appName}} 提示詞",
     "editTitle": "編輯 {{appName}} 提示詞",
@@ -3200,6 +3202,7 @@
       "launchFailed": "開啟終端機失敗"
     },
     "memory": {
+      "title": "記憶管理",
       "disabledHint": "在重新啟用前 Hermes 會跳過此記憶",
       "toggleFailed": "切換記憶狀態失敗",
       "saveSuccess": "記憶已儲存，Hermes 下次啟動或建立新工作階段時生效。",

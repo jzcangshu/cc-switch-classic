@@ -1285,6 +1285,7 @@
     "routeOnlySettingsHint": "以下の二つはルーティングモードでのみ有効です。"
   },
   "sessionManager": {
+    "title": "セッション管理",
     "readerRegion": "セッション閲覧",
     "selectSession": "セッションを選択してください",
     "searchPlaceholder": "タイトル・ディレクトリ・最初と最後のメッセージ・セッション ID で検索",
@@ -2852,6 +2853,7 @@
     }
   },
   "prompts": {
+    "title": "{{appName}} プロンプト管理",
     "add": "プロンプトを追加",
     "addTitle": "{{appName}} プロンプトを追加",
     "editTitle": "{{appName}} プロンプトを編集",
@@ -3199,6 +3201,7 @@
       "launchFailed": "ターミナルを開けませんでした"
     },
     "memory": {
+      "title": "メモリ",
       "disabledHint": "再度有効化するまで Hermes はこの記憶をスキップします",
       "toggleFailed": "メモリの切り替えに失敗しました",
       "saveSuccess": "記憶を保存しました。Hermes の再起動または新規セッション時に反映されます。",

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -86,18 +92,10 @@ function renderPanel(
   onSwitch = vi.fn(),
 ) {
   const queryClient = createTestQueryClient();
-  const statusSlot = document.createElement("div");
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <div
-        data-testid="connection-header"
-        ref={(node) => {
-          node?.appendChild(statusSlot);
-        }}
-      />
       <SwitchModePanel
         app={app}
-        statusSlot={statusSlot}
         providers={providers}
         currentProviderId={Object.keys(providers)[0] ?? ""}
         isLoading={false}
@@ -388,8 +386,12 @@ describe("SwitchModePanel — Claude Desktop", () => {
       map: provider("map"),
     });
 
+    // 模式查询读到生效的路由（那格 tab 带圆点）后再继续断言
+    const routeTab = await screen.findByRole("button", {
+      name: /mode\.names\.route/,
+    });
     expect(
-      await screen.findByLabelText("mode.status.routeLead map"),
+      await within(routeTab).findByRole("img", { name: "mode.active" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /mode\.names\.stack/ }),
@@ -802,7 +804,12 @@ describe("SwitchModePanel — mode layer", () => {
     renderPanel("claude", { a: provider("a"), kimi: provider("kimi") });
 
     // 等模式读到了再换页签：生效的模式一变，查看的那格会跳回生效的那格
-    await screen.findByLabelText("mode.status.routeLead a");
+    const routeTab = await screen.findByRole("button", {
+      name: /mode\.names\.route/,
+    });
+    expect(
+      await within(routeTab).findByRole("img", { name: "mode.active" }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /mode\.names\.stack/ }));
     // 默认和路由目标是同一个指针：路由中改它就是当场换路由，只能在切换时的确认框里选
     expect(await screen.findByTestId("menu-setDefault-kimi")).toBeDisabled();
@@ -875,7 +882,7 @@ describe("SwitchModePanel — mode layer", () => {
   });
 
   it.each(["route", "stack"] as const)(
-    "keeps %s status gray when the service runs but the app is detached",
+    "renders no connection status badge when the service runs but the app is detached (%s)",
     async (mode) => {
       mockMode(mode, "a");
       server.use(
@@ -889,17 +896,15 @@ describe("SwitchModePanel — mode layer", () => {
         ),
       );
       renderPanel("claude", { a: provider("a") });
-      await screen.findByLabelText(new RegExp(`mode.status.${mode}Lead`));
+      await screen.findByTestId("card-a");
+      // 第三版页头不带连接状态徽章：分离状态不再渲染任何状态点
       expect(
-        screen.getByTestId("connection-header").querySelector(".bg-fg-3"),
-      ).not.toBeNull();
-      expect(
-        screen.getByTestId("connection-header").querySelector(`.bg-${mode}`),
-      ).toBeNull();
+        screen.queryByLabelText(/mode\.status\./),
+      ).not.toBeInTheDocument();
     },
   );
 
-  it("shows only the route target in the status line, not the local address", async () => {
+  it("does not leak the local proxy address anywhere in the panel", async () => {
     mockMode("route", "route");
     server.use(
       http.post(`${TAURI_ENDPOINT}/get_proxy_status`, () =>
@@ -908,14 +913,9 @@ describe("SwitchModePanel — mode layer", () => {
     );
     renderPanel("gemini", { route: provider("route") });
 
-    expect(
-      await screen.findByLabelText("mode.status.routeLead route"),
-    ).toHaveTextContent("route");
-    expect(screen.getByTestId("connection-header")).toHaveTextContent("route");
-    fireEvent.click(screen.getByRole("button", { name: "mode.names.direct" }));
-    expect(
-      screen.getByLabelText("mode.status.routeLead route"),
-    ).toBeInTheDocument();
+    await screen.findByTestId("card-route");
+    // 徽章随第三版页头一起移除：地址和端口都不再出现
+    expect(screen.queryByLabelText(/mode\.status\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/15721/)).not.toBeInTheDocument();
   });
 });
