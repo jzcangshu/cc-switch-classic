@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "items": [
+    {
+      "type": "new",
+      "zh": "CC Switch Classic 首发版：V4.0.18 内核 + 第三版界面",
+      "zh-TW": "CC Switch Classic 首發版：V4.0.18 核心 + 第三版介面",
+      "en": "CC Switch Classic 1.0.0: the v4.0.18 core with the V3 interface",
+      "ja": "CC Switch Classic 初版：V4.0.18 コア＋第三版UI"
+    },
+    {
+      "type": "new",
+      "zh": "仅 Classic 主版本更新才提示；更新日志只收已跟进的内核变更",
+      "zh-TW": "僅 Classic 主版本更新才提示；更新日誌只收已跟進的核心變更",
+      "en": "Update prompts only for Classic releases; the changelog lists adopted core changes only",
+      "ja": "更新通知はClassic主バージョンのみ。履歴は取り込んだコア変更のみ"
+    },
+    {
+      "type": "improve",
+      "zh": "供应商搜索回到浮动面板（Ctrl+F），Windows 恢复原生标题栏",
+      "zh-TW": "供應商搜尋回到浮動面板（Ctrl+F），Windows 恢復原生標題列",
+      "en": "Provider search returns as the Ctrl+F floating panel; native Windows title bar",
+      "ja": "検索はCtrl+Fのフローティングパネルへ。Windowsはネイティブタイトルバー"
+    }
+  ]
+}

@@ -1,0 +1,474 @@
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/lib/toast";
+import { useTranslation } from "react-i18next";
+import {
+  piApi,
+  providersApi,
+  settingsApi,
+  openclawApi,
+  type AppId,
+} from "@/lib/api";
+import type {
+  Provider,
+  UsageScript,
+  OpenClawProviderConfig,
+  OpenClawDefaultModel,
+} from "@/types";
+import { getOpencodeDeclaredModels } from "@/components/providers/forms/helpers/opencodeFormUtils";
+import type { OpenClawSuggestedDefaults } from "@/config/openclawProviderPresets";
+import type { ProviderEditorSave } from "@/lib/api/providers";
+import { injectCodingPlanUsageScript } from "@/config/codingPlanProviders";
+import {
+  useAddProviderMutation,
+  useUpdateProviderMutation,
+  useDeleteProviderMutation,
+  useSwitchProviderMutation,
+} from "@/lib/query";
+import { usageKeys } from "@/lib/query/usage";
+import { routeSwitchNotification } from "@/utils/routeSwitchNotification";
+import { extractErrorMessage } from "@/utils/errorUtils";
+import { openclawKeys } from "@/hooks/useOpenClaw";
+import { supportsOfficialProxyTakeover } from "@/utils/providerCapabilities";
+import { getRoutingReason } from "@/utils/routingReason";
+import { logFrontendInfo } from "@/lib/frontendLogger";
+
+/**
+ * Hook for managing provider actions (add, update, delete, switch)
+ * Extracts business logic from App.tsx
+ */
+export function useProviderActions(
+  activeApp: AppId,
+  isProxyTakeover?: boolean,
+) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const addProviderMutation = useAddProviderMutation(activeApp);
+  const updateProviderMutation = useUpdateProviderMutation(activeApp);
+  const deleteProviderMutation = useDeleteProviderMutation(activeApp);
+  const switchProviderMutation = useSwitchProviderMutation(activeApp);
+
+  // Claude 插件同步逻辑
+  const syncClaudePlugin = useCallback(
+    async (provider: Provider) => {
+      if (activeApp !== "claude") return;
+
+      try {
+        const settings = await settingsApi.get();
+        if (!settings?.enableClaudePluginIntegration) {
+          return;
+        }
+
+        const isOfficial = provider.category === "official";
+        await settingsApi.applyClaudePluginConfig({ official: isOfficial });
+
+        // 静默执行，不显示成功通知
+      } catch (error) {
+        const detail =
+          extractErrorMessage(error) ||
+          t("notifications.syncClaudePluginFailed", {
+            defaultValue: "同步 Claude 插件失败",
+          });
+        toast.error(detail, { duration: 4200 });
+      }
+    },
+    [activeApp, t],
+  );
+
+  // 添加供应商
+  const addProvider = useCallback(
+    async (
+      provider: Omit<Provider, "id"> & {
+        providerKey?: string;
+        suggestedDefaults?: OpenClawSuggestedDefaults;
+        addToLive?: boolean;
+        ensureClaudeDesktopOfficialSeed?: boolean;
+        ensureGrokBuildOfficialSeed?: boolean;
+        editorSave?: ProviderEditorSave;
+      },
+    ) => {
+      const enhanced = injectCodingPlanUsageScript(activeApp, provider);
+      await addProviderMutation.mutateAsync(enhanced);
+
+      // OpenClaw: register models to allowlist after adding provider
+      if (activeApp === "openclaw" && provider.suggestedDefaults) {
+        const { model, modelCatalog } = provider.suggestedDefaults;
+        let modelsRegistered = false;
+
+        try {
+          // 1. Merge model catalog (allowlist)
+          if (modelCatalog && Object.keys(modelCatalog).length > 0) {
+            const existingCatalog = (await openclawApi.getModelCatalog()) || {};
+            const mergedCatalog = { ...existingCatalog, ...modelCatalog };
+            await openclawApi.setModelCatalog(mergedCatalog);
+            await queryClient.invalidateQueries({
+              queryKey: openclawKeys.health,
+            });
+            modelsRegistered = true;
+          }
+
+          // 2. Set default model (only if not already set)
+          if (model) {
+            const existingDefault = await openclawApi.getDefaultModel();
+            if (!existingDefault?.primary) {
+              await openclawApi.setDefaultModel(model);
+              await queryClient.invalidateQueries({
+                queryKey: openclawKeys.health,
+              });
+            }
+          }
+
+          // Show success toast if models were registered
+          if (modelsRegistered) {
+            toast.success(
+              t("notifications.openclawModelsRegistered", {
+                defaultValue: "模型已注册到 /model 列表",
+              }),
+              { closeButton: true },
+            );
+          }
+        } catch (error) {
+          // Log warning but don't block main flow - provider config is already saved
+          console.warn(
+            "[OpenClaw] Failed to register models to allowlist:",
+            error,
+          );
+        }
+      }
+    },
+    [addProviderMutation, activeApp, queryClient, t],
+  );
+
+  // 更新供应商
+  const updateProvider = useCallback(
+    async (
+      provider: Provider,
+      originalId?: string,
+      editorSave?: ProviderEditorSave,
+    ) => {
+      await updateProviderMutation.mutateAsync({
+        provider,
+        originalId,
+        editorSave,
+      });
+
+      // 更新托盘菜单（失败不影响主操作）
+      try {
+        await providersApi.updateTrayMenu();
+      } catch (trayError) {
+        console.error(
+          "Failed to update tray menu after updating provider",
+          trayError,
+        );
+      }
+    },
+    [updateProviderMutation],
+  );
+
+  // 切换供应商
+  const switchProvider = useCallback(
+    async (provider: Provider, options?: { acknowledgedRouting?: boolean }) => {
+      // 必须开启当前应用的 takeover（只看全局进程会漏判别的应用已接管的情况）。
+      // 确认框 F 里选了「仍然直连切换」的不再重复提醒。
+      const routingReady =
+        isProxyTakeover === true || options?.acknowledgedRouting === true;
+      const proxyRequiredReason = routingReady
+        ? null
+        : getRoutingReason(activeApp, provider, t);
+
+      if (proxyRequiredReason) {
+        logFrontendInfo(
+          `[SWITCH] ${activeApp} 直连切到 ${provider.id}，提示需要路由：${proxyRequiredReason}`,
+        );
+        toast.warning(
+          t("notifications.proxyRequiredForSwitch", {
+            reason: proxyRequiredReason,
+            defaultValue:
+              "此供应商{{reason}}，需要代理服务才能正常使用，请先启动代理",
+          }),
+        );
+      }
+
+      // Codex official account cards can reuse the active native ChatGPT login
+      // through local routing. Other apps' official providers remain blocked.
+      const officialSupportsTakeover = supportsOfficialProxyTakeover(
+        activeApp,
+        provider,
+      );
+      if (
+        isProxyTakeover &&
+        provider.category === "official" &&
+        !officialSupportsTakeover
+      ) {
+        logFrontendInfo(
+          `[SWITCH] ${activeApp} 拒绝切到 ${provider.id}：路由模式下不能切到官方供应商`,
+        );
+        toast.error(
+          t("notifications.officialBlockedByProxy", {
+            defaultValue:
+              "代理接管模式下不能切换到官方供应商，使用代理访问官方 API 可能导致账号被封禁",
+          }),
+          { duration: 6000 },
+        );
+        return;
+      }
+
+      try {
+        const result = await switchProviderMutation.mutateAsync(provider.id);
+        await syncClaudePlugin(provider);
+
+        // Surface switch warnings by code — a generic "backfill failed"
+        // message for an auth-cleanup warning would point the user at the
+        // wrong problem entirely.
+        if (result?.warnings?.length) {
+          const authCleanupFailed = result.warnings.some((warning) =>
+            warning.startsWith("codex_auth_cleanup_failed"),
+          );
+          const hasOtherWarnings = result.warnings.some(
+            (warning) => !warning.startsWith("codex_auth_cleanup_failed"),
+          );
+          if (authCleanupFailed) {
+            toast.warning(
+              t("notifications.codexAuthCleanupFailed", {
+                defaultValue:
+                  "切换成功，但未能删除 auth.json，官方登录凭据仍留在磁盘上；如需彻底移除请手动删除 Codex 配置目录中的 auth.json",
+              }),
+              { duration: 6000 },
+            );
+          }
+          if (hasOtherWarnings) {
+            toast.warning(
+              t("notifications.backfillWarning", {
+                defaultValue:
+                  "切换成功，但旧供应商配置回填失败，您手动修改的配置可能未保存",
+              }),
+              { duration: 5000 },
+            );
+          }
+        }
+
+        // 若已弹过 proxyRequired 警告则不再弹 success
+        if (!proxyRequiredReason) {
+          let messageKey = "notifications.switchSuccess";
+          let defaultMessage = "切换成功！";
+          if (activeApp === "codex") {
+            messageKey = "notifications.codexRestartRequired";
+            defaultMessage = "切换成功，请重启客户端以生效";
+          } else if (activeApp === "gemini") {
+            messageKey = "notifications.geminiRestartRequired";
+            defaultMessage = "切换成功，请重启 Gemini CLI 以生效";
+          } else if (activeApp === "grokbuild") {
+            messageKey = "notifications.grokBuildRestartRequired";
+            defaultMessage = "切换成功，请重启 Grok Build 以生效";
+          } else if (activeApp === "claude-desktop") {
+            // 直连、路由换一家都改了 Desktop 的配置文件，它只在启动时读
+            messageKey = "notifications.claudeDesktopRestartRequired";
+            defaultMessage = "切换成功，重启 Claude Desktop 后生效";
+          } else if (
+            activeApp === "opencode" ||
+            activeApp === "openclaw" ||
+            activeApp === "mcode"
+          ) {
+            messageKey = "notifications.addToConfigSuccess";
+            defaultMessage = "已添加到配置";
+          }
+          const message = result?.route
+            ? routeSwitchNotification(result.route, activeApp, provider.name, t)
+            : t(messageKey, { defaultValue: defaultMessage });
+          toast.success(message, {
+            closeButton: true,
+          });
+        }
+      } catch {
+        // 错误提示由 mutation 处理
+      }
+    },
+    [switchProviderMutation, syncClaudePlugin, activeApp, isProxyTakeover, t],
+  );
+
+  // 删除供应商
+  const deleteProvider = useCallback(
+    async (id: string) => {
+      await deleteProviderMutation.mutateAsync(id);
+    },
+    [deleteProviderMutation],
+  );
+
+  // 保存用量脚本
+  const saveUsageScript = useCallback(
+    async (provider: Provider, script: UsageScript) => {
+      try {
+        const updatedProvider: Provider = {
+          ...provider,
+          meta: {
+            ...provider.meta,
+            usage_script: script,
+          },
+        };
+
+        if (activeApp === "pi") {
+          await piApi.updateProviderUsageScript(provider.id, script);
+        } else {
+          await providersApi.update(updatedProvider, activeApp);
+        }
+        await queryClient.invalidateQueries({
+          queryKey: ["providers", activeApp],
+        });
+        // 🔧 保存用量脚本后，也应该失效该 provider 的用量查询缓存
+        // 这样主页列表会使用新配置重新查询，而不是使用测试时的缓存
+        await queryClient.invalidateQueries({
+          queryKey: usageKeys.script(provider.id, activeApp),
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["subscription", "quota", activeApp],
+        });
+        toast.success(
+          t("provider.usageSaved", {
+            defaultValue: "用量查询配置已保存",
+          }),
+          { closeButton: true },
+        );
+      } catch (error) {
+        const detail =
+          extractErrorMessage(error) ||
+          t("provider.usageSaveFailed", {
+            defaultValue: "用量查询配置保存失败",
+          });
+        toast.error(detail);
+      }
+    },
+    [activeApp, queryClient, t],
+  );
+
+  // OpenCode：只写 opencode.json 顶层 model，small_model 不动
+  const setOpenCodeDefaultModel = useCallback(
+    async (provider: Provider, modelId?: string) => {
+      const modelIds = getOpencodeDeclaredModels(
+        provider.id,
+        provider.settingsConfig,
+      ).map((model) => model.id);
+      if (modelIds.length === 0) {
+        toast.error(
+          t("notifications.openclawNoModels", {
+            defaultValue: "该供应商没有配置模型",
+          }),
+        );
+        return;
+      }
+      const selected = modelId ?? modelIds[0];
+      if (!modelIds.includes(selected)) {
+        toast.error(
+          t("notifications.openclawModelNotFound", {
+            defaultValue: "所选模型已不存在，请刷新后重试",
+          }),
+        );
+        return;
+      }
+
+      try {
+        await providersApi.setOpenCodeDefaultModel(
+          `${provider.id}/${selected}`,
+        );
+        await queryClient.invalidateQueries({
+          queryKey: ["opencodeDefaultModel"],
+        });
+        toast.success(
+          t("notifications.openclawDefaultModelSet", {
+            defaultValue: "已设为默认模型",
+          }),
+          { closeButton: true },
+        );
+      } catch (error) {
+        toast.error(
+          extractErrorMessage(error) ||
+            t("notifications.openclawDefaultModelSetFailed", {
+              defaultValue: "设置默认模型失败",
+            }),
+        );
+      }
+    },
+    [queryClient, t],
+  );
+
+  // Set provider as default model (OpenClaw / OpenCode)
+  const setAsDefaultModel = useCallback(
+    async (provider: Provider, modelId?: string) => {
+      if (activeApp === "opencode") {
+        await setOpenCodeDefaultModel(provider, modelId);
+        return;
+      }
+      const config = provider.settingsConfig as OpenClawProviderConfig;
+      if (!config.models || config.models.length === 0) {
+        toast.error(
+          t("notifications.openclawNoModels", {
+            defaultValue: "该供应商没有配置模型",
+          }),
+        );
+        return;
+      }
+
+      const selectedModel = modelId
+        ? config.models.find((model) => model.id === modelId)
+        : config.models[0];
+      if (!selectedModel) {
+        toast.error(
+          t("notifications.openclawModelNotFound", {
+            defaultValue: "所选模型已不存在，请刷新后重试",
+          }),
+        );
+        return;
+      }
+
+      try {
+        const primary = `${provider.id}/${selectedModel.id}`;
+        const existingDefault = await openclawApi.getDefaultModel();
+        const model: OpenClawDefaultModel = {
+          ...(existingDefault ?? {}),
+          primary,
+        };
+        if (existingDefault?.fallbacks) {
+          model.fallbacks = existingDefault.fallbacks.filter(
+            (fallback) => fallback !== primary,
+          );
+        }
+
+        await openclawApi.setDefaultModel(model);
+        await queryClient.invalidateQueries({
+          queryKey: openclawKeys.defaultModel,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: openclawKeys.health,
+        });
+        toast.success(
+          t("notifications.openclawDefaultModelSet", {
+            defaultValue: "已设为默认模型",
+          }),
+          { closeButton: true },
+        );
+      } catch (error) {
+        const detail =
+          extractErrorMessage(error) ||
+          t("notifications.openclawDefaultModelSetFailed", {
+            defaultValue: "设置默认模型失败",
+          });
+        toast.error(detail);
+      }
+    },
+    [activeApp, queryClient, setOpenCodeDefaultModel, t],
+  );
+
+  return {
+    addProvider,
+    updateProvider,
+    switchProvider,
+    deleteProvider,
+    saveUsageScript,
+    setAsDefaultModel,
+    isLoading:
+      addProviderMutation.isPending ||
+      updateProviderMutation.isPending ||
+      deleteProviderMutation.isPending ||
+      switchProviderMutation.isPending,
+  };
+}

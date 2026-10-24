@@ -1,0 +1,208 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Archive, History, KeyRound } from "lucide-react";
+import { toast } from "@/lib/toast";
+import type { SettingsFormState } from "@/hooks/useSettings";
+import { ToggleRow } from "@/components/ui/toggle-row";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { settingsApi } from "@/lib/api";
+import { formatBytes } from "@/components/settings/BackupStorageSection";
+
+interface CodexAuthSettingsProps {
+  settings: SettingsFormState;
+  /** 返回 false（或 resolve 为 false）表示保存失败；其余返回值视为成功 */
+  onChange: (
+    updates: Partial<SettingsFormState>,
+  ) => void | boolean | Promise<void | boolean>;
+  /** 已保存的 Codex 配置目录覆盖（不是输入框里的草稿）：变了就重读会话压缩状态 */
+  codexConfigDir?: string;
+}
+
+export function CodexAuthSettings({
+  settings,
+  onChange,
+  codexConfigDir,
+}: CodexAuthSettingsProps) {
+  const { t } = useTranslation();
+  const [showEnableConfirm, setShowEnableConfirm] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [hasUnifyBackup, setHasUnifyBackup] = useState(false);
+  // 会话压缩开关以 config.toml 为准，不走设置表单的自动保存
+  const [sessionCompression, setSessionCompression] = useState(false);
+  const [sessionCompressionSaving, setSessionCompressionSaving] =
+    useState(false);
+  const [sessionsBytes, setSessionsBytes] = useState<number | null>(null);
+
+  // 后端按已保存的目录读写 config.toml，同页保存新目录后要跟着重读
+  useEffect(() => {
+    let cancelled = false;
+    setSessionsBytes(null);
+    void settingsApi
+      .getCodexSessionCompression()
+      .catch(() => false)
+      .then((enabled) => {
+        if (!cancelled) setSessionCompression(enabled);
+      });
+    void settingsApi
+      .getCodexSessionsDiskUsage()
+      .catch(() => null)
+      .then((bytes) => {
+        if (!cancelled) setSessionsBytes(bytes);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [codexConfigDir]);
+
+  const handleSessionCompressionChange = async (checked: boolean) => {
+    setSessionCompressionSaving(true);
+    try {
+      setSessionCompression(
+        await settingsApi.setCodexSessionCompression(checked),
+      );
+    } catch (error) {
+      console.error("Failed to toggle codex session compression:", error);
+      toast.error(t("settings.codexSessionCompressionFailed"));
+    } finally {
+      setSessionCompressionSaving(false);
+    }
+  };
+
+  const handleUnifyHistoryChange = (checked: boolean) => {
+    if (checked) {
+      setShowEnableConfirm(true);
+      return;
+    }
+    // 先探测有无迁移备份，决定关闭弹窗是否提供"恢复备份"勾选
+    void settingsApi
+      .hasCodexUnifyHistoryBackup()
+      .catch(() => false)
+      .then((hasBackup) => {
+        setHasUnifyBackup(hasBackup);
+        setShowDisableConfirm(true);
+      });
+  };
+
+  const handleEnableConfirm = (migrateExisting: boolean) => {
+    setShowEnableConfirm(false);
+    void onChange({
+      unifyCodexSessionHistory: true,
+      unifyCodexMigrateExisting: migrateExisting,
+    });
+  };
+
+  // 备份探测可能落后于正在后台进行的迁移（刚勾选迁入就立刻关闭时，
+  // 备份尚未产出）。只要本轮勾选过"迁入既有会话"，就必须提供恢复入口；
+  // 真正有没有账本交给后端 restore 的 skippedReason 判定。
+  const showRestoreOption =
+    hasUnifyBackup || (settings.unifyCodexMigrateExisting ?? false);
+
+  const handleDisableConfirm = async (restoreBackup: boolean) => {
+    setShowDisableConfirm(false);
+    const saved = await onChange({
+      unifyCodexSessionHistory: false,
+      unifyCodexMigrateExisting: false,
+    });
+    // 关闭保存失败时绝不还原：否则开关仍开着（live 仍统一路由），
+    // 已迁移会话却被翻回 openai 桶，历史被拆成两半。
+    if (saved === false) return;
+    // 不再以探测结果短路：还原命令会在迁移锁上排队，等到迁移落盘后
+    // 拿到完整账本；确实无账本时由 skippedReason 提示。
+    if (!restoreBackup) return;
+    try {
+      const result = await settingsApi.restoreCodexUnifiedHistory();
+      if (result.skippedReason) {
+        // unify_toggle_on：还原排队期间开关被重新开启，后端拒绝还原
+        toast.info(
+          result.skippedReason === "unify_toggle_on"
+            ? t("settings.unifyCodexHistoryRestoreSkippedToggleOn")
+            : t("settings.unifyCodexHistoryRestoreNothing"),
+        );
+        return;
+      }
+      toast.success(
+        t("settings.unifyCodexHistoryRestoreCompleted", {
+          files: result.restoredJsonlFiles,
+          rows: result.restoredStateRows,
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to restore codex unified history:", error);
+      toast.error(t("settings.unifyCodexHistoryRestoreFailed"));
+    }
+  };
+
+  // 设置 → 通用 →「Codex 应用增强」小节（第三版小节标题 + 内联灰色说明；经典子 agent
+  // 开关在 Codex 聚合页签的「聚合设置」里；压缩会话是第四版新增，说明同样内联）
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+        <KeyRound className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-medium">{t("settings.codexAuth")}</h3>
+      </div>
+
+      <ToggleRow
+        icon={<KeyRound className="h-4 w-4 text-emerald-500" />}
+        title={t("settings.preserveCodexOfficialAuthOnSwitch")}
+        description={t("settings.preserveCodexOfficialAuthOnSwitchDescription")}
+        checked={settings.preserveCodexOfficialAuthOnSwitch ?? false}
+        onCheckedChange={(value) =>
+          onChange({ preserveCodexOfficialAuthOnSwitch: value })
+        }
+      />
+
+      <ToggleRow
+        icon={<History className="h-4 w-4 text-sky-500" />}
+        title={t("settings.unifyCodexSessionHistory")}
+        description={t("settings.unifyCodexSessionHistoryDescription")}
+        checked={settings.unifyCodexSessionHistory ?? false}
+        onCheckedChange={handleUnifyHistoryChange}
+      />
+
+      <div className="space-y-1">
+        <ToggleRow
+          icon={<Archive className="h-4 w-4 text-amber-500" />}
+          title={t("settings.codexSessionCompression")}
+          description={t("settings.codexSessionCompressionDescription")}
+          checked={sessionCompression}
+          disabled={sessionCompressionSaving}
+          onCheckedChange={(value) => void handleSessionCompressionChange(value)}
+        />
+        {sessionsBytes !== null && (
+          <p className="px-1 text-xs text-fg-3">
+            {t("settings.codexSessionCompressionUsage", {
+              size: formatBytes(sessionsBytes),
+            })}
+          </p>
+        )}
+      </div>
+
+      <ConfirmDialog
+        isOpen={showEnableConfirm}
+        title={t("confirm.unifyCodexHistory.title")}
+        message={t("confirm.unifyCodexHistory.message")}
+        checkboxLabel={t("confirm.unifyCodexHistory.migrateExisting")}
+        confirmText={t("confirm.unifyCodexHistory.confirm")}
+        variant="info"
+        onConfirm={handleEnableConfirm}
+        onCancel={() => setShowEnableConfirm(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showDisableConfirm}
+        title={t("confirm.unifyCodexHistoryOff.title")}
+        message={t("confirm.unifyCodexHistoryOff.message")}
+        checkboxLabel={
+          showRestoreOption
+            ? t("confirm.unifyCodexHistoryOff.restoreBackup")
+            : undefined
+        }
+        checkboxDefaultChecked
+        confirmText={t("confirm.unifyCodexHistoryOff.confirm")}
+        variant="info"
+        onConfirm={(restoreBackup) => void handleDisableConfirm(restoreBackup)}
+        onCancel={() => setShowDisableConfirm(false)}
+      />
+    </section>
+  );
+}

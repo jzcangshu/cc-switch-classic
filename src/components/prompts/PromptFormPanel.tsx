@@ -1,0 +1,315 @@
+import React, { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetDescription,
+  SheetPageContent,
+} from "@/components/ui/sheet";
+import { APP_DISPLAY_NAME } from "@/components/shell/AppGlyph";
+import MarkdownEditor, {
+  type MarkdownEditorHandle,
+} from "@/components/MarkdownEditor";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { useUnsavedChangesTracker } from "@/lib/unsavedChanges";
+import type { Prompt, AppId } from "@/lib/api";
+import { fieldClass } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+  MCODE_PROMPT_LIMIT,
+  charCount,
+  formatSize,
+  promptFileName,
+  utf8Bytes,
+} from "./promptUtils";
+
+interface PromptFormPanelProps {
+  appId: AppId;
+  editingId?: string;
+  initialData?: Prompt;
+  onSave: (id: string, prompt: Prompt) => Promise<void | boolean>;
+  onClose: () => void;
+}
+
+/** 和 Input / Textarea 同一套外观（ui/input.tsx 的 fieldClass） */
+export const promptFieldClass = fieldClass;
+
+export function FieldError({ id, children }: { id: string; children: string }) {
+  return (
+    <span
+      id={id}
+      className="flex items-start gap-1 text-caption text-danger-text"
+    >
+      <CircleAlert
+        aria-hidden="true"
+        strokeWidth={1.5}
+        className="mt-0.5 h-3.5 w-3.5 shrink-0"
+      />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+/**
+ * 第三版的 Markdown 编辑体验，保留第四版保存目标、大小限制及错误定位。
+ */
+const PromptFormPanel: React.FC<PromptFormPanelProps> = ({
+  appId,
+  editingId,
+  initialData,
+  onSave,
+  onClose,
+}) => {
+  const { t } = useTranslation();
+  const baseId = useId();
+  const appName = APP_DISPLAY_NAME[appId];
+  const fileName = promptFileName(appId);
+  const isHermes = appId === "hermes";
+  const isPi = appId === "pi";
+  const isActive = Boolean(editingId && initialData?.enabled);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [content, setContent] = useState("");
+  useUnsavedChangesTracker(true, content !== (initialData?.content ?? ""));
+  const [attempted, setAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<MarkdownEditorHandle>(null);
+  const isDarkMode = useDarkMode();
+
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name);
+      setDescription(initialData.description || "");
+      setContent(initialData.content);
+    }
+  }, [initialData]);
+
+  const bodyBytes = utf8Bytes(content);
+  const limit = appId === "mcode" ? MCODE_PROMPT_LIMIT : undefined;
+  const overLimit = limit !== undefined && bodyBytes > limit;
+  const nameError = !name.trim()
+    ? t(isHermes ? "prompts.nameRequiredHermes" : "prompts.nameRequired")
+    : "";
+  const bodyError = overLimit
+    ? t("prompts.mcodeTooLarge", { size: formatSize(bodyBytes) })
+    : "";
+  const showNameError = attempted && Boolean(nameError);
+  const showBodyError = attempted && Boolean(bodyError);
+
+  const handleSave = async () => {
+    if (savingRef.current) return;
+    if (nameError || bodyError) {
+      setAttempted(true);
+      (nameError ? nameRef : bodyRef).current?.focus();
+      return;
+    }
+
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const id = editingId || `prompt-${Date.now()}`;
+      const timestamp = Math.floor(Date.now() / 1000);
+      const prompt: Prompt = {
+        id,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        content: isPi ? content : content.trim(),
+        enabled: initialData?.enabled || false,
+        createdAt: initialData?.createdAt || timestamp,
+        updatedAt: timestamp,
+      };
+      const saved = await onSave(id, prompt);
+      if (saved !== false) {
+        onClose();
+      }
+    } catch {
+      // Error handled by hook
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!savingRef.current) onClose();
+  };
+
+  const title = editingId
+    ? t("prompts.editTitle", { appName })
+    : t("prompts.addTitle", { appName });
+
+  const writeEffect =
+    editingId && isActive
+      ? isPi
+        ? t("prompts.saveAndWritePi")
+        : t("prompts.saveAndOverwrite", { file: fileName })
+      : undefined;
+
+  const countText = limit
+    ? `${formatSize(bodyBytes)} / 32 KB`
+    : t("prompts.charCount", {
+        chars: charCount(content).toLocaleString(),
+        size: formatSize(bodyBytes),
+      });
+
+  const nameHintId = `${baseId}-name-hint`;
+  const bodyHintId = `${baseId}-body-hint`;
+  const countId = `${baseId}-count`;
+
+  return (
+    <Sheet
+      open
+      modal={false}
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+    >
+      <SheetPageContent
+        title={title}
+        closeLabel={t("common.back")}
+        onEscapeKeyDown={(event) => {
+          if (savingRef.current) event.preventDefault();
+        }}
+      >
+        <SheetDescription className="sr-only">
+          {t("prompts.formDescription", { file: fileName })}
+        </SheetDescription>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto scroll-stable overscroll-contain px-6 pb-6 pt-5">
+          <div className="glass flex flex-1 flex-col gap-6 rounded-xl border border-white/10 p-6">
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <label
+                htmlFor={`${baseId}-name`}
+                className="text-body font-medium text-fg-1"
+              >
+                {t("prompts.name")}
+                <span aria-hidden="true" className="ms-0.5 text-danger-text">
+                  *
+                </span>
+                <span className="sr-only">{t("prompts.requiredMark")}</span>
+              </label>
+              <input
+                ref={nameRef}
+                id={`${baseId}-name`}
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={saving}
+                placeholder={t(
+                  isHermes
+                    ? "prompts.namePlaceholderHermes"
+                    : "prompts.namePlaceholder",
+                )}
+                aria-required="true"
+                aria-invalid={showNameError}
+                aria-describedby={showNameError ? nameHintId : undefined}
+                autoComplete="off"
+                className={cn(promptFieldClass, "h-9")}
+              />
+              {showNameError ? (
+                <FieldError id={nameHintId}>{nameError}</FieldError>
+              ) : null}
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <label
+                htmlFor={`${baseId}-desc`}
+                className="text-body font-medium text-fg-1"
+              >
+                {t("prompts.description")}
+              </label>
+              <input
+                id={`${baseId}-desc`}
+                type="text"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                disabled={saving}
+                placeholder={t("prompts.descriptionPlaceholder")}
+                autoComplete="off"
+                className={cn(promptFieldClass, "h-9")}
+              />
+            </div>
+
+            <div className="flex min-h-[220px] flex-1 flex-col gap-1.5">
+              {writeEffect && (
+                <p className="text-xs text-muted-foreground">{writeEffect}</p>
+              )}
+              <label
+                htmlFor={`${baseId}-body`}
+                id={`${baseId}-body-label`}
+                onClick={() => bodyRef.current?.focus()}
+                className="text-body font-medium text-fg-1"
+              >
+                {t("prompts.content")}
+              </label>
+              <MarkdownEditor
+                ref={bodyRef}
+                id={`${baseId}-body`}
+                value={content}
+                onChange={setContent}
+                readOnly={saving}
+                darkMode={isDarkMode}
+                minHeight="167px"
+                aria-labelledby={`${baseId}-body-label`}
+                placeholder={
+                  isHermes
+                    ? t("prompts.contentPlaceholderHermes")
+                    : t("prompts.contentPlaceholder", {
+                        filename: fileName,
+                        appName,
+                      })
+                }
+                aria-invalid={showBodyError}
+                aria-describedby={
+                  showBodyError ? `${bodyHintId} ${countId}` : countId
+                }
+                className={cn("flex-1", showBodyError && "border-danger")}
+              />
+              <div className="flex items-start gap-3">
+                {showBodyError ? (
+                  <FieldError id={bodyHintId}>{bodyError}</FieldError>
+                ) : null}
+                <span
+                  id={countId}
+                  className={cn(
+                    "ms-auto shrink-0 whitespace-nowrap text-caption tabular-nums",
+                    overLimit ? "text-danger-text" : "text-fg-2",
+                  )}
+                >
+                  {countText}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex h-14 shrink-0 items-center gap-2 border-t border-border px-6">
+          <div className="flex-1" />
+          <Button
+            type="button"
+            variant="neutral"
+            size="regular"
+            onClick={handleClose}
+            disabled={saving}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="solid"
+            size="regular"
+            onClick={() => void handleSave()}
+            disabled={saving}
+          >
+            {saving ? t("common.saving") : t("common.save")}
+          </Button>
+        </div>
+      </SheetPageContent>
+    </Sheet>
+  );
+};
+
+export default PromptFormPanel;

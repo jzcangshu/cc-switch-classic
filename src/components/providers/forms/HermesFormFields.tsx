@@ -1,0 +1,519 @@
+import { useTranslation } from "react-i18next";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { FormLabel } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { ImeSafeInput } from "@/components/ui/ime-safe-input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { HoverTip } from "@/components/ui/hover-tip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/lib/toast";
+import { Download, Plus, Trash2, ChevronRight, Loader2 } from "lucide-react";
+import { ApiKeySection, GptContextWindowHint, ModelDropdown } from "./shared";
+import {
+  fetchModelsForConfig,
+  showFetchModelsError,
+  type FetchedModel,
+} from "@/lib/api/model-fetch";
+import {
+  hermesApiModes,
+  type HermesApiMode,
+  type HermesModel,
+} from "@/config/hermesProviderPresets";
+import type { ProviderCategory } from "@/types";
+import { useCommittableRef } from "@/hooks/useLatestRef";
+import { useModelMetadataFill } from "@/hooks/useModelMetadataFill";
+import { hermesPresetModelSources } from "@/config/presetModelMetadata";
+import { fillHermesModel, metadataFilledAnything } from "./modelMetadataFill";
+
+interface HermesFormFieldsProps {
+  baseUrl: string;
+  onBaseUrlChange: (value: string) => void;
+  apiKey: string;
+  onApiKeyChange: (value: string) => void;
+  category?: ProviderCategory;
+  shouldShowApiKeyLink: boolean;
+  websiteUrl: string;
+  isPartner?: boolean;
+  partnerPromotionKey?: string;
+  apiMode: HermesApiMode;
+  onApiModeChange: (mode: HermesApiMode) => void;
+  models: HermesModel[];
+  onModelsChange: (models: HermesModel[]) => void;
+  rateLimitDelay: number | undefined;
+  onRateLimitDelayChange: (delay: number | undefined) => void;
+}
+
+type BaseUrlErrorCode = "empty" | "invalid" | "scheme";
+
+const BASE_URL_ERROR_I18N_KEY: Record<BaseUrlErrorCode, string> = {
+  empty: "hermes.form.baseUrlRequired",
+  scheme: "hermes.form.baseUrlScheme",
+  invalid: "hermes.form.baseUrlInvalid",
+};
+
+const TEMPLATE_TOKEN_RE = /\$\{[^}]+\}/g;
+
+/**
+ * Hermes 0.10.0+ rejects `base_url` entries that don't parse as proper URLs
+ * (commit 2cdae233). Validate client-side so the error surfaces before the
+ * request ever reaches Hermes' startup.
+ */
+function validateBaseUrl(raw: string): BaseUrlErrorCode | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "empty";
+  // Presets like KAT-Coder embed `${VAR}` tokens — swap them before URL parse.
+  const candidate = trimmed.replace(TEMPLATE_TOKEN_RE, "placeholder");
+  let u: URL;
+  try {
+    u = new URL(candidate);
+  } catch {
+    return "invalid";
+  }
+  if (!u.protocol.startsWith("http")) return "scheme";
+  if (!u.hostname) return "invalid";
+  return null;
+}
+
+export function HermesFormFields({
+  baseUrl,
+  onBaseUrlChange,
+  apiKey,
+  onApiKeyChange,
+  category,
+  shouldShowApiKeyLink,
+  websiteUrl,
+  isPartner,
+  partnerPromotionKey,
+  apiMode,
+  onApiModeChange,
+  models,
+  onModelsChange,
+  rateLimitDelay,
+  onRateLimitDelayChange,
+}: HermesFormFieldsProps) {
+  const { t } = useTranslation();
+  const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(
+    new Set(),
+  );
+  const [fetchedModels, setFetchedModels] = useState<FetchedModel[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [baseUrlTouched, setBaseUrlTouched] = useState(false);
+
+  const baseUrlErrorCode = useMemo(() => validateBaseUrl(baseUrl), [baseUrl]);
+  const showBaseUrlError = baseUrlTouched && baseUrlErrorCode !== null;
+  const baseUrlErrorMessage = baseUrlErrorCode
+    ? t(BASE_URL_ERROR_I18N_KEY[baseUrlErrorCode])
+    : "";
+
+  // Stable list keys: a manual ref rather than UUID-in-state so adding/removing
+  // rows doesn't re-mount unrelated inputs (would drop focus mid-typing).
+  const modelKeysRef = useRef<string[]>([]);
+  while (modelKeysRef.current.length < models.length) {
+    modelKeysRef.current.push(crypto.randomUUID());
+  }
+  if (modelKeysRef.current.length > models.length) {
+    modelKeysRef.current.length = models.length;
+  }
+  const modelKeys = modelKeysRef.current;
+
+  const toggleModelDetails = (modelKey: string) => {
+    setExpandedModelKeys((current) => {
+      const next = new Set(current);
+      if (next.has(modelKey)) next.delete(modelKey);
+      else next.add(modelKey);
+      return next;
+    });
+  };
+
+  const handleAddModel = () => {
+    modelKeysRef.current.push(crypto.randomUUID());
+    onModelsChange([
+      ...models,
+      { id: "", name: "", context_length: undefined },
+    ]);
+  };
+
+  const handleFetchModels = useCallback(() => {
+    if (!baseUrl || !apiKey) {
+      showFetchModelsError(null, t, {
+        hasApiKey: !!apiKey,
+        hasBaseUrl: !!baseUrl,
+      });
+      return;
+    }
+    setIsFetchingModels(true);
+    fetchModelsForConfig(baseUrl, apiKey)
+      .then((fetched) => {
+        setFetchedModels(fetched);
+        if (fetched.length === 0) {
+          toast.info(t("providerForm.fetchModelsEmpty"));
+        } else {
+          toast.success(
+            t("providerForm.fetchModelsSuccess", { count: fetched.length }),
+          );
+        }
+      })
+      .catch((err) => {
+        console.warn("[ModelFetch] Failed:", err);
+        showFetchModelsError(err, t);
+      })
+      .finally(() => setIsFetchingModels(false));
+  }, [baseUrl, apiKey, t]);
+
+  const handleRemoveModel = (index: number) => {
+    const removedKey = modelKeysRef.current[index];
+    modelKeysRef.current.splice(index, 1);
+    const next = [...models];
+    next.splice(index, 1);
+    onModelsChange(next);
+    setExpandedModelKeys((current) => {
+      const updated = new Set(current);
+      updated.delete(removedKey);
+      return updated;
+    });
+  };
+
+  const handleModelChange = (
+    index: number,
+    field: keyof HermesModel,
+    value: unknown,
+  ) => {
+    const next = [...models];
+    next[index] = { ...next[index], [field]: value };
+    onModelsChange(next);
+  };
+
+  // 选中拉取到的模型：改 ID，再补上它已知的上下文长度。
+  // 补全可能晚到，要用最新的列表和回调提交。
+  const [modelsRef, commitModels] = useCommittableRef(models, onModelsChange);
+  const fillModelMetadata = useModelMetadataFill({
+    baseUrl,
+    presets: hermesPresetModelSources,
+    prefetch: fetchedModels.length > 0,
+  });
+  const handleSelectFetchedModel = (index: number, id: string) => {
+    commitModels(
+      modelsRef.current.map((model, i) =>
+        i === index ? { ...model, id } : model,
+      ),
+    );
+    // 补全晚到时这一行可能已经挪了位置（删了上面的行），按行 key 重新找。
+    const rowKey = modelKeysRef.current[index];
+    fillModelMetadata(id, (metadata) => {
+      const at = modelKeysRef.current.indexOf(rowKey);
+      const current = modelsRef.current[at];
+      if (at < 0 || current?.id !== id) return false;
+      const filled = fillHermesModel(current, metadata);
+      if (!metadataFilledAnything(current, filled)) return false;
+      commitModels(
+        modelsRef.current.map((model, i) => (i === at ? filled : model)),
+      );
+      return true;
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <FormLabel htmlFor="hermes-api-mode">
+          {t("hermes.form.apiMode", { defaultValue: "API 模式" })}
+        </FormLabel>
+        <Select
+          value={apiMode}
+          onValueChange={(v) => onApiModeChange(v as HermesApiMode)}
+        >
+          <SelectTrigger id="hermes-api-mode">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {hermesApiModes.map((mode) => (
+              <SelectItem key={mode.value} value={mode.value}>
+                {t(mode.labelKey)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <FormLabel htmlFor="hermes-baseurl">
+          {t("hermes.form.baseUrl", { defaultValue: "API 端点" })}
+        </FormLabel>
+        <ImeSafeInput
+          id="hermes-baseurl"
+          value={baseUrl}
+          onValueChange={onBaseUrlChange}
+          onBlur={() => setBaseUrlTouched(true)}
+          placeholder="https://api.example.com/v1"
+          aria-invalid={showBaseUrlError}
+          className={
+            showBaseUrlError
+              ? "border-destructive focus-visible:ring-destructive"
+              : undefined
+          }
+        />
+        {showBaseUrlError && (
+          <p className="text-xs text-destructive">{baseUrlErrorMessage}</p>
+        )}
+      </div>
+
+      <ApiKeySection
+        value={apiKey}
+        onChange={onApiKeyChange}
+        // Hermes 没有 OAuth-only 的免 key 官方供应商：即便是 official 预设
+        // （如 Nous Research）也需用户自填 key，故不让 official 禁用输入框。
+        category={category === "official" ? undefined : category}
+        shouldShowLink={shouldShowApiKeyLink}
+        websiteUrl={websiteUrl}
+        isPartner={isPartner}
+        partnerPromotionKey={partnerPromotionKey}
+      />
+
+      <div className="space-y-3 border-l border-border pl-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-normal leading-5">
+            {t("hermes.form.models", { defaultValue: "模型列表" })}
+          </h3>
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleFetchModels}
+              disabled={isFetchingModels}
+              className="h-7 gap-1"
+            >
+              {isFetchingModels ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              {t("providerForm.fetchModels")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddModel}
+              className="h-7 gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t("hermes.form.addModel", { defaultValue: "添加模型" })}
+            </Button>
+          </div>
+        </div>
+
+        {models.length === 0 ? (
+          <p className="text-sm text-fg-2 py-2">
+            {t("hermes.form.noModels", {
+              defaultValue: "暂无模型配置。切换到此供应商时将无默认模型。",
+            })}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1 text-xs text-fg-2">
+              <span className="w-9" />
+              <span className="flex-1">
+                {t("hermes.form.modelId", { defaultValue: "模型 ID" })}
+              </span>
+              <span className="flex-1">
+                {t("hermes.form.modelName", { defaultValue: "显示名称" })}
+              </span>
+              <span className="w-9" />
+            </div>
+            {models.map((model, index) => {
+              const modelKey = modelKeys[index];
+              const isExpanded = expandedModelKeys.has(modelKey);
+              const detailsId = `hermes-model-details-${modelKey}`;
+              return (
+                <div key={modelKey} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleModelDetails(modelKey)}
+                      aria-label={t("hermes.form.toggleModelDetails", {
+                        defaultValue: "展开或收起模型详情",
+                      })}
+                      aria-expanded={isExpanded}
+                      aria-controls={detailsId}
+                      className="h-9 w-9 shrink-0"
+                    >
+                      <ChevronRight
+                        className={`h-4 w-4 transition-transform motion-reduce:transition-none ${
+                          isExpanded ? "rotate-90" : ""
+                        }`}
+                      />
+                    </Button>
+                    <div className="flex min-w-0 flex-1 items-center gap-1">
+                      <ImeSafeInput
+                        id={`hermes-model-id-${modelKey}`}
+                        value={model.id}
+                        onValueChange={(value) =>
+                          handleModelChange(index, "id", value)
+                        }
+                        placeholder={t("hermes.form.modelIdPlaceholder", {
+                          defaultValue: "anthropic/claude-opus-5",
+                        })}
+                        aria-label={t("hermes.form.modelId", {
+                          defaultValue: "模型 ID",
+                        })}
+                        className="min-w-0 flex-1"
+                      />
+                      {fetchedModels.length > 0 && (
+                        <ModelDropdown
+                          models={fetchedModels}
+                          onSelect={(id) => handleSelectFetchedModel(index, id)}
+                        />
+                      )}
+                    </div>
+                    <ImeSafeInput
+                      id={`hermes-model-name-${modelKey}`}
+                      value={model.name ?? ""}
+                      onValueChange={(value) =>
+                        handleModelChange(index, "name", value)
+                      }
+                      placeholder={t("hermes.form.modelNamePlaceholder", {
+                        defaultValue: "Claude Opus 5",
+                      })}
+                      aria-label={t("hermes.form.modelName", {
+                        defaultValue: "显示名称",
+                      })}
+                      className="min-w-0 flex-1"
+                    />
+                    <HoverTip
+                      content={t("hermes.form.removeModel", {
+                        defaultValue: "移除模型",
+                      })}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveModel(index)}
+                        aria-label={t("hermes.form.removeModel", {
+                          defaultValue: "移除模型",
+                        })}
+                        className="h-9 w-9 shrink-0 text-fg-2 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </HoverTip>
+                  </div>
+
+                  {isExpanded && (
+                    <div
+                      id={detailsId}
+                      className="ml-9 grid gap-3 border-l border-border pl-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem]"
+                    >
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor={`hermes-model-context-${modelKey}`}
+                          className="text-xs font-normal text-fg-2"
+                        >
+                          {t("hermes.form.contextLength", {
+                            defaultValue: "上下文长度",
+                          })}
+                        </Label>
+                        <Input
+                          id={`hermes-model-context-${modelKey}`}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={model.context_length ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d]/g, "");
+                            handleModelChange(
+                              index,
+                              "context_length",
+                              value ? parseInt(value, 10) : undefined,
+                            );
+                          }}
+                          placeholder="200000"
+                        />
+                        <GptContextWindowHint
+                          modelId={model.id}
+                          contextWindow={model.context_length}
+                        />
+                      </div>
+                      <div className="flex h-9 items-center gap-2.5 self-end">
+                        <Label
+                          htmlFor={`hermes-model-vision-${modelKey}`}
+                          className="cursor-pointer text-xs font-normal text-fg-2"
+                        >
+                          {t("hermes.form.supportsVision", {
+                            defaultValue: "支持图片输入",
+                          })}
+                        </Label>
+                        <Switch
+                          id={`hermes-model-vision-${modelKey}`}
+                          checked={model.supports_vision === true}
+                          onCheckedChange={(checked) =>
+                            // 关掉时删键而不是写 false，交回 Hermes 按目录判断。
+                            handleModelChange(
+                              index,
+                              "supports_vision",
+                              checked ? true : undefined,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-xs text-fg-2">
+          {t("hermes.form.modelsHint", {
+            defaultValue:
+              "启用为当前供应商时，第一个模型会设为 Hermes 默认模型。",
+          })}
+        </p>
+      </div>
+
+      <div className="space-y-2 border-l border-border pl-3">
+        <Label htmlFor="hermes-rate-limit-delay">
+          {t("hermes.form.rateLimitDelay", {
+            defaultValue: "请求间隔（秒）",
+          })}
+        </Label>
+        <Input
+          id="hermes-rate-limit-delay"
+          type="number"
+          step="0.1"
+          min="0"
+          value={rateLimitDelay ?? ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "") {
+              onRateLimitDelayChange(undefined);
+              return;
+            }
+            const n = parseFloat(v);
+            onRateLimitDelayChange(
+              Number.isFinite(n) && n >= 0 ? n : undefined,
+            );
+          }}
+          placeholder="0.5"
+        />
+        <p className="text-xs text-fg-2">
+          {t("hermes.form.rateLimitDelayHint", {
+            defaultValue: "连续请求间的最小间隔秒数（可选）。留空表示无限制。",
+          })}
+        </p>
+      </div>
+    </>
+  );
+}

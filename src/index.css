@@ -1,0 +1,590 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 210 100% 56%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 5% 12%;
+    --foreground: 0 0% 98%;
+    --card: 240 5% 16%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5% 16%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 210 100% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 5% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5% 24%;
+    --input: 240 5% 24%;
+    --ring: 210 100% 54%;
+  }
+  /* 第四版语义色映射到第三版主题；模式、错误、图表仍保留独立含义。 */
+  :root {
+    --bg-app: hsl(var(--background));
+    --bg-sidebar: hsl(var(--muted));
+    --bg-subtle: hsl(var(--muted));
+    --bg-selected: hsl(var(--accent));
+    --bg-card: hsl(var(--card));
+    --border-strong: hsl(var(--border));
+    --text-1: hsl(var(--foreground));
+    --text-2: hsl(var(--muted-foreground));
+    --text-3: hsl(var(--muted-foreground));
+    --action-bg: hsl(var(--primary));
+    --action-fg: hsl(var(--primary-foreground));
+    --action-hover: color-mix(in srgb, hsl(var(--primary)) 85%, black);
+    --action-text: #006bd6;
+    --action-soft: hsl(var(--primary) / 0.1);
+    --inverse-bg: #18181b;
+    --inverse-fg: #ffffff;
+    --inverse-hover: #2e2e33;
+    --overlay: rgba(9, 9, 11, 0.36);
+    --control-off: #888890;
+
+    /* 模式色：直连蓝、路由青绿、聚合紫。--*-border 是当前卡片的边框，等于各自的 fill */
+    --direct-fill: #0a84ff;
+    --direct-text: #0063c7;
+    --direct-soft: #eaf3ff;
+    --direct-solid: #0066cc;
+    --direct-on: #ffffff;
+    --direct-border: var(--direct-fill);
+
+    --route-fill: #0d9488;
+    --route-text: #06726b;
+    --route-soft: #e7f6f4;
+    --route-solid: #0f766e;
+    --route-on: #ffffff;
+    --route-border: var(--route-fill);
+
+    --stack-fill: #7c3aed;
+    --stack-text: #6d28d9;
+    --stack-soft: #f2ecfe;
+    --stack-solid: #6d28d9;
+    --stack-on: #ffffff;
+    --stack-border: var(--stack-fill);
+
+    --success: #16a34a;
+    --success-text: #007634;
+    --success-soft: #e8f7ee;
+    --warning: #d97706;
+    --warning-text: #a64a00;
+    --warning-soft: #fef3c7;
+    --danger: #dc2626;
+    --danger-text: #b91c1c;
+    --danger-soft: #fee2e2;
+    --chart-1: #0891b2;
+    /* 热力图 1–4 档：前三档用 chart-1 保住饱和度，最深档换同色相深一级的 #0e7490。
+       chart-1 是中等亮度，只按浓度混的话最深档不够深，整张图偏淡 */
+    --heat-1: color-mix(in srgb, var(--chart-1) 32%, transparent);
+    --heat-2: color-mix(in srgb, var(--chart-1) 62%, transparent);
+    --heat-3: var(--chart-1);
+    --heat-4: #0e7490;
+    --chart-2: #db2777;
+    --chart-grid: #ececf0;
+
+    /* 会话阅读页的 Agent 主题色：只用于提问竖条和助手 glyph，
+       正文保持中性（决策 D4）。作文字用时对 --bg-app / --bg-subtle 对比度 ≥ 4.5:1 */
+    --agent-claude: #c2613f;
+    --agent-codex: #3f3f46;
+    --agent-gemini: #3367d6;
+    --agent-opencode: #0f766e;
+    --agent-pi: #7c3aed;
+    --agent-generic: var(--text-2);
+    --diff-add-bg: var(--success-soft);
+    --diff-del-bg: var(--danger-soft);
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md:
+      0 4px 12px rgba(16, 24, 40, 0.08), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow-lg:
+      0 20px 40px rgba(16, 24, 40, 0.16), 0 4px 12px rgba(16, 24, 40, 0.08);
+  }
+
+  .dark {
+    --bg-app: hsl(var(--background));
+    --bg-sidebar: hsl(var(--muted));
+    --bg-subtle: hsl(var(--muted));
+    --bg-selected: hsl(var(--accent));
+    --bg-card: hsl(var(--card));
+    --border-strong: hsl(var(--border));
+    /* 三档文字都比纯白压低一截并拉开明度差：太亮时三档都贴近白色，整屏显得刺眼、层次压平。
+       次级、三级对卡片底、选中底（--bg-card / --bg-selected）都 ≥ 4.5:1 */
+    --text-1: hsl(var(--foreground));
+    --text-2: hsl(var(--muted-foreground));
+    --text-3: hsl(var(--muted-foreground));
+
+    --action-bg: hsl(var(--primary));
+    --action-fg: hsl(var(--primary-foreground));
+    --action-hover: color-mix(in srgb, hsl(var(--primary)) 85%, black);
+    --action-text: #409cff;
+
+    --action-soft: hsl(var(--primary) / 0.1);
+    --inverse-bg: #f4f4f5;
+    --inverse-fg: #18181b;
+    --inverse-hover: #e4e4e7;
+    --overlay: rgba(0, 0, 0, 0.55);
+    --control-off: #6f6f77;
+
+    /* 深色模式的模式色压低亮度和饱和度：原来的亮蓝 / 青绿 / 亮紫在深底上太刺眼。
+       浅底用半透明叠加，当前卡片边框用半透明的 fill */
+    --direct-fill: #4a8fd9;
+    --direct-text: #8fb8e6;
+    --direct-soft: rgba(74, 143, 217, 0.12);
+    --direct-solid: #2f6db3;
+    --direct-on: #ffffff;
+    --direct-border: color-mix(in srgb, var(--direct-fill) 50%, transparent);
+
+    --route-fill: #2a9d8f;
+    --route-text: #7cc4ba;
+    --route-soft: rgba(42, 157, 143, 0.12);
+    --route-solid: #1f7d72;
+    --route-on: #ffffff;
+    --route-border: color-mix(in srgb, var(--route-fill) 50%, transparent);
+
+    --stack-fill: #8b74d6;
+    --stack-text: #b5a6e3;
+    --stack-soft: rgba(139, 116, 214, 0.12);
+    --stack-solid: #6a52bf;
+    --stack-on: #ffffff;
+    --stack-border: color-mix(in srgb, var(--stack-fill) 50%, transparent);
+
+    --success: #4ade80;
+    --success-text: #4ade80;
+    --success-soft: #0f2b1a;
+    --warning: #fbbf24;
+    --warning-text: #fcd34d;
+    --warning-soft: #33260a;
+    --danger: #f87171;
+    --danger-text: #fca5a5;
+    --danger-soft: #3a1414;
+    --chart-1: #38bdf8;
+    /* 深色底上越亮越多，chart-1 本身就是最亮档 */
+    --heat-1: color-mix(in srgb, var(--chart-1) 30%, transparent);
+    --heat-2: color-mix(in srgb, var(--chart-1) 50%, transparent);
+    --heat-3: color-mix(in srgb, var(--chart-1) 75%, transparent);
+    --heat-4: var(--chart-1);
+    --chart-2: #f472b6;
+    --chart-grid: #2c2c31;
+
+    --agent-claude: #e08a6a;
+    --agent-codex: #d4d4d8;
+    --agent-gemini: #8ab4f8;
+    --agent-opencode: #5eead4;
+    --agent-pi: #c4b5fd;
+    --agent-generic: var(--text-2);
+    --diff-add-bg: var(--success-soft);
+    --diff-del-bg: var(--danger-soft);
+
+    --shadow-sm:
+      0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* 勾选框 / 单选框（docs/design-system.html「开关 · 勾选」）：不用系统原生外观（各处边框、圆角、深色模式都不一样），
+   统一画成 16px、1.5px border-strong 描边；选中 = 主题色底 + 反色勾（单选 = 粗主题色圈）。
+   原生 <input type="checkbox|radio"> 加 ui-checkbox / ui-radio 即可，Checkbox 组件已经带上。 */
+@layer components {
+  .ui-checkbox,
+  .ui-radio {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-grid;
+    place-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 1.5px solid var(--border-strong);
+    background-color: var(--bg-card);
+    cursor: pointer;
+    transition:
+      background-color 150ms,
+      border-color 150ms;
+  }
+  .ui-checkbox {
+    border-radius: 4px;
+  }
+  .ui-radio {
+    border-radius: 9999px;
+  }
+  .ui-checkbox::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background-color: var(--action-fg);
+    transform: scale(0);
+    transition: transform 120ms ease-out;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  .ui-checkbox:indeterminate::before {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  .ui-checkbox:checked,
+  .ui-checkbox:indeterminate {
+    background-color: var(--action-bg);
+    border-color: var(--action-bg);
+  }
+  .ui-checkbox:checked::before,
+  .ui-checkbox:indeterminate::before {
+    transform: scale(1);
+  }
+  .ui-radio:checked {
+    border: 5px solid var(--action-bg);
+  }
+  .ui-checkbox:hover:not(:disabled):not(:checked):not(:indeterminate),
+  .ui-radio:hover:not(:disabled):not(:checked) {
+    border-color: var(--text-3);
+  }
+  .ui-checkbox:focus-visible,
+  .ui-radio:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  .ui-checkbox:disabled,
+  .ui-radio:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+/* 切换明暗期间暂停所有过渡（theme-provider 加上 theme-switching，两帧后移除） */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card-active {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.dark .glass-card-active {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.glass-header {
+  background: hsl(var(--background));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-top: 2px solid hsl(var(--border));
+}
+
+.dark .glass-header {
+  background: hsl(var(--background));
+  border: none;
+  border-top: 2px solid hsl(var(--border));
+}
+
+/* Windows 使用 Tauri 的事件拖拽。原生拖拽 CSS 会触发 WebView2 的
+   UpdateDraggableRegions，可能导致高 CPU 或挂起 */
+.is-mac [data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-tauri-no-drag],
+[data-tauri-drag-region] .no-drag {
+  -webkit-app-region: no-drag;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  @apply font-sans antialiased;
+  line-height: 1.5;
+  color-scheme: light;
+  overscroll-behavior: none;
+}
+
+body {
+  @apply m-0 p-0 text-sm;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+.status-heartbeat {
+  opacity: 1;
+  transition-property: color, opacity;
+  transition-duration: 150ms, 300ms;
+  transition-timing-function: ease, ease-out;
+}
+
+html[data-window-active="true"][data-status-heartbeat="true"]
+  .status-heartbeat {
+  opacity: 0.5;
+}
+
+html[data-window-active="false"] .status-heartbeat {
+  opacity: 1;
+  transition-duration: 0s;
+}
+
+@keyframes pi-thinking-popover-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(22px, 0, 0) scale(0.94);
+  }
+  68% {
+    opacity: 1;
+    transform: translate3d(-2px, 0, 0) scale(1.008);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pi-thinking-popover-out {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0) scale(0.97);
+  }
+}
+
+.pi-thinking-popover {
+  transform-origin: var(--radix-popover-content-transform-origin);
+  will-change: transform, opacity;
+}
+
+.pi-thinking-popover[data-state="open"] {
+  animation: pi-thinking-popover-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pi-thinking-popover[data-state="closed"] {
+  animation: pi-thinking-popover-out 150ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-heartbeat {
+    opacity: 1;
+    transition-property: color;
+  }
+
+  html[data-window-active="true"][data-status-heartbeat="true"]
+    .status-heartbeat {
+    opacity: 1;
+  }
+
+  .pi-thinking-popover[data-state] {
+    animation: none;
+  }
+}
+
+/* 细滚动条常显：不设 scrollbar-width / scrollbar-color，
+   否则 Chromium（WebView2）会忽略下面的 ::-webkit-scrollbar 样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+  background-color: var(--border-strong);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-3);
+}
+
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* 焦点框只给键盘用户（src/lib/inputModality.ts 在按导航键时给 <html> 加 data-keyboard）。
+   鼠标点过的按钮、页签不画主题色描边，也关掉 Tailwind 的 focus-visible:ring-*。
+   输入框 / 文本域聚焦时的主题色光晕不在这条规则里（它们点进去也算 :focus-visible），照常显示。 */
+html:not([data-keyboard])
+  :is(*:not(input, textarea, select, [contenteditable="true"])):focus-visible,
+html:not([data-keyboard]) button:focus,
+html:not([data-keyboard]) [role="tab"]:focus,
+html:not([data-keyboard]) [tabindex]:focus {
+  outline: none;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 滚动条常显且占 8px：主滚动区、大列表先把这条槽留出来，
+     内容高度跨过能否滚动的临界时整列不会左右横跳。
+     不用 scrollbar-gutter: stable：WKWebView（macOS）对自定义 ::-webkit-scrollbar 不留槽；
+     overflow-y: scroll 两边都留，轨道透明、不能滚时不画滑块，看起来和留槽一样。
+     这条排在 overflow-*-auto 之后，同权重时它生效。 */
+  .scroll-stable {
+    overflow-y: scroll;
+  }
+
+  .border-default {
+    border-width: 1px;
+    border-color: hsl(var(--border));
+  }
+
+  .border-active {
+    border-width: 2px;
+  }
+
+  .border-border-default {
+    border-color: hsl(var(--border));
+  }
+
+  .border-border-active {
+    border-color: hsl(var(--primary));
+  }
+
+  .border-border-hover {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+
+  .border-border-dragging {
+    border-color: hsl(var(--primary) / 0.6);
+  }
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/*
+ * Usage date-range picker popover.
+ *
+ * The two-column layout (date fields | calendar) must depend on how much
+ * width the popover itself actually has — not on the viewport. The popover is
+ * clamped to `100vw - 2rem` and anchored to its trigger, so a viewport-based
+ * breakpoint (e.g. Tailwind `sm:`) could enable the wide layout while the
+ * popover only had room for one column, pushing the calendar off-screen.
+ *
+ * A container query keys the layout to the popover's own inline size. The base
+ * (stacked) layout is the safe fallback when container queries are
+ * unsupported, keeping the calendar fully visible at any width.
+ */
+.usage-range-popover {
+  container-type: inline-size;
+}
+
+@container (min-width: 500px) {
+  .usage-range-layout {
+    flex-direction: row;
+  }
+
+  .usage-range-fields {
+    width: 250px;
+    flex: none;
+  }
+
+  .usage-range-calendar {
+    min-width: 0;
+    flex: 1 1 0%;
+  }
+}
+
+/* 原生拖动只落在留白和标题上，所有顶栏控件仍可操作。 */
+.classic-app header button,
+.classic-app header a,
+.classic-app header input,
+.classic-app header [role="tab"] {
+  -webkit-app-region: no-drag;
+}
