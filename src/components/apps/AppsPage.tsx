@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpCircle,
+  CheckCircle2,
   ChevronDown,
   Copy,
   Download,
@@ -11,6 +12,7 @@ import {
   Loader2,
   MoreHorizontal,
   RefreshCw,
+  Stethoscope,
   Trash2,
 } from "lucide-react";
 import type { AppId } from "@/lib/api";
@@ -24,7 +26,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
-import { HoverTip } from "@/components/ui/hover-tip";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -88,9 +91,8 @@ const ROWS: Row[] = [
   ),
 ];
 
-// 表头和应用行共用列宽；操作列宽取各行按钮和表头量宽按钮的最大值，最后一列是行尾的「⋯」菜单。
-const APP_ROW_GRID =
-  "grid grid-cols-[minmax(0,1fr)_168px_var(--apps-actions-width,0px)_56px_28px] items-center gap-x-4";
+const CARD_CLASS =
+  "flex min-h-[150px] flex-col gap-3 rounded-panel border border-border bg-surface p-4";
 
 function formatCheckedAt(timestamp: number, locale: string): string {
   const date = new Date(timestamp);
@@ -105,35 +107,15 @@ function formatCheckedAt(timestamp: number, locale: string): string {
 }
 
 /**
- * 「应用」页（v7）：每个应用一行 = 安装状态 / 版本 + 安装 / 升级 + 在侧栏显示的开关 + 「⋯」菜单（卸载）。
+ * 「应用」页（第三版卡片网格形态）：每个工具一张圆角卡 = 图标 + 名称 + 环境徽章 +
+ * 「当前版本 / 最新版本」两行 + 「安装 / 升级」按钮；「显示」开关和 ⋯ 菜单
+ * （手动命令、来源与路径、卸载）在卡片右上角。
  * 隐藏一个应用只影响界面（侧栏、MCP / Skills 的列、提示词和会话的下拉），配置照常同步。
  */
 export function AppsPage() {
   const { t, i18n } = useTranslation();
   const tools = useToolManagement();
   const { settings, updateSettings, autoSaveSettings } = useSettings();
-  const tableRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const table = tableRef.current;
-    if (!table) return;
-    const actions = Array.from(
-      table.querySelectorAll<HTMLElement>("[data-tool-actions]"),
-    );
-    const updateActionWidth = () => {
-      const width = Math.max(
-        0,
-        ...actions.map((action) => action.getBoundingClientRect().width),
-      );
-      table.style.setProperty("--apps-actions-width", `${width}px`);
-    };
-    updateActionWidth();
-    // 按钮增减、文案或字体变化时同步整列，避免各行自行收缩后版本列错位。
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(updateActionWidth);
-    actions.forEach((action) => observer.observe(action));
-    return () => observer.disconnect();
-  }, []);
 
   const [showCommands, setShowCommands] = useState(false);
   const [showUninstallCommands, setShowUninstallCommands] = useState(false);
@@ -143,7 +125,7 @@ export function AppsPage() {
   const [expanded, setExpanded] = useState<Partial<Record<ToolName, boolean>>>(
     {},
   );
-  // 「诊断安装冲突」（和升级后的自动补诊）有结果的行自动展开，否则点了诊断看起来没反应
+  // 「诊断安装冲突」（和升级后的自动补诊）有结果的卡片自动展开，否则点了诊断看起来没反应
   const diagnosedTools = Object.keys(tools.toolDiagnostics) as ToolName[];
   useEffect(() => {
     if (diagnosedTools.length === 0) return;
@@ -219,6 +201,26 @@ export function AppsPage() {
             <span className="whitespace-nowrap text-caption text-fg-3">
               {lastChecked}
             </span>
+            <Button
+              variant="quiet"
+              size="regular"
+              className="shrink-0 gap-1.5 text-fg-2"
+              disabled={
+                tools.isLoadingTools ||
+                tools.isAnyBusy ||
+                tools.isDiagnosingAll
+              }
+              onClick={() => void tools.handleDiagnoseAll()}
+            >
+              {tools.isDiagnosingAll ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Stethoscope className="h-3.5 w-3.5" />
+              )}
+              {tools.isDiagnosingAll
+                ? t("settings.toolDiagnosing")
+                : t("settings.toolDiagnose")}
+            </Button>
             {(updatableCount > 0 || tools.batchAction) && (
               <Button
                 variant="neutral"
@@ -269,41 +271,6 @@ export function AppsPage() {
                 </span>
               </span>
             </Button>
-            <DropdownMenu>
-              <HoverTip content={t("common.more")}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="quiet"
-                    size="icon-compact"
-                    className="h-8 w-8"
-                    aria-label={t("appsPage.moreActions")}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </HoverTip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={
-                    tools.isLoadingTools ||
-                    tools.isAnyBusy ||
-                    tools.isDiagnosingAll
-                  }
-                  onSelect={() => void tools.handleDiagnoseAll()}
-                >
-                  {t("settings.toolDiagnose")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setShowCommands(true)}>
-                  {t("appsPage.manualCommands")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-500 focus:text-red-500 dark:text-red-400 dark:focus:text-red-400"
-                  onSelect={() => setShowUninstallCommands(true)}
-                >
-                  {t("settings.manualUninstallCommands")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </>
         }
       />
@@ -312,86 +279,33 @@ export function AppsPage() {
         id="main-content"
         className="min-h-0 flex-1 overflow-y-auto scroll-stable"
       >
-        <div ref={tableRef} className="px-6 pb-10 pt-4">
-          <div
-            className={cn(
-              APP_ROW_GRID,
-              "mx-px h-8 px-4 text-caption font-medium text-fg-2",
-            )}
-          >
-            <span>{t("appsPage.columnApp")}</span>
-            <span className="text-end">{t("appsPage.columnVersion")}</span>
-            {/* 看不见的「安装 / 升级」按钮只用来量宽：操作列始终留出按钮的位置，
-                版本号加载完或检查到新版本、按钮冒出来时，版本列不会被推开。 */}
-            <div
-              data-tool-actions
-              aria-hidden
-              className="invisible grid w-max justify-self-end [&>*]:col-start-1 [&>*]:row-start-1"
-            >
-              <Button variant="neutral" size="compact" tabIndex={-1}>
-                <Download className="h-3.5 w-3.5" />
-                {t("settings.toolInstall")}
-              </Button>
-              <Button variant="neutral" size="compact" tabIndex={-1}>
-                <ArrowUpCircle className="h-3.5 w-3.5" />
-                {t("settings.toolUpdate")}
-              </Button>
-            </div>
-            <span className="flex items-center justify-end gap-0.5">
-              {t("appsPage.columnVisible")}
-              <HelpTip title={t("appsPage.columnVisible")} align="end">
-                {t("appsPage.visibleHelp")}
-              </HelpTip>
-            </span>
-            <span />
-          </div>
-
-          <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
-            {ROWS.map((row) =>
-              row.kind === "desktop" ? (
-                <AppRow
-                  key="claude-desktop"
-                  app="claude-desktop"
-                  name={
-                    <span className="truncate">
-                      {APP_DISPLAY_NAME["claude-desktop"]}
-                    </span>
-                  }
-                  version={
-                    <span className="inline-flex items-center gap-1 text-caption text-fg-2">
-                      {desktopStatus?.supported === false
-                        ? t("appsPage.desktopUnsupported")
-                        : desktopStatus?.configured
-                          ? t("appsPage.desktopConnected")
-                          : t("appsPage.desktopNotConnected")}
-                      <HelpTip
-                        title={APP_DISPLAY_NAME["claude-desktop"]}
-                        align="end"
-                      >
-                        {t("appsPage.desktopHelp")}
-                      </HelpTip>
-                    </span>
-                  }
-                  visibility={visibilitySwitch("claude-desktop")}
-                />
-              ) : (
-                <ToolRow
-                  key={row.tool}
-                  tool={row.tool}
-                  tools={tools}
-                  onUninstall={() => setPendingUninstall(row.tool)}
-                  expanded={expanded[row.tool] ?? false}
-                  onToggleExpanded={() =>
-                    setExpanded((prev) => ({
-                      ...prev,
-                      [row.tool]: !prev[row.tool],
-                    }))
-                  }
-                  visibility={visibilitySwitch(TOOL_APP_IDS[row.tool])}
-                />
-              ),
-            )}
-          </div>
+        <div className="grid gap-3 px-6 pb-10 pt-4 sm:grid-cols-2 xl:grid-cols-3">
+          {ROWS.map((row) =>
+            row.kind === "desktop" ? (
+              <DesktopCard
+                key="claude-desktop"
+                status={desktopStatus}
+                visibility={visibilitySwitch("claude-desktop")}
+              />
+            ) : (
+              <ToolCard
+                key={row.tool}
+                tool={row.tool}
+                tools={tools}
+                onUninstall={() => setPendingUninstall(row.tool)}
+                onOpenInstallCommands={() => setShowCommands(true)}
+                onOpenUninstallCommands={() => setShowUninstallCommands(true)}
+                expanded={expanded[row.tool] ?? false}
+                onToggleExpanded={() =>
+                  setExpanded((prev) => ({
+                    ...prev,
+                    [row.tool]: !prev[row.tool],
+                  }))
+                }
+                visibility={visibilitySwitch(TOOL_APP_IDS[row.tool])}
+              />
+            ),
+          )}
         </div>
       </div>
 
@@ -463,68 +377,64 @@ export function AppsPage() {
   );
 }
 
-function AppRow({
-  app,
-  name,
-  meta,
-  version,
-  action,
+function DesktopCard({
+  status,
   visibility,
-  menu,
-  footer,
 }: {
-  app: AppId;
-  name: React.ReactNode;
-  meta?: React.ReactNode;
-  version?: React.ReactNode;
-  action?: React.ReactNode;
+  status:
+    | Awaited<ReturnType<typeof providersApi.getClaudeDesktopStatus>>
+    | undefined;
   visibility: React.ReactNode;
-  menu?: React.ReactNode;
-  footer?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  const label =
+    status?.supported === false
+      ? t("appsPage.desktopUnsupported")
+      : status?.configured
+        ? t("appsPage.desktopConnected")
+        : t("appsPage.desktopNotConnected");
   return (
-    <div data-tool-row className="px-4 py-3">
-      <div className={cn(APP_ROW_GRID, "min-h-10")}>
-        <div className="flex min-w-0 items-center gap-4">
-          <AppGlyph app={app} size={20} badgeClassName="bg-surface" />
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-1.5 text-strong text-fg-1">
-              {name}
+    <div data-tool-row className={CARD_CLASS}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <AppGlyph
+            app="claude-desktop"
+            size={20}
+            badgeClassName="bg-subtle"
+          />
+          <div className="min-w-0">
+            <div className="truncate text-body font-medium text-fg-1">
+              <span>{APP_DISPLAY_NAME["claude-desktop"]}</span>
             </div>
-            {meta && (
-              <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-caption text-fg-2">
-                {meta}
-              </div>
-            )}
           </div>
         </div>
-        <div className="text-end">{version}</div>
-        <div
-          data-tool-actions
-          className="flex w-max items-center justify-self-end gap-2 [&>button]:shrink-0"
-        >
-          {action}
-        </div>
-        <div className="flex justify-end">{visibility}</div>
-        <div className="flex justify-end">{menu}</div>
+        <div className="flex shrink-0 items-center gap-1.5">{visibility}</div>
       </div>
-      {footer && <div className="ms-9 mt-2">{footer}</div>}
+      <div className="flex items-center gap-1.5 text-caption text-fg-2">
+        <span
+          className={cn(
+            "rounded-[5px] px-1.5 text-badge leading-5",
+            status?.configured
+              ? "bg-success-soft text-success-text"
+              : "bg-subtle text-fg-2",
+          )}
+        >
+          {label}
+        </span>
+        <HelpTip title={APP_DISPLAY_NAME["claude-desktop"]}>
+          {t("appsPage.desktopHelp")}
+        </HelpTip>
+      </div>
     </div>
   );
 }
 
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex h-[18px] shrink-0 items-center rounded-full border border-border-strong px-1.5 text-badge text-fg-2">
-      {children}
-    </span>
-  );
-}
-
-function ToolRow({
+function ToolCard({
   tool,
   tools,
   onUninstall,
+  onOpenInstallCommands,
+  onOpenUninstallCommands,
   expanded,
   onToggleExpanded,
   visibility,
@@ -532,6 +442,8 @@ function ToolRow({
   tool: ToolName;
   tools: ReturnType<typeof useToolManagement>;
   onUninstall: () => void;
+  onOpenInstallCommands: () => void;
+  onOpenUninstallCommands: () => void;
   expanded: boolean;
   onToggleExpanded: () => void;
   visibility: React.ReactNode;
@@ -568,42 +480,27 @@ function ToolRow({
   const sourceLabel = defaultInstall
     ? SOURCE_LABEL[defaultInstall.source]
     : undefined;
-  const envBadge =
-    info?.env_type === "wsl" && ENV_BADGE_CONFIG.wsl
-      ? `${t(ENV_BADGE_CONFIG.wsl.labelKey)}${info.wsl_distro ? ` · ${info.wsl_distro}` : ""}`
-      : null;
+  const envBadgeConfig = info?.env_type
+    ? ENV_BADGE_CONFIG[info.env_type]
+    : undefined;
 
-  const version = isVersionLoading ? (
-    <span
-      role="status"
-      aria-label={t("common.loading")}
-      className="inline-flex justify-end"
-    >
-      <Loader2 className="h-4 w-4 animate-spin text-fg-3" />
-    </span>
-  ) : info?.version ? (
-    <div>
-      <div className="font-mono text-body font-medium tabular-nums text-fg-1">
-        {info.version}
-      </div>
-      {isOutdated && info.latest_version && (
-        <div className="text-caption text-fg-2">
-          {t("appsPage.newVersion", { version: info.latest_version })}
-        </div>
-      )}
-    </div>
-  ) : broken ? (
-    <span className="inline-flex items-center gap-1 text-caption font-medium text-warning-text">
-      <AlertTriangle className="h-3.5 w-3.5" />
-      {t("appsPage.notRunnable")}
-    </span>
-  ) : (
-    <span className="text-caption text-fg-2">{t("common.notInstalled")}</span>
-  );
+  const currentVersion = isVersionLoading
+    ? t("common.loading")
+    : info?.version
+      ? info.version
+      : broken
+        ? t("settings.installedNotRunnable")
+        : t("common.notInstalled");
+  const latestVersion = isVersionLoading
+    ? t("common.loading")
+    : (info?.latest_version ?? t("common.unknown"));
+  const versionTitle = info?.version || info?.error || t("common.unknown");
+
+  const installHint = t(`appsPage.installHint.${tool}`, { defaultValue: "" });
 
   const actionButton = action ? (
     <Button
-      variant="neutral"
+      variant={action === "install" ? "outline" : "default"}
       size="compact"
       onClick={() => void tools.handleRunToolAction([tool], action)}
       disabled={isVersionLoading || isBusy}
@@ -622,38 +519,9 @@ function ToolRow({
     </Button>
   ) : null;
 
-  const installHint = t(`appsPage.installHint.${tool}`, { defaultValue: "" });
-  const meta = defaultInstall ? (
-    <>
-      <span className="min-w-0 truncate font-mono" title={defaultInstall.path}>
-        {defaultInstall.path}
-      </span>
-      {otherInstalls > 0 && (
-        <button
-          type="button"
-          onClick={onToggleExpanded}
-          aria-expanded={expanded}
-          className="inline-flex shrink-0 items-center gap-0.5 font-medium text-warning-text hover:underline"
-        >
-          {t("appsPage.otherInstalls", { count: otherInstalls })}
-          <ChevronDown
-            className={cn(
-              "h-3 w-3 transition-transform",
-              expanded && "rotate-180",
-            )}
-          />
-        </button>
-      )}
-    </>
-  ) : !info?.version && !isVersionLoading ? (
-    <span className="truncate" title={installHint}>
-      {installHint}
-    </span>
-  ) : null;
-
   const wslControls =
     info?.env_type === "wsl" ? (
-      <div className="flex items-center gap-2 text-caption text-fg-2">
+      <div className="flex flex-wrap items-center gap-2 text-caption text-fg-2">
         <span>Shell</span>
         <Select
           value={tools.wslShellByTool[tool]?.wslShell || "auto"}
@@ -730,65 +598,184 @@ function ToolRow({
       </div>
     ) : null;
 
-  const footer =
-    wslControls || errorLine || nodeLine || conflictList ? (
-      <div className="space-y-2">
-        {errorLine}
-        {nodeLine}
-        {wslControls}
-        {conflictList}
-      </div>
-    ) : undefined;
+  const statusIcon = isVersionLoading ? (
+    <Loader2
+      aria-label={t("common.loading")}
+      className="h-4 w-4 animate-spin text-fg-3"
+    />
+  ) : info?.version ? (
+    isOutdated ? (
+      <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] text-yellow-600 dark:text-yellow-400">
+        {t("settings.updateAvailableShort")}
+      </span>
+    ) : (
+      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
+    )
+  ) : broken ? (
+    <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />
+  ) : null;
+
+  const menu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="quiet"
+          size="icon-compact"
+          className="h-8 w-8"
+          aria-label={t("appPage.moreActions", {
+            name: toolDisplayName(tool),
+          })}
+          disabled={busyAction === "uninstall"}
+          aria-busy={busyAction === "uninstall"}
+        >
+          {busyAction === "uninstall" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[200px]">
+        {(sourceLabel || defaultInstall) && (
+          <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
+            <span className="text-caption text-fg-2">
+              {t("appsPage.sourceAndPath")}
+            </span>
+            <span className="font-mono text-caption text-fg-1">
+              {sourceLabel ?? t("common.unknown")}
+            </span>
+            {defaultInstall && (
+              <span
+                className="max-w-[280px] truncate font-mono text-caption text-fg-2"
+                title={defaultInstall.path}
+              >
+                {defaultInstall.path}
+              </span>
+            )}
+          </DropdownMenuLabel>
+        )}
+        <DropdownMenuItem onSelect={onOpenInstallCommands}>
+          {t("appsPage.manualCommands")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onOpenUninstallCommands}>
+          {t("settings.manualUninstallCommands")}
+        </DropdownMenuItem>
+        {canUninstall && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={onUninstall}
+              className="text-danger-text focus:text-danger-text"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("settings.toolUninstall")}
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
-    <AppRow
-      app={TOOL_APP_IDS[tool]}
-      name={
-        <>
-          <span className="truncate">{toolDisplayName(tool)}</span>
-          {sourceLabel && <Pill>{sourceLabel}</Pill>}
-          {envBadge && <Pill>{envBadge}</Pill>}
-        </>
-      }
-      meta={meta}
-      version={version}
-      action={actionButton}
-      visibility={visibility}
-      menu={
-        (canUninstall || busyAction === "uninstall") && (
-          <DropdownMenu>
-            <HoverTip content={t("common.more")}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="quiet"
-                  size="icon-compact"
-                  aria-label={t("appPage.moreActions", {
-                    name: toolDisplayName(tool),
-                  })}
-                  disabled={isVersionLoading || isBusy}
-                  aria-busy={busyAction === "uninstall"}
-                >
-                  {busyAction === "uninstall" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-            </HoverTip>
-            <DropdownMenuContent align="end" className="min-w-[160px]">
-              <DropdownMenuItem
-                onSelect={onUninstall}
-                className="text-danger-text focus:text-danger-text"
+    <div data-tool-row className={CARD_CLASS}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <AppGlyph
+            app={TOOL_APP_IDS[tool]}
+            size={20}
+            badgeClassName="bg-subtle"
+          />
+          <div className="min-w-0">
+            <div className="truncate text-body font-medium text-fg-1">
+              <span>{toolDisplayName(tool)}</span>
+            </div>
+            {envBadgeConfig && (
+              <span
+                className={cn(
+                  "mt-1 inline-flex w-fit rounded-full border px-1.5 py-0.5 text-[9px]",
+                  envBadgeConfig.className,
+                )}
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                {t("settings.toolUninstall")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      }
-      footer={footer}
-    />
+                {t(envBadgeConfig.labelKey)}
+                {info?.env_type === "wsl" && info.wsl_distro
+                  ? ` · ${info.wsl_distro}`
+                  : ""}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {statusIcon}
+          {visibility}
+          {menu}
+        </div>
+      </div>
+
+      <div className="space-y-1.5 text-caption">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-fg-2">{t("settings.currentVersion")}</span>
+          <span
+            className="min-w-0 truncate font-mono text-fg-1"
+            title={versionTitle}
+          >
+            {currentVersion}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-fg-2">{t("settings.latestVersion")}</span>
+          <span className="min-w-0 truncate font-mono text-fg-1">
+            {latestVersion}
+          </span>
+        </div>
+        {!isVersionLoading && !info?.version && !info?.error && installHint && (
+          <div className="truncate text-fg-3" title={installHint}>
+            {installHint}
+          </div>
+        )}
+        {errorLine}
+        {nodeLine}
+      </div>
+
+      {wslControls}
+
+      {(otherInstalls > 0 || conflictList) && (
+        <div className="space-y-2">
+          {otherInstalls > 0 && (
+            <button
+              type="button"
+              onClick={onToggleExpanded}
+              aria-expanded={expanded}
+              className="inline-flex items-center gap-0.5 text-caption font-medium text-warning-text hover:underline"
+            >
+              {t("appsPage.otherInstalls", { count: otherInstalls })}
+              <ChevronDown
+                className={cn(
+                  "h-3 w-3 transition-transform",
+                  expanded && "rotate-180",
+                )}
+              />
+            </button>
+          )}
+          {conflictList}
+        </div>
+      )}
+
+      <div className="mt-auto flex items-center justify-end gap-2">
+        {isVersionLoading ? (
+          <span className="text-caption text-fg-2">{t("common.loading")}</span>
+        ) : broken ? (
+          // 已安装但跑不起来：重装无济于事，不给按钮，给一句指向环境的提示。
+          <span className="text-caption text-warning-text">
+            {t("settings.toolCheckEnv")}
+          </span>
+        ) : action ? (
+          actionButton
+        ) : (
+          <span className="text-caption text-fg-2">
+            {t("settings.toolReady")}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

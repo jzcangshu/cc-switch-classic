@@ -790,6 +790,7 @@ export function SessionReader({
             setFindIndex(1);
           }}
           onStepFind={stepFind}
+          onCopy={onCopy}
           onExportMarkdown={exportMarkdownFile}
         />
         <div className="flex min-h-0 flex-1">

@@ -17,6 +17,7 @@ import {
   X,
   PanelRight,
   Download,
+  Trash2,
 } from "lucide-react";
 
 import { AppGlyph } from "@/components/shell/AppGlyph";
@@ -341,24 +342,6 @@ export const SessionReaderHeader = memo(function SessionReaderHeader({
         <DropdownMenuItem className={sessionMenuItemClass} onSelect={onReload}>
           {t("sessionManager.reload", { defaultValue: "重新读取" })}
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className={cn(
-            sessionMenuItemClass,
-            deletable ? "text-danger-text" : "text-fg-3",
-          )}
-          disabled={!deletable}
-          onSelect={onDelete}
-        >
-          {t("sessionManager.deleteEllipsis", { defaultValue: "删除…" })}
-        </DropdownMenuItem>
-        {!deletable && session.providerId === "mcode" && (
-          <p className="px-2.5 pb-1.5 text-caption text-fg-2">
-            {t("sessionManager.mcodeDeleteHint", {
-              defaultValue: "请在 MiniMax Code 中删除",
-            })}
-          </p>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -441,6 +424,31 @@ export const SessionReaderHeader = memo(function SessionReaderHeader({
           </div>
           {resume}
           {moreMenu}
+          {/* 常驻红色删除按钮（第三版详情头部形态），避免与更多菜单形成双入口 */}
+          <HoverTip
+            content={
+              deletable
+                ? t("sessionManager.deleteTooltip", {
+                    defaultValue: "永久删除此本地会话记录",
+                  })
+                : t("sessionManager.mcodeDeleteHint", {
+                    defaultValue: "请在 MiniMax Code 中删除",
+                  })
+            }
+          >
+            <Button
+              variant="destructive"
+              size="regular"
+              className="shrink-0 gap-1.5 rounded-lg px-3"
+              disabled={!deletable}
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+              <span className="hidden sm:inline">
+                {t("sessionManager.delete", { defaultValue: "删除会话" })}
+              </span>
+            </Button>
+          </HoverTip>
         </>
       }
     />
@@ -496,6 +504,8 @@ export interface SessionReaderToolbarProps {
   onCloseFind: () => void;
   onFindQueryChange: (query: string) => void;
   onStepFind: (delta: number) => void;
+  /** 复制文本并弹 toast（恢复命令预览条用） */
+  onCopy: (text: string, message: string) => void;
   /** 导出为 Markdown 文件（和查找、显示选项放在同一行） */
   onExportMarkdown: () => void;
 }
@@ -571,6 +581,7 @@ export const SessionReaderToolbar = memo(function SessionReaderToolbar({
   onCloseFind,
   onFindQueryChange,
   onStepFind,
+  onCopy,
   onExportMarkdown,
 }: SessionReaderToolbarProps) {
   const { t } = useTranslation();
@@ -834,6 +845,38 @@ export const SessionReaderToolbar = memo(function SessionReaderToolbar({
           </div>
         )}
       </div>
+
+      {/* 恢复命令预览（第三版详情区形态）：等宽完整命令 + 复制按钮 */}
+      {session.resumeCommand && (
+        <div className="mb-1 mt-1.5 flex items-center gap-2">
+          <div className="min-w-0 flex-1 truncate rounded-md bg-subtle px-3 py-1.5 font-mono text-caption text-fg-2">
+            {session.resumeCommand}
+          </div>
+          <HoverTip
+            content={t("sessionManager.copyCommand", {
+              defaultValue: "复制命令",
+            })}
+          >
+            <button
+              type="button"
+              aria-label={t("sessionManager.copyCommand", {
+                defaultValue: "复制命令",
+              })}
+              onClick={() =>
+                onCopy(
+                  session.resumeCommand!,
+                  t("sessionManager.resumeCommandCopied", {
+                    defaultValue: "恢复命令已复制",
+                  }),
+                )
+              }
+              className={cn(readerIconButton, "h-8 w-8")}
+            >
+              <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
+          </HoverTip>
+        </div>
+      )}
 
       {noResumeReason && (
         <p id="session-resume-note" className="m-0 mb-1 text-caption text-fg-2">

@@ -258,7 +258,7 @@ describe("UsageDashboard (smoke)", () => {
     expect(screen.getByText("$1.32")).toBeInTheDocument();
     expect(screen.getByText("$0.044")).toBeInTheDocument();
     expect(
-      await screen.findByText("usage.pricing.modelsDevTitle"),
+      await screen.findByText("usage.modelsDevAutoSync.title"),
     ).toBeInTheDocument();
   });
 });

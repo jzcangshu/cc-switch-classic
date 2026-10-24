@@ -352,7 +352,9 @@ describe("UsageDashboard", () => {
     expect(
       screen.getByRole("button", { name: "Claude Code" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Codex/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Codex" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Gemini/, pressed: true }),
     ).toBeInTheDocument();
@@ -444,8 +446,9 @@ describe("UsageDashboard", () => {
     await waitFor(() =>
       expect(usageApiMock.syncSessionUsage).toHaveBeenCalledTimes(1),
     );
+    // 页头与数据来源卡各有一个「立即同步」按钮，这里点页头的（DOM 顺序在前）
     await user.click(
-      screen.getByRole("button", { name: "usage.sessionSync.syncNow" }),
+      screen.getAllByRole("button", { name: "usage.sessionSync.syncNow" })[0],
     );
 
     await waitFor(() =>
@@ -483,8 +486,9 @@ describe("UsageDashboard", () => {
       ),
     );
 
+    // 页头与数据来源卡各有一个「立即同步」按钮，这里点页头的（DOM 顺序在前）
     await user.click(
-      screen.getByRole("button", { name: "usage.sessionSync.syncNow" }),
+      screen.getAllByRole("button", { name: "usage.sessionSync.syncNow" })[0],
     );
 
     await waitFor(() =>
@@ -634,13 +638,12 @@ describe("UsageDashboard", () => {
     expect(logsTab).toHaveFocus();
   });
 
-  it("toggles session scanning and links to routing settings from the data sources drawer", async () => {
+  it("toggles session scanning and links to routing settings from the inline data source cards", async () => {
     const user = userEvent.setup();
     const onSessionAutoSyncEnabledChange = vi.fn();
     const onOpenRoutingSettings = vi.fn();
     renderDashboard({ onSessionAutoSyncEnabledChange, onOpenRoutingSettings });
 
-    await user.click(screen.getByRole("button", { name: "usage.dataSources" }));
     await user.click(
       await screen.findByRole("switch", { name: "usage.sources.scanTitle" }),
     );

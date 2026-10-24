@@ -127,7 +127,7 @@ function isReady(name: string) {
   return (
     card(name).queryByRole("button", {
       name: /settings\.tool(Update|Install)/,
-    }) === null && card(name).queryByText("2.0.0") !== null
+    }) === null && card(name).queryAllByText("2.0.0").length > 0
   );
 }
 
@@ -257,9 +257,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     );
     const user = userEvent.setup();
     await renderApps();
-    await user.click(
-      screen.getByRole("button", { name: "appsPage.moreActions" }),
-    );
+    await user.click(rowMenu("Claude Code"));
     await user.click(
       await screen.findByRole("menuitem", {
         name: "settings.manualUninstallCommands",
@@ -305,9 +303,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     await user.click(dialog.getByRole("button", { name: "common.close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "appsPage.moreActions" }),
-    );
+    await user.click(rowMenu("Claude Code"));
     await user.click(
       await screen.findByRole("menuitem", { name: "appsPage.manualCommands" }),
     );
@@ -327,9 +323,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
       try {
         const user = userEvent.setup();
         await renderApps();
-        await user.click(
-          screen.getByRole("button", { name: "appsPage.moreActions" }),
-        );
+        await user.click(rowMenu("Claude Code"));
         await user.click(
           await screen.findByRole("menuitem", {
             name: "settings.manualUninstallCommands",
@@ -363,9 +357,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     mocks.copyText.mockRejectedValueOnce(new Error("clipboard unavailable"));
     const user = userEvent.setup();
     await renderApps();
-    await user.click(
-      screen.getByRole("button", { name: "appsPage.moreActions" }),
-    );
+    await user.click(rowMenu("Claude Code"));
     await user.click(
       await screen.findByRole("menuitem", {
         name: "settings.manualUninstallCommands",
@@ -391,9 +383,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     try {
       const user = userEvent.setup();
       await renderApps();
-      await user.click(
-        screen.getByRole("button", { name: "appsPage.moreActions" }),
-      );
+      await user.click(rowMenu("Claude Code"));
       await user.click(
         await screen.findByRole("menuitem", {
           name: "settings.manualUninstallCommands",
@@ -467,9 +457,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
       const user = userEvent.setup();
       const { AppsPage } = await import("@/components/apps/AppsPage");
       mountApps(AppsPage);
-      await user.click(
-        screen.getByRole("button", { name: "appsPage.moreActions" }),
-      );
+      await user.click(rowMenu("Claude Code"));
       await user.click(
         await screen.findByRole("menuitem", {
           name: "settings.manualUninstallCommands",
@@ -590,6 +578,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
 
   it("offers uninstall for installed tools and keeps missing tools installable", async () => {
     missing.add("codex");
+    const user = userEvent.setup();
     await renderApps();
     expect(
       card("Claude Code").getByRole("button", {
@@ -601,11 +590,13 @@ describe("AppsPage concurrent CLI upgrades", () => {
         name: "appPage.moreActions",
       }),
     ).toBeEnabled();
+    await user.click(
+      card("Codex").getByRole("button", { name: "appPage.moreActions" }),
+    );
     expect(
-      card("Codex").queryByRole("button", {
-        name: "appPage.moreActions",
-      }),
+      screen.queryByRole("menuitem", { name: "settings.toolUninstall" }),
     ).toBeNull();
+    await user.keyboard("{Escape}");
     expect(
       card("Codex").getByRole("button", { name: "settings.toolInstall" }),
     ).toBeEnabled();
@@ -781,9 +772,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     );
     const user = userEvent.setup();
     await renderApps();
-    await user.click(
-      screen.getByRole("button", { name: "appsPage.moreActions" }),
-    );
+    await user.click(rowMenu("Claude Code"));
     await user.click(
       await screen.findByRole("menuitem", {
         name: "settings.manualUninstallCommands",
@@ -820,6 +809,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
       },
     );
     const view = await renderApps();
+    const user = userEvent.setup();
     const uninstall = () => rowMenu("Claude Code");
     await openUninstall("Claude Code");
     expect(mocks.runToolLifecycleAction).not.toHaveBeenCalled();
@@ -851,11 +841,14 @@ describe("AppsPage concurrent CLI upgrades", () => {
     expect(uninstall()).toBeDisabled();
     expect(uninstall()).toHaveAttribute("aria-busy", "true");
     await act(async () => running.resolve());
+    // 卡片 ⋯ 菜单常驻（手动命令入口）；卸载完成后菜单里不再有卸载项
+    await user.click(
+      card("Claude Code").getByRole("button", { name: "appPage.moreActions" }),
+    );
     expect(
-      card("Claude Code").queryByRole("button", {
-        name: "appPage.moreActions",
-      }),
+      screen.queryByRole("menuitem", { name: "settings.toolUninstall" }),
     ).toBeNull();
+    await user.keyboard("{Escape}");
     expect(
       card("Claude Code").getByRole("button", { name: "settings.toolInstall" }),
     ).toBeEnabled();
@@ -1104,9 +1097,15 @@ describe("AppsPage concurrent CLI upgrades", () => {
         },
       ),
     );
+    // 来源与路径收进了卡片 ⋯ 菜单：从菜单里看剩余安装的路径
+    const user = userEvent.setup();
+    await user.click(
+      card("Claude Code").getByRole("button", { name: "appPage.moreActions" }),
+    );
     expect(
-      card("Claude Code").getByText("C:/remaining/claude.exe"),
+      await screen.findByText("C:/remaining/claude.exe"),
     ).toBeInTheDocument();
+    await user.keyboard("{Escape}");
     expect(
       card("Claude Code").getByRole("button", {
         name: "appPage.moreActions",
@@ -1900,10 +1899,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
     expect(screen.queryByText("/opt/homebrew/bin/claude")).toBeNull();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "appsPage.moreActions" }),
-    );
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "settings.toolDiagnose" }),
+      screen.getByRole("button", { name: "settings.toolDiagnose" }),
     );
 
     // 冲突列表直接在行里展开，入口「另有 1 处安装」也刷新出来，并有一条提示

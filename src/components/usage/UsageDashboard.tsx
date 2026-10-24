@@ -6,7 +6,6 @@ import {
   Check,
   ChartColumn,
   ChevronDown,
-  Database,
   Loader2,
   RefreshCw,
 } from "lucide-react";
@@ -53,7 +52,7 @@ import { ProviderStatsTable } from "./ProviderStatsTable";
 import { ModelStatsTable } from "./ModelStatsTable";
 import { PricingConfigPanel } from "./PricingConfigPanel";
 import { RequestDetailPanel } from "./RequestDetailPanel";
-import { UsageDataSourcesSheet } from "./UsageDataSourcesSheet";
+import { UsageDataSourcesCards } from "./UsageDataSourcesSheet";
 import { UsageDisplaySection } from "./UsageDisplaySection";
 import { resolveRequestLogColumns } from "./requestLogColumns";
 import type { UsageDisplaySettings } from "@/types";
@@ -226,7 +225,6 @@ export function UsageDashboard({
     normalizeRefreshInterval(savedRefreshIntervalMs),
   );
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
   const [showRebuildConfirm, setShowRebuildConfirm] = useState(false);
   const [rebuildingCodex, setRebuildingCodex] = useState(false);
   const [syncingSession, setSyncingSession] = useState(false);
@@ -433,7 +431,7 @@ export function UsageDashboard({
   const syncTip = sessionAutoSyncEnabled
     ? t("usage.syncStatus.tipAuto")
     : t("usage.syncStatus.tipOff");
-  const drawerSyncedLabel =
+  const sourcesSyncedLabel =
     lastSyncAt == null
       ? undefined
       : t("usage.sources.lastSynced", {
@@ -504,18 +502,23 @@ export function UsageDashboard({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      <Button
-        type="button"
-        variant="quiet"
-        size="regular"
-        className="shrink-0 gap-1.5 ps-2.5 text-fg-2"
-        aria-haspopup="dialog"
-        onClick={() => setSourcesOpen(true)}
-      >
-        <Database className="h-3.5 w-3.5" />
-        {t("usage.dataSources")}
-      </Button>
     </>
+  );
+
+  // 数据来源卡（第三版形态）：页面主体直显，不再走抽屉
+  const sourcesCards = (
+    <UsageDataSourcesCards
+      sessionAutoSyncEnabled={sessionAutoSyncEnabled}
+      onSessionAutoSyncEnabledChange={(value) =>
+        void onSessionAutoSyncEnabledChange?.(value)
+      }
+      syncedLabel={sourcesSyncedLabel}
+      syncing={syncingSession}
+      onSyncNow={() => void runManualSessionSync()}
+      onOpenRoutingSettings={onOpenRoutingSettings}
+      rebuildingCodex={rebuildingCodex}
+      onRebuildCodex={() => setShowRebuildConfirm(true)}
+    />
   );
 
   // ── 筛选行 ───────────────────────────────────────────────────────────
@@ -826,6 +829,7 @@ export function UsageDashboard({
         className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto scroll-stable px-6 pb-6 pt-1"
       >
         {tabsSection}
+        {sourcesCards}
       </div>
     ) : isEmpty ? (
       <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto scroll-stable px-6 pb-6">
@@ -899,6 +903,7 @@ export function UsageDashboard({
         )}
 
         {tabsSection}
+        {sourcesCards}
       </div>
     );
 
@@ -925,20 +930,6 @@ export function UsageDashboard({
       <RequestDetailPanel
         requestId={detailRequestId}
         onClose={() => setDetailRequestId(null)}
-      />
-      <UsageDataSourcesSheet
-        open={sourcesOpen}
-        onOpenChange={setSourcesOpen}
-        sessionAutoSyncEnabled={sessionAutoSyncEnabled}
-        onSessionAutoSyncEnabledChange={(value) =>
-          void onSessionAutoSyncEnabledChange?.(value)
-        }
-        syncedLabel={drawerSyncedLabel}
-        syncing={syncingSession}
-        onSyncNow={() => void runManualSessionSync()}
-        onOpenRoutingSettings={onOpenRoutingSettings}
-        rebuildingCodex={rebuildingCodex}
-        onRebuildCodex={() => setShowRebuildConfirm(true)}
       />
       <ConfirmDialog
         isOpen={showRebuildConfirm}

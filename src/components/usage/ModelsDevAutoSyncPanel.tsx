@@ -6,12 +6,10 @@ import {
   Check,
   FolderOpen,
   Loader2,
-  MoreHorizontal,
   RefreshCw,
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HoverTip } from "@/components/ui/hover-tip";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   Dialog,
@@ -32,14 +30,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Notice } from "@/components/ui/notice";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { settingsApi } from "@/lib/api/settings";
 import { usageApi } from "@/lib/api/usage";
 import {
@@ -441,8 +431,8 @@ function AutoSyncDialog({ state, onClose, onSaved }: AutoSyncDialogProps) {
 }
 
 /**
- * 定价页签第一行（v7 S6）：models.dev 同步状态 + 选择模型 + 立即同步；
- * 开关、本地定价文件（打开目录 / 重新加载）收进右侧和 ⋯ 菜单。
+ * models.dev 自动同步整卡（第三版形态）：标题描述 + 开关、上次同步一行、
+ * 本地定价文件路径，底部 打开目录 / 重新加载文件 / 选择模型 / 立即同步 四个按钮。
  */
 export function ModelsDevAutoSyncPanel() {
   const { t, i18n } = useTranslation();
@@ -582,111 +572,41 @@ export function ModelsDevAutoSyncPanel() {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-panel bg-subtle px-4 py-2.5">
-          <RefreshCw
-            aria-hidden="true"
-            className="h-4 w-4 shrink-0 text-fg-2"
-            strokeWidth={1.5}
-          />
-          <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex flex-col gap-3 rounded-panel border border-border px-4 py-3.5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-0.5">
-              <span className="truncate text-body font-semibold text-fg-1">
-                {t("usage.pricing.modelsDevTitle", {
-                  status: enabled
-                    ? t("usage.modelsDevAutoSync.enabled")
-                    : t("usage.modelsDevAutoSync.disabled"),
-                })}
-              </span>
+              <h3 className="m-0 truncate text-strong font-semibold text-fg-1">
+                {t("usage.modelsDevAutoSync.title")}
+              </h3>
               <HelpTip title={t("usage.pricing.modelsDevHelpTitle")}>
                 {t("usage.pricing.modelsDevHelp")}
               </HelpTip>
             </div>
-            <span
-              className="truncate text-caption text-fg-2"
-              title={lastSyncTitle}
-            >
-              {data.config.includeCommonModels
-                ? `${lastSync} · ${t("usage.pricing.commonIncluded")}`
-                : lastSync}
-            </span>
+            <p className="m-0 text-caption text-fg-2">
+              {t("usage.modelsDevAutoSync.description")}
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <span className="text-caption text-fg-2">
+              {enabled
+                ? t("usage.modelsDevAutoSync.enabled")
+                : t("usage.modelsDevAutoSync.disabled")}
+            </span>
             <Switch
               checked={enabled}
               disabled={isSaving}
               onCheckedChange={handleAutoSyncChange}
               aria-label={t("usage.modelsDevAutoSync.title")}
             />
-            <Button
-              type="button"
-              variant="quiet"
-              size="compact"
-              onClick={() => setIsDialogOpen(true)}
-            >
-              {t("usage.modelsDevAutoSync.configure")}
-            </Button>
-            <Button
-              type="button"
-              variant="neutral"
-              size="compact"
-              onClick={() => void syncNow()}
-              disabled={isSyncing}
-            >
-              {isSyncing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {t("usage.modelsDevAutoSync.syncNow")}
-            </Button>
-            <DropdownMenu>
-              <HoverTip content={t("common.more")}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="quiet"
-                    size="icon-compact"
-                    aria-label={t("usage.pricing.moreActions")}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </HoverTip>
-              <DropdownMenuContent
-                align="end"
-                className="min-w-[220px] max-w-[320px] rounded-panel border-border bg-surface shadow-v7-md"
-              >
-                <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
-                  <span className="text-caption text-fg-2">
-                    {t("usage.modelsDevAutoSync.localFile")}
-                  </span>
-                  <span
-                    className="truncate font-mono text-caption text-fg-1"
-                    title={data.configPath}
-                  >
-                    {data.configPath}
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-body"
-                  onSelect={() => void openLocalFileFolder()}
-                >
-                  <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-                  {t("usage.modelsDevAutoSync.openFolder")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-body"
-                  disabled={isReloading}
-                  onSelect={() => void reloadLocalFile()}
-                >
-                  {isReloading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
-                  )}
-                  {t("usage.modelsDevAutoSync.reloadLocalFile")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
+        </div>
+
+        <div className="text-caption text-fg-2" title={lastSyncTitle}>
+          {t("usage.modelsDevAutoSync.lastSync")}:{" "}
+          {data.config.includeCommonModels
+            ? `${lastSync} · ${t("usage.pricing.commonIncluded")}`
+            : lastSync}
         </div>
 
         {data.config.lastSyncError && (
@@ -697,6 +617,66 @@ export function ModelsDevAutoSyncPanel() {
             })}
           />
         )}
+
+        <div className="rounded-control bg-subtle px-3 py-2">
+          <div className="text-caption text-fg-2">
+            {t("usage.modelsDevAutoSync.localFile")}
+          </div>
+          <div
+            className="truncate font-mono text-caption text-fg-1"
+            title={data.configPath}
+          >
+            {data.configPath}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="neutral"
+            size="compact"
+            onClick={() => void openLocalFileFolder()}
+          >
+            <FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
+            {t("usage.modelsDevAutoSync.openFolder")}
+          </Button>
+          <Button
+            type="button"
+            variant="neutral"
+            size="compact"
+            onClick={() => void reloadLocalFile()}
+            disabled={isReloading}
+          >
+            {isReloading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.5} />
+            )}
+            {t("usage.modelsDevAutoSync.reloadLocalFile")}
+          </Button>
+          <Button
+            type="button"
+            variant="neutral"
+            size="compact"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            {t("usage.modelsDevAutoSync.configure")}
+          </Button>
+          <Button
+            type="button"
+            variant="solid"
+            size="compact"
+            onClick={() => void syncNow()}
+            disabled={isSyncing}
+          >
+            {isSyncing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.5} />
+            )}
+            {t("usage.modelsDevAutoSync.syncNow")}
+          </Button>
+        </div>
       </div>
 
       {isDialogOpen && (
