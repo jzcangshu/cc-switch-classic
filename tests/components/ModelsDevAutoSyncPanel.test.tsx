@@ -120,19 +120,13 @@ describe("ModelsDevAutoSyncPanel", () => {
   });
 
   it("loads automatic sync as disabled by default", async () => {
-    const user = userEvent.setup();
     renderPanel();
 
+    // 第三版卡片形态：标题与状态分开展示，本地定价文件路径直显在卡上
     expect(
-      await screen.findByText(
-        "usage.pricing.modelsDevTitle:usage.modelsDevAutoSync.disabled",
-      ),
+      await screen.findByText("usage.modelsDevAutoSync.disabled"),
     ).toBeInTheDocument();
     expect(screen.getByRole("switch")).not.toBeChecked();
-    // 本地定价文件路径在 ⋯ 菜单里
-    await user.click(
-      screen.getByRole("button", { name: "usage.pricing.moreActions" }),
-    );
     expect(await screen.findByText(state.configPath)).toBeInTheDocument();
     expect(saveModelsDevSyncConfig).not.toHaveBeenCalled();
   });
@@ -204,10 +198,7 @@ describe("ModelsDevAutoSyncPanel", () => {
     renderPanel();
 
     await user.click(
-      await screen.findByRole("button", { name: "usage.pricing.moreActions" }),
-    );
-    await user.click(
-      await screen.findByRole("menuitem", {
+      await screen.findByRole("button", {
         name: "usage.modelsDevAutoSync.reloadLocalFile",
       }),
     );

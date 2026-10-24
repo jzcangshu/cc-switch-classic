@@ -499,14 +499,12 @@ describe("SessionManagerPage", () => {
     openRow("Alpha Session");
     await screen.findByRole("heading", { level: 2, name: "Alpha Session" });
 
+    // 第三版形态：删除是阅读页头部的常驻按钮，不再收在 ⋯ 菜单里
     await userEvent.click(
       within(screen.getByRole("region", { name: "会话阅读" })).getByRole(
         "button",
-        { name: "Alpha Session 的更多操作" },
+        { name: "删除会话" },
       ),
-    );
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "删除…" }),
     );
 
     const dialog = await screen.findByRole("alertdialog");
