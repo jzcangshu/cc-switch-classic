@@ -101,6 +101,15 @@ jobs:
         with:
           toolchain: ${{ steps.rust-toolchain.outputs.channel }}
 
+      - name: Setup pnpm
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+        shell: bash
+        run: |
+          corepack enable
+          corepack install
+          pnpm --version
+
       - name: Get pnpm store directory
         id: pnpm-store
         shell: bash
