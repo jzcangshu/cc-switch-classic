@@ -91,22 +91,25 @@ describe("UsageFooter token plan", () => {
   it("keeps a failed script query visible with its reason and a working retry", async () => {
     const result: UsageResult = { success: false, error: "查询端点不可用" };
     const query = vi.spyOn(usageApi, "query").mockResolvedValue(result);
-    renderFooter(result, true);
+    const { container } = renderFooter(result, true);
 
-    expect(screen.getByText("quota.failed")).toBeInTheDocument();
-    expect(screen.getByText("查询端点不可用")).toBeInTheDocument();
+    // 第三版形态：卡片上是「查询失败」胶囊，完整原因放悬停提示
+    expect(screen.getByText("usage.queryFailed")).toBeInTheDocument();
+    expect(
+      container.querySelector('[title="查询端点不可用"]'),
+    ).not.toBeNull();
     fireEvent.click(
-      screen.getByRole("button", { name: "quota.clickToRefresh" }),
+      screen.getByRole("button", { name: "usage.refreshUsage" }),
     );
     await waitFor(() => expect(query).toHaveBeenCalledWith("zhipu", "claude"));
   });
 
-  it("retains the update time and retry control on an expanded failure", () => {
+  it("keeps the full reason and retry control on an expanded failure", () => {
     renderFooter({ success: false, error: "查询端点不可用" });
-    expect(screen.getByText("quota.failed")).toBeInTheDocument();
-    expect(screen.getByText("usage.justNow")).toBeInTheDocument();
+    // 展开视图完整显示错误原因（第三版形态）
+    expect(screen.getByText("查询端点不可用")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "subscription.refresh" }),
+      screen.getByRole("button", { name: "usage.refreshUsage" }),
     ).toBeInTheDocument();
   });
 });

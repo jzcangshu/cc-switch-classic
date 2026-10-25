@@ -273,15 +273,23 @@ describe("credential failures", () => {
 
   it("says the token is waiting for a refresh, not that the login expired", () => {
     failed("refresh_pending");
-    expect(screen.getByText("查询失败")).toBeInTheDocument();
-    expect(screen.getByText("令牌待刷新")).toBeInTheDocument();
+    // 失败原因与「查询失败」合并在同一行展示（badge 与外层容器同文本，取多匹配）
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.textContent === "查询失败：令牌待刷新",
+      ).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("登录已过期")).not.toBeInTheDocument();
     expect(screen.queryByText("raw backend message")).not.toBeInTheDocument();
   });
 
   it("still says the login expired when it really did", () => {
     failed("expired");
-    expect(screen.getByText("登录已过期")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.textContent === "查询失败：登录已过期",
+      ).length,
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -310,8 +318,11 @@ describe("missing credentials with and without backend errors", () => {
         { success: false, credentialStatus, error: "后端明确的凭据错误" },
         refetch,
       );
-      expect(screen.getByText("查询失败")).toBeInTheDocument();
-      expect(screen.getByText("后端明确的凭据错误")).toBeInTheDocument();
+      expect(
+        screen.getAllByText(
+          (_, el) => el?.textContent === "查询失败：后端明确的凭据错误",
+        ).length,
+      ).toBeGreaterThan(0);
       fireEvent.click(
         screen.getByRole("button", { name: i18n.t("quota.clickToRefresh") }),
       );
