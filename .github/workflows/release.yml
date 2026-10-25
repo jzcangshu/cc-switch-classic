@@ -116,6 +116,22 @@ jobs:
         shell: pwsh
         run: rustup target add aarch64-pc-windows-msvc
 
+      # windows-11-arm 镜像装了 LLVM 但不在 PATH：rquickjs 的 bindgen 特性构建时
+      # 要 libclang，不设这两个变量会在编译期报 "libclang not found"
+      - name: Setup LLVM for Windows ARM64
+        if: runner.os == 'Windows' && matrix.arch == 'arm64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $llvmRoot = 'C:\Program Files\LLVM'
+          if (-not (Test-Path $llvmRoot)) {
+            throw "LLVM not found at $llvmRoot"
+          }
+          $llvmBin = Join-Path $llvmRoot 'bin'
+          "LIBCLANG_PATH=$llvmBin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CLANG_PATH=$(Join-Path $llvmBin 'clang.exe')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
       - name: Install Linux system deps
         if: runner.os == 'Linux'
         shell: bash
@@ -129,6 +145,7 @@ jobs:
             wget \
             file \
             patchelf \
+            elfutils \
             libssl-dev \
             rpm \
             xdg-utils
@@ -400,6 +417,13 @@ jobs:
       # tauri bundle 需要 tauri CLI（devDependency），必须装依赖
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
+
+      # bundle 会产 updater 的 .app.tar.gz + .sig，需要签名私钥（三个跑 tauri 的 job 都要）
+      - name: Prepare Tauri signing key
+        uses: ./.github/actions/prepare-tauri-signing-key
+        with:
+          private-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Download macOS binaries
         uses: actions/download-artifact@v8
