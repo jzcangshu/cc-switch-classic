@@ -248,10 +248,7 @@ export function UsageHero({
                 titleTheme.iconBg,
               )}
             >
-              <AppGlyphIcon
-                appType={appType}
-                accentClass={titleTheme.accent}
-              />
+              <AppGlyphIcon appType={appType} accentClass={titleTheme.accent} />
             </div>
             <div>
               <div className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-fg-2">

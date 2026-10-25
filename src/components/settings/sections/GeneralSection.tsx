@@ -172,7 +172,9 @@ export function GeneralSection({
           <ToggleRow
             icon={<ArrowLeftRight className="h-4 w-4 text-blue-500" />}
             title={t("settings.appVisibility.showProfileSwitcher")}
-            description={t("settings.appVisibility.showProfileSwitcherDescription")}
+            description={t(
+              "settings.appVisibility.showProfileSwitcherDescription",
+            )}
             checked={settings.showProfileSwitcher ?? false}
             onCheckedChange={(value) =>
               void onAutoSave({ showProfileSwitcher: value })

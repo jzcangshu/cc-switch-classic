@@ -166,7 +166,9 @@ export function CodexAuthSettings({
           description={t("settings.codexSessionCompressionDescription")}
           checked={sessionCompression}
           disabled={sessionCompressionSaving}
-          onCheckedChange={(value) => void handleSessionCompressionChange(value)}
+          onCheckedChange={(value) =>
+            void handleSessionCompressionChange(value)
+          }
         />
         {sessionsBytes !== null && (
           <p className="px-1 text-xs text-fg-3">

@@ -2,13 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
-import {
-  Check,
-  FolderOpen,
-  Loader2,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { Check, FolderOpen, Loader2, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {

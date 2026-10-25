@@ -517,7 +517,10 @@ export function RoutingSection({ onOpenApp }: RoutingSectionProps) {
                   label: APP_DISPLAY_NAME[app],
                 }))}
               />
-              <AutoFailoverConfigPanel key={failoverApp} appType={failoverApp} />
+              <AutoFailoverConfigPanel
+                key={failoverApp}
+                appType={failoverApp}
+              />
             </div>
           </AccordionContent>
         </AccordionItem>

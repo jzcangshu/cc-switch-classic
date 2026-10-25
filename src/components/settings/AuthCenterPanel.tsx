@@ -65,7 +65,10 @@ export function AuthCenterPanel({
         <section className="rounded-panel border border-border bg-surface p-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" />
+              <ShieldCheck
+                aria-hidden="true"
+                className="h-5 w-5 text-primary"
+              />
               <h3 className="m-0 text-base font-semibold text-fg-1">
                 {t("settings.authCenter.title", {
                   defaultValue: "OAuth 认证中心",

@@ -10,7 +10,10 @@ import {
   type DirectoryAppId,
 } from "@/components/settings/DirectorySettings";
 import { ToggleRow } from "@/components/ui/toggle-row";
-import { SettingsCard, SettingsRow } from "@/components/settings/SettingsLayout";
+import {
+  SettingsCard,
+  SettingsRow,
+} from "@/components/settings/SettingsLayout";
 
 const DIRECTORY_FIELD: Record<DirectoryAppId, keyof Settings> = {
   claude: "claudeConfigDir",

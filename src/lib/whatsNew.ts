@@ -35,7 +35,10 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = Object.values(modules).sort(
 /** 旧记录是内核版本（主版本 >= 4，上游 farion1231 体系）时，Classic 线还没看过 */
 function isKernelEraVersion(version: string | undefined): boolean {
   if (!version) return false;
-  const major = Number.parseInt(version.replace(/^v/, "").split(".")[0] ?? "", 10);
+  const major = Number.parseInt(
+    version.replace(/^v/, "").split(".")[0] ?? "",
+    10,
+  );
   return Number.isFinite(major) && major >= 4;
 }
 

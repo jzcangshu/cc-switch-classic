@@ -196,79 +196,72 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
 
   const headerActions = (
     <>
-            <span className="whitespace-nowrap text-caption text-fg-3">
-              {lastChecked}
-            </span>
-            <Button
-              variant="quiet"
-              size="regular"
-              className="shrink-0 gap-1.5 text-fg-2"
-              disabled={
-                tools.isLoadingTools ||
-                tools.isAnyBusy ||
-                tools.isDiagnosingAll
-              }
-              onClick={() => void tools.handleDiagnoseAll()}
-            >
-              {tools.isDiagnosingAll ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Stethoscope className="h-3.5 w-3.5" />
-              )}
-              {tools.isDiagnosingAll
-                ? t("settings.toolDiagnosing")
-                : t("settings.toolDiagnose")}
-            </Button>
-            {(updatableCount > 0 || tools.batchAction) && (
-              <Button
-                variant="neutral"
-                size="regular"
-                disabled={tools.isLoadingTools || Boolean(tools.batchAction)}
-                aria-busy={Boolean(tools.batchAction)}
-                onClick={() =>
-                  void tools.handleRunToolAction(
-                    tools.updatableToolNames,
-                    "update",
-                    { fromBatchEntry: true },
-                  )
-                }
-              >
-                {tools.batchAction === "update" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ArrowUpCircle className="h-3.5 w-3.5" />
-                )}
-                {t("settings.updateAllTools", { count: updatableCount })}
-              </Button>
-            )}
-            <Button
-              variant="neutral"
-              size="regular"
-              disabled={tools.isLoadingTools || tools.isAnyBusy}
-              onClick={() => void tools.checkForUpdates()}
-            >
-              <RefreshCw
-                className={cn(
-                  "h-3.5 w-3.5",
-                  tools.isLoadingTools && "animate-spin",
-                )}
-              />
-              {/* 两种文案叠在同一格，按钮按较宽的那个定宽，切换时不改变宽度 */}
-              <span className="grid justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
-                <span
-                  aria-hidden={tools.isLoadingTools}
-                  className={cn(tools.isLoadingTools && "invisible")}
-                >
-                  {t("appsPage.checkUpdates")}
-                </span>
-                <span
-                  aria-hidden={!tools.isLoadingTools}
-                  className={cn(!tools.isLoadingTools && "invisible")}
-                >
-                  {t("appsPage.checking")}
-                </span>
-              </span>
-            </Button>
+      <span className="whitespace-nowrap text-caption text-fg-3">
+        {lastChecked}
+      </span>
+      <Button
+        variant="quiet"
+        size="regular"
+        className="shrink-0 gap-1.5 text-fg-2"
+        disabled={
+          tools.isLoadingTools || tools.isAnyBusy || tools.isDiagnosingAll
+        }
+        onClick={() => void tools.handleDiagnoseAll()}
+      >
+        {tools.isDiagnosingAll ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Stethoscope className="h-3.5 w-3.5" />
+        )}
+        {tools.isDiagnosingAll
+          ? t("settings.toolDiagnosing")
+          : t("settings.toolDiagnose")}
+      </Button>
+      {(updatableCount > 0 || tools.batchAction) && (
+        <Button
+          variant="neutral"
+          size="regular"
+          disabled={tools.isLoadingTools || Boolean(tools.batchAction)}
+          aria-busy={Boolean(tools.batchAction)}
+          onClick={() =>
+            void tools.handleRunToolAction(tools.updatableToolNames, "update", {
+              fromBatchEntry: true,
+            })
+          }
+        >
+          {tools.batchAction === "update" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ArrowUpCircle className="h-3.5 w-3.5" />
+          )}
+          {t("settings.updateAllTools", { count: updatableCount })}
+        </Button>
+      )}
+      <Button
+        variant="neutral"
+        size="regular"
+        disabled={tools.isLoadingTools || tools.isAnyBusy}
+        onClick={() => void tools.checkForUpdates()}
+      >
+        <RefreshCw
+          className={cn("h-3.5 w-3.5", tools.isLoadingTools && "animate-spin")}
+        />
+        {/* 两种文案叠在同一格，按钮按较宽的那个定宽，切换时不改变宽度 */}
+        <span className="grid justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
+          <span
+            aria-hidden={tools.isLoadingTools}
+            className={cn(tools.isLoadingTools && "invisible")}
+          >
+            {t("appsPage.checkUpdates")}
+          </span>
+          <span
+            aria-hidden={!tools.isLoadingTools}
+            className={cn(!tools.isLoadingTools && "invisible")}
+          >
+            {t("appsPage.checking")}
+          </span>
+        </span>
+      </Button>
     </>
   );
 
@@ -424,11 +417,7 @@ function DesktopCard({
     <div data-tool-row className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <AppGlyph
-            app="claude-desktop"
-            size={20}
-            badgeClassName="bg-subtle"
-          />
+          <AppGlyph app="claude-desktop" size={20} badgeClassName="bg-subtle" />
           <div className="min-w-0">
             <div className="truncate text-body font-medium text-fg-1">
               <span>{APP_DISPLAY_NAME["claude-desktop"]}</span>
