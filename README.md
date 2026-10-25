@@ -11,7 +11,7 @@
 [![Classic](https://img.shields.io/badge/Classic-v1.0.0-blue)](https://github.com/jzcangshu/cc-switch-classic/releases)
 [![内核](https://img.shields.io/badge/内核-v4.0.18-green)](https://github.com/farion1231/cc-switch)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](#license)
-[![平台](https://img.shields.io/badge/平台-Windows%20x64-9cf)](#下载与更新)
+[![平台](https://img.shields.io/badge/平台-Windows%20%7C%20Linux%20%7C%20macOS%20(未签名)-9cf)](#下载与更新)
 
 [下载最新版](https://github.com/jzcangshu/cc-switch-classic/releases/latest) · [更新日志](https://github.com/jzcangshu/cc-switch-classic/releases) · [上游项目](https://github.com/farion1231/cc-switch)
 
@@ -87,10 +87,14 @@
 
 ## 下载与更新
 
-1. 到 [Releases](https://github.com/jzcangshu/cc-switch-classic/releases/latest) 下载：
-   - `CC-Switch-Classic-v1.0.0-Windows-x64-Portable.zip` —— 免安装便携版，解压即用
-   - `CC-Switch-Classic_4.0.18_x64-setup.exe` —— 安装版
-2. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x），不会把你引回官方 V4 界面版；内核升级会以 Classic 更新的形式一并发布。
+1. 到 [Releases](https://github.com/jzcangshu/cc-switch-classic/releases/latest) 按平台下载：
+   - **Windows x64**: `…-Windows-setup.exe`（安装版）/ `…-Windows-Portable.zip`（绿色版，解压即用）
+   - **Windows ARM64**: `…-Windows-arm64-setup.exe` / `…-Windows-arm64-Portable.zip`
+   - **Linux x64**: `…-Linux-x86_64.AppImage` / `.deb` / `.rpm`
+   - **Linux ARM64**: `…-Linux-arm64.AppImage` / `.deb` / `.rpm`
+   - **macOS**（universal，未签名）: `…-macOS-unsigned.dmg`（推荐）或 `…-macOS-unsigned.zip`
+2. **macOS 未签名包**首次打开需在「系统设置 → 隐私与安全性」点击「仍要打开」放行；macOS 暂不支持应用内自动更新（Windows/Linux 安装版支持）。
+3. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x），不会把你引回官方 V4 界面版；内核升级会以 Classic 更新的形式一并发布。
 
 ## 与上游的关系
 
