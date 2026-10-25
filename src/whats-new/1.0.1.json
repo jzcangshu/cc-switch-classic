@@ -1,0 +1,19 @@
+{
+  "version": "1.0.1",
+  "items": [
+    {
+      "type": "fix",
+      "zh": "用量查询失败改回第三版胶囊样式，不再挤乱卡片布局",
+      "zh-TW": "用量查詢失敗改回第三版膠囊樣式，不再擠亂卡片版面",
+      "en": "Usage query failures now use the V3 pill style instead of breaking the card layout",
+      "ja": "用量クエリ失敗を第三版ピル表示へ戻し、カード崩れを修正"
+    },
+    {
+      "type": "fix",
+      "zh": "修复窄窗口下供应商名被额度信息挤没的问题",
+      "zh-TW": "修復窄視窗下供應商名被額度資訊擠沒的問題",
+      "en": "Fixed provider names being squeezed out by quota info in narrow windows",
+      "ja": "狭いウィンドウでプロバイダー名が表示されるよう修正"
+    }
+  ]
+}

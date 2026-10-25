@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 /// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
 /// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
 pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-pub(crate) const CLASSIC_VERSION: &str = "1.0.0";
+pub(crate) const CLASSIC_VERSION: &str = "1.0.1";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -6190,7 +6190,7 @@ mod tests {
     /// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
     /// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
     const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-    const CLASSIC_VERSION: &str = "1.0.0";
+    const CLASSIC_VERSION: &str = "1.0.1";
 
     #[tokio::test]
     async fn lifecycle_coordinator_serializes_writes_and_rejects_duplicate_tools() {
