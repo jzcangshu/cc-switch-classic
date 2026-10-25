@@ -70,14 +70,24 @@ jobs:
       - name: Validate all summaries
         run: pnpm vitest run tests/config/whatsNewEntries.test.ts
 
-  # Classic 首发只打 Windows（与 README 口径一致）。安装器用 NSIS 而非 MSI：Classic 的
-  # 版本号是双段的（Classic 主版本 + 内核版本），纯界面修复发布时内核版本号不变，
-  # MSI 同 ProductVersion 无法覆盖安装，NSIS 安装器没有这个限制。
+  # Classic 安装器用 NSIS 而非 MSI：Classic 的版本号是双段的（Classic 主版本 + 内核版本），
+  # 纯界面修复发布时内核版本号不变，MSI 同 ProductVersion 无法覆盖安装，NSIS 没有这个限制。
   release:
-    name: Build Windows assets
+    name: Build ${{ matrix.os }}${{ matrix.arch && format(' ({0})', matrix.arch) || '' }}
     needs: whats-new-check
-    runs-on: windows-2022
-    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-22.04
+          - os: ubuntu-22.04-arm
+            arch: arm64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -101,6 +111,39 @@ jobs:
         with:
           toolchain: ${{ steps.rust-toolchain.outputs.channel }}
 
+      - name: Add Windows ARM64 target
+        if: runner.os == 'Windows' && matrix.arch == 'arm64'
+        shell: pwsh
+        run: rustup target add aarch64-pc-windows-msvc
+
+      - name: Install Linux system deps
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            curl \
+            wget \
+            file \
+            patchelf \
+            libssl-dev \
+            rpm \
+            xdg-utils
+          # GTK/GLib stack for gdk-3.0, glib-2.0, gio-0.0
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev
+          # WebKit2GTK (version differs across Ubuntu images; try 4.1 then 4.0)
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev \
+            || sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.0-dev
+          # libsoup also changed major version; prefer 3.0 with fallback to 2.4
+          sudo apt-get install -y --no-install-recommends libsoup-3.0-dev \
+            || sudo apt-get install -y --no-install-recommends libsoup2.4-dev
+
       - name: Setup pnpm
         env:
           COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
@@ -108,11 +151,197 @@ jobs:
         run: |
           corepack enable
           corepack install
+          node --version
+          pnpm --version
+
+      - name: Get pnpm store directory
+        if: runner.os != 'Windows' || matrix.arch != 'arm64'
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm cache
+        if: runner.os != 'Windows' || matrix.arch != 'arm64'
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare Tauri signing key
+        uses: ./.github/actions/prepare-tauri-signing-key
+        with:
+          private-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Build Tauri App (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ('${{ matrix.arch }}' -eq 'arm64') {
+            pnpm tauri build --target aarch64-pc-windows-msvc --bundles nsis
+          } else {
+            pnpm tauri build --bundles nsis
+          }
+
+      - name: Build Tauri App (Linux)
+        if: runner.os == 'Linux'
+        run: pnpm tauri build --bundles appimage,deb,rpm
+
+      - name: Prepare Windows Assets
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_RELEASE_ARCH: ${{ matrix.arch || 'x86_64' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
+          # e.g., v1.0.1
+          $VERSION = $env:GITHUB_REF_NAME
+          $isArm64 = $env:WINDOWS_RELEASE_ARCH -eq 'arm64'
+          $targetRoot = if ($isArm64) { 'src-tauri/target/aarch64-pc-windows-msvc/release' } else { 'src-tauri/target/release' }
+          $assetSuffix = if ($isArm64) { '-arm64' } else { '' }
+
+          # 安装器：NSIS setup.exe + .sig（.sig 供 Updater 校验）
+          $setup = Get-ChildItem -Path (Join-Path $targetRoot 'bundle/nsis') -Recurse -Include *-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $setup) {
+            throw "No NSIS setup.exe found ($env:WINDOWS_RELEASE_ARCH)"
+          }
+          $sigPath = "$($setup.FullName).sig"
+          if (-not (Test-Path $sigPath)) {
+            throw "Updater signature not found for $($setup.Name) (TAURI_SIGNING_PRIVATE_KEY missing?)"
+          }
+          $dest = "CC-Switch-Classic-$VERSION-Windows$assetSuffix-setup.exe"
+          Copy-Item $setup.FullName (Join-Path release-assets $dest)
+          Copy-Item $sigPath (Join-Path release-assets "$dest.sig")
+          Write-Host "Installer copied: $dest (+ .sig)"
+
+          # 绿色版（portable）：仅可执行文件打 zip（不参与 Updater，更新走下载页）
+          $exePath = "$targetRoot/cc-switch.exe"
+          if (Test-Path $exePath) {
+            $portableDir = 'release-assets/CC-Switch-Classic-Portable'
+            New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
+            Copy-Item $exePath $portableDir
+            $portableIniPath = Join-Path $portableDir 'portable.ini'
+            if ($isArm64) {
+              @(
+                '# CC Switch Classic portable ARM64 build marker',
+                'portable=true',
+                'arch=arm64'
+              ) | Set-Content -Path $portableIniPath -Encoding UTF8
+            } else {
+              @(
+                '# CC Switch Classic portable build marker',
+                'portable=true'
+              ) | Set-Content -Path $portableIniPath -Encoding UTF8
+            }
+            $portableZip = "release-assets/CC-Switch-Classic-$VERSION-Windows$assetSuffix-Portable.zip"
+            Compress-Archive -Path "$portableDir/*" -DestinationPath $portableZip -Force
+            Remove-Item -Recurse -Force $portableDir
+            Write-Host "Windows portable zip created: CC-Switch-Classic-$VERSION-Windows$assetSuffix-Portable.zip"
+          } else {
+            Write-Warning 'Portable exe not found'
+          }
+
+      - name: Prepare Linux Assets
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p release-assets
+          # e.g., v1.0.1；手动干跑时是分支名，斜杠会被当成目录，换成 -
+          VERSION="${GITHUB_REF_NAME//\//-}"
+          ARCH="${{ matrix.arch || 'x86_64' }}"
+          # Updater artifact: AppImage（含对应 .sig）
+          APPIMAGE=$(find src-tauri/target/release/bundle -name "*.AppImage" | head -1 || true)
+          if [ -z "$APPIMAGE" ]; then
+            echo "❌ No AppImage found under target/release/bundle" >&2
+            exit 1
+          fi
+          if [ ! -f "$APPIMAGE.sig" ]; then
+            echo "❌ Updater signature not found: $APPIMAGE.sig" >&2
+            exit 1
+          fi
+          NEW_APPIMAGE="CC-Switch-Classic-${VERSION}-Linux-${ARCH}.AppImage"
+          cp "$APPIMAGE" "release-assets/$NEW_APPIMAGE"
+          cp "$APPIMAGE.sig" "release-assets/$NEW_APPIMAGE.sig"
+          echo "AppImage copied: $NEW_APPIMAGE"
+          # 额外上传 .deb / .rpm（不参与 Updater）
+          DEB=$(find src-tauri/target/release/bundle -name "*.deb" | head -1 || true)
+          if [ -n "$DEB" ]; then
+            NEW_DEB="CC-Switch-Classic-${VERSION}-Linux-${ARCH}.deb"
+            cp "$DEB" "release-assets/$NEW_DEB"
+            echo "Deb package copied: $NEW_DEB"
+          fi
+          RPM=$(find src-tauri/target/release/bundle -name "*.rpm" | head -1 || true)
+          if [ -n "$RPM" ]; then
+            NEW_RPM="CC-Switch-Classic-${VERSION}-Linux-${ARCH}.rpm"
+            cp "$RPM" "release-assets/$NEW_RPM"
+            echo "Rpm package copied: $NEW_RPM"
+          fi
+
+      - name: List prepared assets
+        shell: bash
+        run: ls -la release-assets
+
+      - name: Upload release artifacts to workflow
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-assets-${{ runner.os }}-${{ matrix.arch || runner.arch }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  # macOS：两个架构分别编译（无需任何 Apple 证书），再合并 universal 打包。
+  # Classic 出未签名包：无 Developer ID 证书与公证，首次打开需在「系统设置 → 隐私与
+  # 安全」里放行（Gatekeeper），App 内自动更新在 macOS 上不可用（未签名包不参与 Updater）。
+  macos-binary:
+    name: Build macOS binary (${{ matrix.target }})
+    runs-on: macos-14
+    needs: whats-new-check
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      # rust-toolchain.toml 是编译器版本的唯一来源：直接装它，免得先装 stable 再被 rustup 换掉
+      - name: Read pinned Rust toolchain
+        id: rust-toolchain
+        shell: bash
+        run: |
+          channel=$(sed -nE 's/^channel *= *"([^"]+)".*/\1/p' rust-toolchain.toml)
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
+          targets: ${{ matrix.target }}
+
+      - name: Setup pnpm
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+        run: |
+          corepack enable
+          corepack install
+          node --version
           pnpm --version
 
       - name: Get pnpm store directory
         id: pnpm-store
-        shell: bash
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm cache
@@ -131,52 +360,145 @@ jobs:
           private-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
-      - name: Build Tauri App (Windows)
-        shell: pwsh
+      # 编译只做一次：编译失败是确定性的，重试没有意义。
+      - name: Build Tauri App (${{ matrix.target }})
+        timeout-minutes: 60
+        run: pnpm tauri build --target ${{ matrix.target }} --no-bundle
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-binary-${{ matrix.target }}
+          path: src-tauri/target/${{ matrix.target }}/release/cc-switch
+          if-no-files-found: error
+          retention-days: 1
+
+  # 合并成 universal 二进制后打 .app 和 .tar.gz（带 updater 签名，供未来签名后启用）。
+  # 未签名模式下不跑公证/签名/staple；DMG 用 create-dmg 产出（未签名 DMG 同样可打开）。
+  macos-release:
+    name: Bundle macOS release (unsigned)
+    runs-on: macos-14
+    needs: macos-binary
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
         run: |
-          $ErrorActionPreference = 'Stop'
-          pnpm tauri build --bundles nsis
+          corepack enable
+          corepack install
+          pnpm --version
 
-      - name: Prepare Windows Assets
-        shell: pwsh
+      - name: Download macOS binaries
+        uses: actions/download-artifact@v8
+        with:
+          pattern: macos-binary-*
+          path: macos-binaries
+
+      # tauri bundle 只读这个 universal 二进制（和 tauri build --target universal-apple-darwin
+      # 的 lipo 结果相同），不需要各架构的 target 目录。
+      - name: Merge universal binary
+        shell: bash
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-          # e.g., v1.0.0
-          $VERSION = $env:GITHUB_REF_NAME
+          set -euo pipefail
+          out=src-tauri/target/universal-apple-darwin/release
+          mkdir -p "$out"
+          lipo -create -output "$out/cc-switch" \
+            macos-binaries/macos-binary-aarch64-apple-darwin/cc-switch \
+            macos-binaries/macos-binary-x86_64-apple-darwin/cc-switch
+          chmod +x "$out/cc-switch"
+          lipo -info "$out/cc-switch"
 
-          # 安装器：NSIS setup.exe + .sig（.sig 供 Updater 校验）
-          $setup = Get-ChildItem -Path 'src-tauri/target/release/bundle/nsis' -Recurse -Include *-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($null -eq $setup) {
-            throw 'No NSIS setup.exe found under bundle/nsis'
-          }
-          $sigPath = "$($setup.FullName).sig"
-          if (-not (Test-Path $sigPath)) {
-            throw "Updater signature not found for $($setup.Name) (TAURI_SIGNING_PRIVATE_KEY missing?)"
-          }
-          $dest = "CC-Switch-Classic-$VERSION-Windows-setup.exe"
-          Copy-Item $setup.FullName (Join-Path release-assets $dest)
-          Copy-Item $sigPath (Join-Path release-assets "$dest.sig")
-          Write-Host "Installer copied: $dest (+ .sig)"
+      # 只打 .app（连同 updater 的 .app.tar.gz 和 .sig——updater 签名与 Apple 签名无关，
+      # 用的是我们自己的 minisign 密钥）
+      - name: Bundle (macOS, unsigned)
+        shell: bash
+        timeout-minutes: 45
+        run: pnpm tauri bundle --target universal-apple-darwin --bundles app
 
-          # 绿色版（portable）：仅可执行文件打 zip（不参与 Updater，更新走下载页）
-          $exePath = 'src-tauri/target/release/cc-switch.exe'
-          if (-not (Test-Path $exePath)) {
-            Write-Warning 'Portable exe not found'
-          } else {
-            $portableDir = 'release-assets/CC-Switch-Classic-Portable'
-            New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
-            Copy-Item $exePath $portableDir
-            $portableIniPath = Join-Path $portableDir 'portable.ini'
-            @(
-              '# CC Switch Classic portable build marker',
-              'portable=true'
-            ) | Set-Content -Path $portableIniPath -Encoding UTF8
-            $portableZip = "release-assets/CC-Switch-Classic-$VERSION-Windows-Portable.zip"
-            Compress-Archive -Path "$portableDir/*" -DestinationPath $portableZip -Force
-            Remove-Item -Recurse -Force $portableDir
-            Write-Host "Windows portable zip created: CC-Switch-Classic-$VERSION-Windows-Portable.zip"
-          }
+      - name: Prepare macOS Assets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p release-assets
+          # e.g., v1.0.1；手动干跑时是分支名，斜杠会被当成目录，换成 -
+          VERSION="${GITHUB_REF_NAME//\//-}"
+
+          TAR_GZ=""; APP_PATH=""
+          for path in \
+            "src-tauri/target/universal-apple-darwin/release/bundle/macos" \
+            "src-tauri/target/release/bundle/macos"; do
+            if [ -d "$path" ]; then
+              [ -z "$TAR_GZ" ]   && TAR_GZ=$(find "$path" -maxdepth 1 -name "*.tar.gz" -type f | head -1 || true)
+              [ -z "$APP_PATH" ] && APP_PATH=$(find "$path" -maxdepth 1 -name "*.app" -type d | head -1 || true)
+            fi
+          done
+          if [ -z "$TAR_GZ" ]; then
+            echo "❌ No macOS .tar.gz updater artifact found" >&2
+            exit 1
+          fi
+          if [ -z "$APP_PATH" ]; then
+            echo "❌ No .app found" >&2
+            exit 1
+          fi
+
+          # 1) .tar.gz updater artifact + .sig（随包保存，未来补 Apple 签名后可直接启用 macOS 自动更新）
+          NEW_TAR_GZ="CC-Switch-Classic-${VERSION}-macOS.tar.gz"
+          cp "$TAR_GZ" "release-assets/$NEW_TAR_GZ"
+          if [ ! -f "$TAR_GZ.sig" ]; then
+            echo "❌ Updater signature not found: $TAR_GZ.sig" >&2
+            exit 1
+          fi
+          cp "$TAR_GZ.sig" "release-assets/$NEW_TAR_GZ.sig"
+          echo "macOS updater artifact copied: $NEW_TAR_GZ"
+
+          # 2) .app zip（未签名；首次打开需在系统设置放行）
+          NEW_ZIP="CC-Switch-Classic-${VERSION}-macOS-unsigned.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release-assets/$NEW_ZIP"
+          echo "macOS zip ready: $NEW_ZIP"
+
+          # 3) DMG（create-dmg 的样式步骤在未签名包上同样可用）
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install create-dmg
+          NEW_DMG="CC-Switch-Classic-${VERSION}-macOS-unsigned.dmg"
+          DMG_STAGE_DIR="$RUNNER_TEMP/dmg-stage"
+          rm -rf "$DMG_STAGE_DIR"
+          mkdir -p "$DMG_STAGE_DIR"
+          ditto "$APP_PATH" "$DMG_STAGE_DIR/CC Switch Classic.app"
+
+          create-dmg \
+            --volname "CC Switch Classic" \
+            --background "src-tauri/icons/dmg-background.png" \
+            --window-pos 200 120 \
+            --window-size 660 400 \
+            --icon-size 100 \
+            --icon "CC Switch Classic.app" 180 190 \
+            --hide-extension "CC Switch Classic.app" \
+            --app-drop-link 480 190 \
+            "$PWD/release-assets/$NEW_DMG" \
+            "$DMG_STAGE_DIR" || {
+              # create-dmg 对已存在的挂载点偶尔失败；重试一次通常就好
+              rm -f "$PWD/release-assets/$NEW_DMG"
+              create-dmg \
+                --volname "CC Switch Classic" \
+                --background "src-tauri/icons/dmg-background.png" \
+                --window-pos 200 120 \
+                --window-size 660 400 \
+                --icon-size 100 \
+                --icon "CC Switch Classic.app" 180 190 \
+                --hide-extension "CC Switch Classic.app" \
+                --app-drop-link 480 190 \
+                "$PWD/release-assets/$NEW_DMG" \
+                "$DMG_STAGE_DIR"
+            }
+          echo "macOS dmg ready: $NEW_DMG"
 
       - name: List prepared assets
         shell: bash
@@ -185,7 +507,7 @@ jobs:
       - name: Upload release artifacts to workflow
         uses: actions/upload-artifact@v7
         with:
-          name: release-assets-${{ runner.os }}
+          name: release-assets-macOS-universal
           path: release-assets/*
           if-no-files-found: error
 
@@ -193,7 +515,7 @@ jobs:
   # 覆盖已发布 release 的正文和安装包
   publish:
     name: Publish GitHub Release
-    needs: release
+    needs: [release, macos-release]
     runs-on: ubuntu-22.04
     if: github.event_name == 'push' && github.ref_type == 'tag'
     permissions:
@@ -212,8 +534,11 @@ jobs:
           set -euo pipefail
           ls -la release-assets
 
-      # 签名就在刚下载的产物里：latest.json 随安装包一起上传。缺签名时在建 release
+      # 签名就在刚下载的产物里：latest.json 随安装包一起上传。缺平台时在建 release
       # 之前就失败，不会留下一个缺 latest.json 的半成品 release。
+      # 注意：macOS 未签名包**不进** platforms（updater 装未签名 .app 会破坏安装），
+      # 只有带 .sig 的产物才进；macOS 的 tar.gz 虽有我们自己的 updater 签名，但
+      # 未公证包在 macOS 上自动更新不可用，同样不进。
       - name: Generate latest.json
         env:
           REPO: ${{ github.repository }}
@@ -223,19 +548,34 @@ jobs:
           VERSION="${TAG#v}"
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           base_url="https://github.com/$REPO/releases/download/$TAG"
-          shopt -s nullglob
           win_x64_url=""; win_x64_sig=""
+          win_arm64_url=""; win_arm64_sig=""
+          linux_x64_url=""; linux_x64_sig=""
+          linux_arm64_url=""; linux_arm64_sig=""
+          shopt -s nullglob
           for sig in release-assets/*.sig; do
             base=${sig%.sig}
             fname=$(basename "$base")
+            url="$base_url/$fname"
+            sig_content=$(cat "$sig")
             case "$fname" in
+              *-Windows-arm64-setup.exe)
+                win_arm64_url="$url"; win_arm64_sig="$sig_content";;
               *-Windows-setup.exe)
-                win_x64_url="$base_url/$fname"
-                win_x64_sig=$(cat "$sig");;
+                win_x64_url="$url"; win_x64_sig="$sig_content";;
+              *-Linux-arm64.AppImage|*-Linux-arm64.appimage)
+                linux_arm64_url="$url"; linux_arm64_sig="$sig_content";;
+              *-Linux-x86_64.AppImage|*-Linux-x86_64.appimage)
+                linux_x64_url="$url"; linux_x64_sig="$sig_content";;
             esac
           done
-          if [ -z "$win_x64_sig" ]; then
-            echo '❌ Missing windows-x86_64 updater signature' >&2
+          missing=""
+          [ -n "$win_x64_sig" ] || missing="$missing windows-x86_64"
+          [ -n "$win_arm64_sig" ] || missing="$missing windows-aarch64"
+          [ -n "$linux_x64_sig" ] || missing="$missing linux-x86_64"
+          [ -n "$linux_arm64_sig" ] || missing="$missing linux-aarch64"
+          if [ -n "$missing" ]; then
+            echo "❌ Missing updater signatures for:$missing" >&2
             exit 1
           fi
           tmp_json=$(mktemp)
@@ -245,7 +585,10 @@ jobs:
             echo "  \"notes\": \"CC Switch Classic $TAG\",";
             echo "  \"pub_date\": \"$PUB_DATE\",";
             echo '  "platforms": {'
-            echo "    \"windows-x86_64\": {\"signature\": \"$win_x64_sig\", \"url\": \"$win_x64_url\"}"
+            echo "    \"windows-x86_64\": {\"signature\": \"$win_x64_sig\", \"url\": \"$win_x64_url\"},"
+            echo "    \"windows-aarch64\": {\"signature\": \"$win_arm64_sig\", \"url\": \"$win_arm64_url\"},"
+            echo "    \"linux-x86_64\": {\"signature\": \"$linux_x64_sig\", \"url\": \"$linux_x64_url\"},"
+            echo "    \"linux-aarch64\": {\"signature\": \"$linux_arm64_sig\", \"url\": \"$linux_arm64_url\"}"
             echo '  }'
             echo '}'
           } > "$tmp_json"
@@ -268,7 +611,12 @@ jobs:
             ### 下载
 
             - **Windows (x86_64)**: `CC-Switch-Classic-${{ github.ref_name }}-Windows-setup.exe`（安装版）或 `CC-Switch-Classic-${{ github.ref_name }}-Windows-Portable.zip`（绿色版，解压即用）
+            - **Windows (ARM64)**: `CC-Switch-Classic-${{ github.ref_name }}-Windows-arm64-setup.exe`（安装版）或 `CC-Switch-Classic-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
+            - **Linux (x86_64)**: `CC-Switch-Classic-${{ github.ref_name }}-Linux-x86_64.AppImage` / `.deb` / `.rpm`
+            - **Linux (ARM64)**: `CC-Switch-Classic-${{ github.ref_name }}-Linux-arm64.AppImage` / `.deb` / `.rpm`
+            - **macOS (universal，未签名)**: `CC-Switch-Classic-${{ github.ref_name }}-macOS-unsigned.dmg`（推荐）或 `CC-Switch-Classic-${{ github.ref_name }}-macOS-unsigned.zip`
 
+            > **macOS 未签名包**：首次打开需在「系统设置 → 隐私与安全性」里点击「仍要打开」放行；macOS 上暂不支持应用内自动更新。
             > 安装版内的「检查更新」只跟随 Classic 主版本号，不会把您引回官方 V4 界面版。
             > `.sig` / `latest.json` 为应用内自动更新专用，无需手动下载。
 
