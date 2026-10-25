@@ -397,6 +397,10 @@ jobs:
           corepack install
           pnpm --version
 
+      # tauri bundle 需要 tauri CLI（devDependency），必须装依赖
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
       - name: Download macOS binaries
         uses: actions/download-artifact@v8
         with:
