@@ -94,7 +94,7 @@
    - **Linux ARM64**: `…-Linux-arm64.AppImage` / `.deb` / `.rpm`
    - **macOS**（universal，未签名）: `…-macOS-unsigned.dmg`（推荐）或 `…-macOS-unsigned.zip`
 2. **macOS 未签名包**首次打开需在「系统设置 → 隐私与安全性」点击「仍要打开」放行；macOS 暂不支持应用内自动更新（Windows/Linux 安装版支持）。
-3. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x），不会把你引回官方 V4 界面版；内核升级会以 Classic 更新的形式一并发布。
+3. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x）；当官方 v4 版发布内核升级后，我们会尽快跟进并推送 Classic 版的更新。
 
 ## 与上游的关系
 
