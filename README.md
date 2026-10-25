@@ -76,6 +76,8 @@
 </tr>
 </table>
 
+- Classic 的关于页**直接内嵌"本地环境检查"**，并显示双版本号：`版本 v1.0.0`（Classic 自己的）+ `内核 v4.0.18`（跟随上游）
+
 ## 怎么选？
 
 | 你想要 | 选它 |
@@ -92,7 +94,7 @@
    - **Linux ARM64**: `…-Linux-arm64.AppImage` / `.deb` / `.rpm`
    - **macOS**（universal，未签名）: `…-macOS-unsigned.dmg`（推荐）或 `…-macOS-unsigned.zip`
 2. **macOS 未签名包**首次打开需在「系统设置 → 隐私与安全性」点击「仍要打开」放行；macOS 暂不支持应用内自动更新（Windows/Linux 安装版支持）。
-3. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x）；当官方 v4 版发布内核升级后，我们会尽快跟进并推送 Classic 版的更新。
+3. 应用内的更新提示**只跟随 Classic 主版本号**（v1.x），不会把你引回官方 V4 界面版；内核升级会以 Classic 更新的形式一并发布。
 
 ## 与上游的关系
 
@@ -113,19 +115,3 @@ pnpm tauri build    # 打包
 ## License
 
 本项目基于 [farion1231/cc-switch](https://github.com/farion1231/cc-switch)（MIT License, © Jason Young）二次开发，沿用 MIT 协议开源。感谢上游作者与社区。
-
-
-## 🔗 LinuxDo 社区
-
-<div align="center">
-  <a href="https://linux.do" target="_blank">
-    <img src="https://cdn3.ldstatic.com/original/4X/c/c/d/ccd8c210609d498cbeb3d5201d4c259348447562.png" alt="LinuxDo" height="60">
-  </a>
-  <p>
-    <a href="https://linux.do" target="_blank"><strong>LinuxDo 社区</strong></a><br>
-  </p>
-    <p>@蕉灼の仓鼠</p>
-    <p>本人长期活跃于L站;</p>
-    <p>这里的人很好说话又好听;</p>
-    <p>欢迎都来加入L站大家庭。 </p>
-
