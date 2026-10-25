@@ -1,6 +1,7 @@
 import React from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { type AppId } from "@/lib/api";
 import { useUsageQuery } from "@/lib/query/queries";
 import { UsageData, Provider } from "@/types";
@@ -15,7 +16,6 @@ import { useQuotaDisplay } from "@/components/quota/useQuotaDisplay";
 import {
   balanceLine,
   expiredLine,
-  failedLines,
   tierLine,
   type QuotaLine,
 } from "@/components/quota/quotaRules";
@@ -139,32 +139,52 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
   if (!usage || !usage.success) {
     const reason = usage?.error || t("usage.queryFailed");
     if (inline) {
+      // 第三版形态：卡片上是「查询失败」胶囊，不塞报错文本（长报错会把卡片
+      // 布局撑破）；完整原因放悬停提示，展开视图里完整显示
       return (
-        <QuotaLines
-          lines={failedLines(t, reason)}
-          queriedAt={lastQueriedAt}
-          loading={loading}
-          onRefresh={refresh}
-        />
+        <div
+          className="inline-flex items-center gap-2 text-xs rounded-lg border border-border bg-card px-3 py-2 shadow-sm"
+          title={reason}
+        >
+          <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400">
+            <AlertCircle size={12} />
+            <span>{t("usage.queryFailed")}</span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              refresh();
+            }}
+            disabled={loading}
+            className="flex-shrink-0 rounded p-1 transition-colors hover:bg-muted disabled:opacity-50"
+            title={t("usage.refreshUsage")}
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
       );
     }
+    // 展开视图（第三版形态）：边框卡片里完整显示错误原因
     return (
-      <QuotaBars
-        className="mt-3"
-        title={t("usage.planUsage")}
-        rows={[]}
-        queriedAt={lastQueriedAt}
-        loading={loading}
-        onRefresh={refresh}
-        footer={
-          <p className="text-caption">
-            <span className="font-medium text-danger-text">
-              {t("quota.failed")}
-            </span>{" "}
-            <span className="text-fg-3">{reason}</span>
-          </p>
-        }
-      />
+      <div className="mt-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex min-w-0 items-center gap-2 text-red-500 dark:text-red-400">
+            <AlertCircle size={14} className="shrink-0" />
+            <span className="break-all">{reason}</span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              refresh();
+            }}
+            disabled={loading}
+            className="flex-shrink-0 rounded p-1 transition-colors hover:bg-muted disabled:opacity-50"
+            title={t("usage.refreshUsage")}
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+      </div>
     );
   }
 
