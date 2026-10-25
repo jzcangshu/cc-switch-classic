@@ -402,19 +402,18 @@ export function expiredLine(
 /** 查询失败那一行的 key：额度列靠它判断这次重查有没有成功 */
 export const FAILED_LINE_KEY = "failed";
 
-/** 查询失败：第一行红字，第二行灰字写原因 */
+/** 查询失败：单行红字（原因拼在同一行，超长由 QuotaBadge 截断）——
+ * 拆两行会把失败卡片撑得比普通卡片高，列表里高度不齐 */
 export function failedLines(t: TFunction, reason?: string | null): QuotaLine[] {
-  const lines: QuotaLine[] = [
+  const text = reason?.trim();
+  return [
     {
       key: FAILED_LINE_KEY,
       left: -2,
       tone: "danger",
-      text: t("quota.failed"),
+      text: text ? `${t("quota.failed")}：${text}` : t("quota.failed"),
     },
   ];
-  const text = reason?.trim();
-  if (text) lines.push({ key: "reason", left: -2, tone: "muted", text });
-  return lines;
 }
 
 /** 卡片上最多留几行：留剩余最少的，再按原顺序排回去 */

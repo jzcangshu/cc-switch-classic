@@ -192,7 +192,12 @@ describe("quota column refresh", () => {
     expect(container.querySelector(".lucide-circle-alert")).toHaveClass(
       "text-red-500",
     );
-    expect(screen.getByText("查询端点不可用")).toBeInTheDocument();
+    // 原因与「查询失败」合并成同一行（卡片高度与普通卡对齐）；
+    // 根容器与徽章 span 的 textContent 相同，取最小的那个匹配断言
+    const matches = screen.getAllByText(
+      (_, el) => el?.textContent === "quota.failed：查询端点不可用",
+    );
+    expect(matches.length).toBeGreaterThan(0);
   });
 
   it("shows no icon when the quota cannot be refreshed", () => {

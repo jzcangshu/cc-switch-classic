@@ -140,10 +140,16 @@ describe("quota lines", () => {
     });
   });
 
-  it("shows a failed query as a red line plus a gray reason", () => {
+  it("shows a failed query as one red line with the reason inline", () => {
+    // 单行而不是「红字 + 灰字」两行：两行会把失败卡片撑得比普通卡片高
     expect(failedLines(t, "登录已过期")).toEqual([
+      expect.objectContaining({
+        text: "quota.failed：登录已过期",
+        tone: "danger",
+      }),
+    ]);
+    expect(failedLines(t, null)).toEqual([
       expect.objectContaining({ text: "quota.failed", tone: "danger" }),
-      expect.objectContaining({ text: "登录已过期", tone: "muted" }),
     ]);
     expect(expiredLine(t).tone).toBe("danger");
   });
