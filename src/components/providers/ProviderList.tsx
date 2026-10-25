@@ -557,44 +557,44 @@ export function ProviderList({
         </div>
       ) : (
         <>
-      {liftLeadTitle && (
-        <div className="flex min-h-8 items-center gap-3 -mb-2">
-          <div className="min-w-0 flex-1">
-            {renderSectionTitle(leadSection)}
-          </div>
-        </div>
-      )}
-
-      <DndContext
-        sensors={sensors}
-        modifiers={verticalDragModifiers}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {sections.map((section, index) => (
-          <section key={section.key} className="space-y-3">
-            {section.title && !(index === 0 && liftLeadTitle) && (
-              <div className="pt-1">{renderSectionTitle(section)}</div>
-            )}
-            {section.items.length === 0 && section.emptyText ? (
-              <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
-                {section.emptyText}
+          {liftLeadTitle && (
+            <div className="flex min-h-8 items-center gap-3 -mb-2">
+              <div className="min-w-0 flex-1">
+                {renderSectionTitle(leadSection)}
               </div>
-            ) : (
-              <SortableContext
-                items={section.items.map((item) => item.provider.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3">
-                  {section.items.map((item) =>
-                    renderCard(item.provider, item.presentation),
-                  )}
-                </div>
-              </SortableContext>
-            )}
-          </section>
-        ))}
-      </DndContext>
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            modifiers={verticalDragModifiers}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            {sections.map((section, index) => (
+              <section key={section.key} className="space-y-3">
+                {section.title && !(index === 0 && liftLeadTitle) && (
+                  <div className="pt-1">{renderSectionTitle(section)}</div>
+                )}
+                {section.items.length === 0 && section.emptyText ? (
+                  <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                    {section.emptyText}
+                  </div>
+                ) : (
+                  <SortableContext
+                    items={section.items.map((item) => item.provider.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {section.items.map((item) =>
+                        renderCard(item.provider, item.presentation),
+                      )}
+                    </div>
+                  </SortableContext>
+                )}
+              </section>
+            ))}
+          </DndContext>
         </>
       )}
     </div>

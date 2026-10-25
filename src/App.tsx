@@ -1135,7 +1135,9 @@ function App() {
       <AppPageHeader
         title={appPageName}
         actions={
-          currentView === "hermesMemory" ? <HermesMemorySaveButton /> : undefined
+          currentView === "hermesMemory" ? (
+            <HermesMemorySaveButton />
+          ) : undefined
         }
       />
     );

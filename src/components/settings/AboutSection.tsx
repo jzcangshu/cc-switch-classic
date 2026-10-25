@@ -91,9 +91,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           : "";
 
       await settingsApi.openExternal(
-        displayVersion
-          ? `${RELEASES_URL}/tag/${displayVersion}`
-          : RELEASES_URL,
+        displayVersion ? `${RELEASES_URL}/tag/${displayVersion}` : RELEASES_URL,
       );
     } catch (error) {
       console.error("[AboutSection] Failed to open release notes", error);
@@ -195,7 +193,9 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="gap-1.5 bg-surface/80">
                   <span className="text-fg-2">{t("common.version")}</span>
-                  <span className="font-medium tabular-nums">v{CLASSIC_VERSION}</span>
+                  <span className="font-medium tabular-nums">
+                    v{CLASSIC_VERSION}
+                  </span>
                 </Badge>
                 <Badge variant="outline" className="gap-1.5 bg-surface/80">
                   <span className="text-fg-2">{t("settings.coreVersion")}</span>
@@ -280,7 +280,9 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
                   <p className="line-clamp-3 text-fg-2">{updateInfo.notes}</p>
                 )}
                 {isPortable && (
-                  <p className="text-fg-2">{t("settings.portableUpdateHint")}</p>
+                  <p className="text-fg-2">
+                    {t("settings.portableUpdateHint")}
+                  </p>
                 )}
               </>
             )}
@@ -322,7 +324,9 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
       {/* 本地环境检查（第三版形态）：应用安装与升级管理直接内嵌在本页 */}
       <section className="rounded-panel border border-border">
         <div className="px-5 pt-4">
-          <h3 className="m-0 text-sm font-medium">{t("settings.localEnvCheck")}</h3>
+          <h3 className="m-0 text-sm font-medium">
+            {t("settings.localEnvCheck")}
+          </h3>
           <p className="mb-2 text-xs text-muted-foreground">
             {t("settings.oneClickInstallHint")}
           </p>

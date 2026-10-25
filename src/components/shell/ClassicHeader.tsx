@@ -101,7 +101,11 @@ export function ClassicHeader({
         )}
         <UpdateBadge onClick={onOpenAbout} />
         {usageActive &&
-          tool(t("usage.title"), <BarChart2 className="h-4 w-4" />, onOpenUsage)}
+          tool(
+            t("usage.title"),
+            <BarChart2 className="h-4 w-4" />,
+            onOpenUsage,
+          )}
       </div>
       <div className="flex min-w-[100px] flex-1 items-center justify-end overflow-hidden">
         <AppSwitcher
