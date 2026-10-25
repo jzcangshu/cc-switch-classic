@@ -119,9 +119,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, windows-latest, macos-latest]
+    env:
+      # 测试二进制不带 debug 符号：冷缓存全量编译时带符号会撑爆 runner 磁盘
+      # （ubuntu-22.04 上实测 LLVM IO failure + No space left on device）
+      CARGO_PROFILE_DEV_DEBUG: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      # ubuntu-22.04 runner 剩余磁盘最小：先清掉用不到的预装大件再编译
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
 
       # rust-toolchain.toml 是编译器版本的唯一来源：直接装它，免得先装 stable 再被 rustup 换掉
       - name: Read pinned Rust toolchain
@@ -183,6 +192,9 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 45
     needs: changes
+    # 与 backend 矩阵 job 共享 Rust 缓存（shared-key）：profile 设置保持一致，避免互相踩着重编
+    env:
+      CARGO_PROFILE_DEV_DEBUG: "0"
     if: needs.changes.outputs.backend == 'true'
     permissions:
       contents: read
