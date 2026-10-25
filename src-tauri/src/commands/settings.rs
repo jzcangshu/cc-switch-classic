@@ -283,6 +283,16 @@ pub async fn install_update_and_restart(app: AppHandle) -> Result<bool, String> 
     // 由 MSI 模板自身的 REBOOT 属性兜底。
     #[cfg(target_os = "windows")]
     let builder = builder.installer_arg("REBOOT=ReallySuppress");
+    // Classic 双段版本：latest.json 里的 version 是 Classic 主版本（1.x），而
+    // package_info.version 是内核版本（4.x）。插件的默认比较是
+    // `release.version > 内核版本`，永远为假。前端 get_classic_update 已按
+    // Classic 主版本判定过有更新，这里只复述同一个判定，保持两处口径一致。
+    let builder = builder.version_comparator(|_current, release| {
+        crate::commands::misc::version_is_newer(
+            &release.version.to_string(),
+            crate::commands::misc::CLASSIC_VERSION,
+        )
+    });
     let updater = builder
         .build()
         .map_err(|e| format!("初始化更新器失败: {e}"))?;

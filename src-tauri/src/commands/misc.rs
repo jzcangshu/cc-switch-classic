@@ -11,8 +11,8 @@ use std::path::{Path, PathBuf};
 
 /// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
 /// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
-const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-const CLASSIC_VERSION: &str = "1.0.0";
+pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
+pub(crate) const CLASSIC_VERSION: &str = "1.0.0";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -120,7 +120,7 @@ pub struct ClassicUpdateInfo {
 
 /// 语义版本比较：candidate 严格大于 current 才算更新（复用前端的偏序思想，
 /// 这里只处理 x.y.z 形态；解析失败视为无更新，宁可漏报不误报）。
-fn version_is_newer(candidate: &str, current: &str) -> bool {
+pub(crate) fn version_is_newer(candidate: &str, current: &str) -> bool {
     let parse = |v: &str| -> Option<Vec<u64>> {
         v.trim()
             .trim_start_matches('v')
