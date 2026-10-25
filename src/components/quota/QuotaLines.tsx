@@ -320,7 +320,9 @@ function QuotaBadge({ line, now }: { line: QuotaLine; now: number }) {
       className={cn(
         "inline-flex max-w-full items-center gap-0.5 text-gray-500 dark:text-gray-400",
         line.tone === "muted"
-          ? "break-words whitespace-normal"
+          ? // 失败原因可能是一整段报错：定宽单行截断（全文在 title 里），
+            // 否则它会按 max-content 把卡片右列撑满、名字列被挤没
+            "min-w-0 max-w-[24rem] whitespace-nowrap"
           : "whitespace-nowrap",
       )}
     >
@@ -328,14 +330,16 @@ function QuotaBadge({ line, now }: { line: QuotaLine; now: number }) {
         <AlertCircle aria-hidden size={12} className={TONE_TEXT.danger} />
       )}
       {line.label && line.value && <span>{line.label}:</span>}
-      <TonedText
-        text={value}
-        line={line}
-        className={cn(
-          line.tone !== "muted" && "font-semibold",
-          TONE_TEXT[line.tone],
-        )}
-      />
+      <span className={cn(line.tone === "muted" && "min-w-0 truncate")}>
+        <TonedText
+          text={value}
+          line={line}
+          className={cn(
+            line.tone !== "muted" && "font-semibold",
+            TONE_TEXT[line.tone],
+          )}
+        />
+      </span>
       <ResetSlot countdown={countdownStr(line.resetsAt, now)} />
     </span>
   );

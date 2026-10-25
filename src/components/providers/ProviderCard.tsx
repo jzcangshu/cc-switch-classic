@@ -515,7 +515,7 @@ export function ProviderCard({
           </div>
         </div>
 
-        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-3">
+        <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-3">
           <div className="min-w-0 max-w-full text-end">
             <div className="flex items-center justify-end gap-1">
               {isCopilot ? (
