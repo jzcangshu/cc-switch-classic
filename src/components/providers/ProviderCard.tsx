@@ -376,7 +376,8 @@ export function ProviderCard({
         )}
       />
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        {/* 名字列保底宽度：窄窗口下右列（额度/操作）按 max-content 分配会把名字挤没 */}
+        <div className="flex min-w-[10rem] flex-1 items-center gap-2">
           {dragHandleProps ? (
             <button
               type="button"

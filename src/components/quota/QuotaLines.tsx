@@ -319,18 +319,27 @@ function QuotaBadge({ line, now }: { line: QuotaLine; now: number }) {
     <span
       className={cn(
         "inline-flex max-w-full items-center gap-0.5 text-gray-500 dark:text-gray-400",
-        line.tone === "muted"
-          ? // 失败原因可能是一整段报错：定宽单行截断（全文在 title 里），
-            // 否则它会按 max-content 把卡片右列撑满、名字列被挤没
-            "min-w-0 max-w-[24rem] whitespace-nowrap"
+        // 失败原因可能是一整段报错：定宽单行截断（全文在 title 里），
+        // 否则它会按 max-content 把卡片右列撑满、名字列被挤没
+        line.tone === "muted" || line.key === FAILED_LINE_KEY
+          ? "min-w-0 max-w-[24rem] whitespace-nowrap"
           : "whitespace-nowrap",
       )}
     >
       {line.key === FAILED_LINE_KEY && (
-        <AlertCircle aria-hidden size={12} className={TONE_TEXT.danger} />
+        <AlertCircle
+          aria-hidden
+          size={12}
+          className={cn(TONE_TEXT.danger, "shrink-0")}
+        />
       )}
       {line.label && line.value && <span>{line.label}:</span>}
-      <span className={cn(line.tone === "muted" && "min-w-0 truncate")}>
+      <span
+        className={cn(
+          (line.tone === "muted" || line.key === FAILED_LINE_KEY) &&
+            "min-w-0 truncate",
+        )}
+      >
         <TonedText
           text={value}
           line={line}
