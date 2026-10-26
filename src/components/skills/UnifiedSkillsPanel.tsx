@@ -64,6 +64,7 @@ import {
   MatrixColumnHighlight,
   MatrixSearch,
   NeutralBadge,
+  ompDiscoveryColumnNote,
   resolveBulkScope,
   showUndoToast,
 } from "@/components/mcp/AppMatrix";
@@ -1324,6 +1325,7 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
                               }
                             : undefined
                         }
+                        {...ompDiscoveryColumnNote(app, t)}
                         extraAction={{
                           label:
                             statusFilter === appFilter

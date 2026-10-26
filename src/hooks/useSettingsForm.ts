@@ -12,6 +12,7 @@ export const DIRECTORY_KEYS = [
   "openclawConfigDir",
   "hermesConfigDir",
   "piConfigDir",
+  "ompConfigDir",
 ] as const;
 
 type Language = "zh" | "zh-TW" | "en" | "ja" | "tr";

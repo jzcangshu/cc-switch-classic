@@ -61,6 +61,11 @@ export function AppPageHeader({
         <ArrowLeft className="h-4 w-4" />
       </Button>
     ));
+
+  // 自绘窗口按钮启用时没有系统标题栏，页头必须同时提供拖动入口。
+  const dragRegionAttr = windowControls
+    ? { "data-tauri-drag-region": true }
+    : DRAG_REGION_ATTR;
   return (
     <header
       className={cn(
@@ -68,12 +73,12 @@ export function AppPageHeader({
         windowControls && "pe-[116px]",
         className,
       )}
-      {...DRAG_REGION_ATTR}
+      {...dragRegionAttr}
       style={DRAG_REGION_STYLE as React.CSSProperties}
     >
       {/* Tauri 只认按下的元素自身带拖动属性：标题区、标题、占位条都要带，整条才能拖窗口 */}
       <div
-        {...DRAG_REGION_ATTR}
+        {...dragRegionAttr}
         className={cn(
           "flex min-w-0 items-center gap-2.5",
           truncateTitle ? "flex-1" : "shrink-0",
@@ -93,7 +98,7 @@ export function AppPageHeader({
           </span>
         )}
         <Heading
-          {...DRAG_REGION_ATTR}
+          {...dragRegionAttr}
           className={cn(
             "m-0 whitespace-nowrap",
             "text-lg font-semibold",
@@ -113,7 +118,7 @@ export function AppPageHeader({
           </div>
         )}
       </div>
-      {!truncateTitle && <div {...DRAG_REGION_ATTR} className="flex-1" />}
+      {!truncateTitle && <div {...dragRegionAttr} className="flex-1" />}
       {actions && (
         <div
           className="flex min-w-0 shrink items-center justify-end gap-2"

@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
 import type { AppMode } from "@/types/proxy";
+import { isPiFamilyApp } from "@/config/appConfig";
 import {
   isOfficialAccount,
   providerNeedsRouting,
@@ -624,7 +625,7 @@ export function buildLaunchSections(input: LaunchInput): ProviderSection[] {
   ];
 }
 
-// ─── 共存式应用（OpenCode / OpenClaw / Hermes / Pi / MiniMax Code）───────────
+// ─── 共存式应用（OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Kimi）─────
 
 export interface AdditiveInput {
   app: AppId;
@@ -641,8 +642,10 @@ export interface AdditiveInput {
   /** Hermes：model.provider 指向的那家 */
   hermesCurrentId?: string | null;
   isHermesManaged?: (provider: Provider) => boolean;
-  /** Pi：读不到当前配置时一律不能改 */
+  /** Pi / Oh My Pi：读不到当前配置时一律不能改 */
   piStateUnavailable?: boolean;
+  /** Kimi：原生 default_model 别名所属的供应商。 */
+  kimiCurrentId?: string | null;
   actions: {
     add: (provider: Provider) => void;
     remove: (provider: Provider) => void;
@@ -656,12 +659,63 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
   const added: ProviderSection["items"] = [];
   const available: ProviderSection["items"] = [];
   const piBlocked =
-    app === "pi" && input.piStateUnavailable
-      ? t("pi.current.stateUnavailableHint")
+    isPiFamilyApp(app) && input.piStateUnavailable
+      ? t(`${app}.current.stateUnavailableHint`)
       : undefined;
 
   for (const p of providers) {
     const chips: CardChip[] = [];
+    if (app === "kimi") {
+      const official = isOfficialAccount(app, p);
+      const live = input.isInConfig(p);
+      // 官方卡可以编辑模型、可以移出 config.toml（登录留着，能再添加）；仍在 Kimi 里的
+      // 官方卡不能直接删，删号在授权中心（连登录一起删）
+      const deleteProtectedReason =
+        official && live ? t("kimi.oauth.managedHint") : undefined;
+      const current = live && p.id === input.kimiCurrentId;
+      // 「加入」只写进 config.toml（模型出现在 Kimi 的 /model 列表），「移除」从 config.toml
+      // 拿掉、卡片留着；「设为默认」按第三版常驻在卡上（判例 11）。
+      const buttons: CardButton[] = [];
+      if (!live) {
+        buttons.push({
+          key: "add",
+          label: t("provider.addToConfig"),
+          onClick: () => actions.add(p),
+        });
+      } else {
+        if (!current) {
+          buttons.push({
+            key: "setDefault",
+            label: t("provider.setAsDefault"),
+            onClick: () => actions.setDefault(p),
+          });
+        }
+        buttons.push({
+          key: "remove",
+          label: t("providerCard.action.remove"),
+          disabledReason: current
+            ? t("providerCard.reason.currentCannotRemove")
+            : undefined,
+          onClick: () => actions.remove(p),
+        });
+      }
+      (live ? added : available).push({
+        provider: p,
+        presentation: {
+          // 第三版：当前默认项蓝框 neutral、其余无色
+          tone: current ? "neutral" : undefined,
+          status: current
+            ? { label: t("provider.isDefault"), dot: "muted", icon: "default" }
+            : undefined,
+          chips,
+          buttons,
+          deleteDisabledReason:
+            deleteProtectedReason ??
+            (current ? t("providerCard.reason.inUseCannotDelete") : undefined),
+        },
+      });
+      continue;
+    }
     const isOmo = p.category === "omo";
     const isOmoSlim = p.category === "omo-slim";
     if (isOmo) chips.push({ key: "omo", label: "OMO", tone: "outline" });
@@ -729,8 +783,9 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
           buttons: [
             {
               key: "add",
-              label:
-                app === "pi" ? t("provider.enable") : t("provider.addToConfig"),
+              label: isPiFamilyApp(app)
+                ? t("provider.enable")
+                : t("provider.addToConfig"),
               onClick: () => actions.add(p),
               disabledReason: piBlocked,
             },
@@ -742,6 +797,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
 
     // 第三版已添加的 OpenCode / Pi / MiniMax Code 有蓝色高亮，默认项仍单独标状态。
     const buttons: CardButton[] = [];
+    const menuItems: CardMenuItem[] = [];
     let status: CardPresentation["status"];
     let isDefault = false;
     let removeReason: string | undefined = piBlocked;
@@ -767,6 +823,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         }
       } else {
         const models = input.defaultModelOptions?.(p) ?? [];
+        // 「设为默认」恢复第三版的卡上常驻按钮；多个模型时按钮自带下拉选。
         // OpenCode 内置供应商可以不列模型（运行时才有），给不出选项就不显示
         if (app === "openclaw" || models.length > 0) {
           buttons.push({
@@ -820,7 +877,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
       presentation: {
         tone: isDefault
           ? "neutral"
-          : app === "opencode" || app === "pi" || app === "mcode"
+          : app === "opencode" || isPiFamilyApp(app) || app === "mcode"
             ? "direct"
             : undefined,
         status,
@@ -828,6 +885,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
         editDisabledReason: readOnlyReason,
         deleteDisabledReason: readOnlyReason ?? piBlocked,
         buttons,
+        menuItems: menuItems.length ? menuItems : undefined,
       },
     });
   }
