@@ -76,6 +76,7 @@ Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品
 | **土耳其语（tr）** | 2026-10-26 | 整语言删除，永不维护 | `src/i18n/locales/tr.json` 已删；`i18n/index.ts`、`useSettingsForm`、`types.ts`、托盘（`tray.rs` / `tray_panel.rs`）、`config.rs` 文案、语言选项全部移除；旧设置里的 `"tr"` 回落到英文。**四语言**：zh / zh-TW / en / ja |
 | **置顶赞助商预设** | 2026-10-26 | 整体删除，只保留知名直营 | 删除 372 个带 `primePartner` / `partnerPromotionKey` 的转售 / 聚合预设；仅保留 **Kimi / Kimi Global / Kimi For Coding / Kimi For Coding Global**（月之暗面）、**火山 Agent Plan / 火山 Coding Plan / Volcengine Doubao / BytePlus**（字节跳动）、**Google Official**（Google）。`primePartner` 字段与「尊享合作伙伴」置顶 / 爱心角标已删；`isPartner` 角标仅剩字节系预设 |
 | **预设供应商默认展开** | 2026-10-26 | 改为默认折叠的可展开区 | `ProviderPresetSelector` 的预设区默认收起（`defaultOpen=false`），标题行显示数量，点击展开；绝大多数用户直接手填 |
+| **「只保留账号登录预设」的过滤方案（PR #9）** | 2026-10-26 | 不采纳 | 只留 `presetGroup === "login"` 会让 Pi / Mcode / Kimi 三个应用预设列表变空（它们没有登录类预设），且牵连 44 个测试；改用「删赞助商预设 + 预设区折叠」。该 PR 的按钮 `min-w-max whitespace-nowrap` 修复已采纳（`68597ea8`） |
 | **用量设置抽屉（V4）** | 2026-10-26 | 不跟进 | 上游 v4.0.20 的 `UsageSettingsSheet` / `RequestLogColumnsMenu` / `ChecklistMenu` / `settingsStyles` 已删除；用量显示设置与列选择仍在「设置」页签内（`UsageDisplaySection`） |
 | **用量页指标条 + 级联筛选（V4）** | 2026-10-26 | 不跟进 | 保留 V3：玻璃汇总卡、供应商 / 模型两个独立下拉、趋势图自带指标切换。上游 v4.0.20 唯一采纳的用量页改进是**明细页签数量一次全显** |
 | **应用页整表形态（V4）** | 2026-10-26 | 只取分组 + 拖动 | 保留 V3 卡片网格；新增「已安装 / 未安装」分组与左上角拖动把手（把手独立于整卡，避免与按钮抢指针） |
