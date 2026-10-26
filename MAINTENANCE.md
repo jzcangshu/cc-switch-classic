@@ -96,7 +96,7 @@ Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品
 - **Rust**：本机 1.95 初始化失败时用 `RUSTUP_TOOLCHAIN=stable`（不改仓库 `rust-toolchain.toml`）；跑 Rust 测试要防 HOME 回退污染真实 `~/.cc-switch`。
 - **推送前三关**：`pnpm format:check`、`pnpm typecheck`、`cargo fmt --check --manifest-path src-tauri/Cargo.toml`；Rust 改动加跑 clippy。
 - **测试判例**：全量跑挂的用例先单文件复跑再定性——并发负载会造成超时假失败，只有单跑仍挂才算回归。
-- **已知问题**：`App.test.tsx` 的「top edge resize / Tauri dragging」用例依赖异步窗口状态（`canResize`）与前面用例铺好的环境，**本机整文件跑通过、CI（Linux）上稳定失败、单独 `-t` 跑必挂**。它断言的是边缘缩放不被拖拽抢走，别为了让 CI 变绿而改 `App.tsx` 的判定逻辑，优先按测试隔离问题排查（把窗口状态 mock 成同步、断言放到 `waitFor` 里）。
+- **平台分叉判例（2026-10-26 已修复，取代早先的「测试隔离」误诊）**：`App.test.tsx` 的「top edge resize / Tauri dragging」用例曾在 CI（Linux）稳定失败，根因**不是**测试隔离——是 `ClassicHeader` 无条件 spread 模块级常量 `DRAG_REGION_ATTR`，而该常量在模块加载时用**真实** `isLinux()`（UA 判断，jsdom 的 UA 含 `process.platform`）求值：Windows 上带 `data-tauri-drag-region`、Linux 上为 `{}`。于是 Linux 开启应用内窗口按钮时主 header 没有拖动区，`App.tsx` 边缘 mousedown 的 `stopPropagation`（要求目标带该属性）不触发，用例正确地抓住了这个真实产品 bug。修复=对齐上游 `AppPageHeader` 的条件模式（`windowControls ? { "data-tauri-drag-region": true } : DRAG_REGION_ATTR`）。教训：**测试 mock 掉的 `isLinux()` 只覆盖函数调用，盖不住模块加载期用它算出的常量**；本机（Windows）与 CI（Linux）因此分叉。复现手法：临时让 `platform.ts` 的 `isLinux` 直接 `return true` 即可在 Windows 上复刻 CI 失败。另注：单独 `-t` 跑该文件必挂是冷启动 `await import("@/App")` 的转换耗时贴着 5s 测试超时，与产品无关，整文件跑不受影响。
 - **测试契约**：`data-tool-row`、`data-account-row`、`aria-controls="provider-preset-body"` 这类钩子被测试依赖，改名要同步改测试；预设区默认折叠，测试用 `tests/utils/openPresets.ts` 展开。
 - **CI 陷阱**：`ci.yml` 的路径过滤依赖父提交，Detect 作业必须 `fetch-depth: 0`，否则 push 触发时静默判成「无改动」、整套检查被跳过（2026-10-26 修复）。
 - CI 的 `CARGO_PROFILE_DEV_DEBUG=0` 与 Linux 清理预装大件步骤别删，删了会复现 ubuntu-22.04 磁盘爆满。

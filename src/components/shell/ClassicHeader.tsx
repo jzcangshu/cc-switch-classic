@@ -66,6 +66,11 @@ export function ClassicHeader({
   const { t } = useTranslation();
   const windowControls = useContext(WindowControlsContext);
   const sharedApp = sharedFeatureAppOf(activeApp);
+  // 与 AppPageHeader 对齐：自绘窗口按钮启用时没有系统标题栏，主 header 必须提供拖动入口；
+  // DRAG_REGION_ATTR 在 Linux 上为空（规避 Wayland 拖拽异常），不能作为唯一来源。
+  const dragRegionAttr = windowControls
+    ? { "data-tauri-drag-region": true }
+    : DRAG_REGION_ATTR;
   const tool = (label: string, icon: ReactNode, onClick: () => void) => (
     <HoverTip content={label}>
       <Button
@@ -82,7 +87,7 @@ export function ClassicHeader({
   return (
     <header
       className="flex h-16 shrink-0 items-center gap-3 bg-background/80 px-6 backdrop-blur-md"
-      {...DRAG_REGION_ATTR}
+      {...dragRegionAttr}
       style={DRAG_REGION_STYLE}
     >
       <a href="#main-content" className="sr-only focus:not-sr-only">
