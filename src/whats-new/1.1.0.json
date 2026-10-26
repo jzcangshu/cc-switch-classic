@@ -1,0 +1,33 @@
+{
+  "version": "1.1.0",
+  "items": [
+    {
+      "type": "new",
+      "zh": "支持 Oh My Pi：供应商、MCP、Skills 与会话都能管理",
+      "zh-TW": "支援 Oh My Pi：供應商、MCP、Skills 與會話都能管理",
+      "en": "Oh My Pi support: providers, MCP, Skills and sessions",
+      "ja": "Oh My Pi に対応。プロバイダー、MCP、Skills、セッションを管理"
+    },
+    {
+      "type": "new",
+      "zh": "支持 Kimi Code，命令行版和桌面版都适用",
+      "zh-TW": "支援 Kimi Code，命令列版和桌面版都適用",
+      "en": "Kimi Code support, for both the CLI and the desktop app",
+      "ja": "Kimi Code に対応。CLI 版とデスクトップ版の両方で使えます"
+    },
+    {
+      "type": "improve",
+      "zh": "「应用」页按已安装和未安装分组，可拖动排序",
+      "zh-TW": "「應用」頁按已安裝和未安裝分組，可拖動排序",
+      "en": "The Apps page groups installed and missing apps; drag to reorder",
+      "ja": "「アプリ」ページをインストール済みと未インストールに分け、ドラッグで並べ替え"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Linux 开启应用内窗口按钮后无法拖动窗口",
+      "zh-TW": "修復 Linux 開啟應用內視窗按鈕後無法拖動視窗",
+      "en": "Fixed being unable to drag the window with in-app window controls on Linux",
+      "ja": "Linux でアプリ内ウィンドウボタン有効時にウィンドウをドラッグできない問題を修正"
+    }
+  ]
+}
