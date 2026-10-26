@@ -1,0 +1,143 @@
+# CC Switch Classic 维护必读
+
+> **动手前先读完这一份。** 本文合并了原先分散的「V4 上游升级裁决手册」「已恢复清单」「发布与更新红线」「工程约定」，并登记所有**已废弃决策**。
+> 与代码或旧笔记冲突时，以本文为准；要推翻任何一条，先改本文并写清理由，再改代码。
+
+---
+
+## 0. 一页速览
+
+| 项目 | 值 |
+|---|---|
+| 产品 | **CC Switch Classic**（界面文案、关于页、打包产物统一用此名，不得出现裸「CC Switch」） |
+| 定位 | V4 官方内核（数据层 / 后端 / 业务钩子）+ 第三版（v3.20.4）视觉与操作风味 |
+| 公开仓库 | <https://github.com/jzcangshu/cc-switch-classic>（前端唯一来源 `src/lib/repo.ts`；Rust 侧 `src-tauri/src/commands/misc.rs` 的 `CLASSIC_REPO`） |
+| 远端 | `origin` = V4 上游官方库；`classic` = 本仓库 |
+| 开发分支 | `codex/v3-classic-v4-core`（worktree：`C:/Users/jzcan/.codex/worktrees/v3-classic-v4-core/cc-switch`） |
+| 远端 main | 干净树，每次整树镜像（孤儿提交），不与本地历史同源 |
+| 版本 | 双段：Classic 主版本 `1.0.1`（`src/lib/classicVersion.ts` + `misc.rs`），内核版本 `4.0.20`（`src-tauri/tauri.conf.json`） |
+| 界面参照 | tag `v3.20.4` |
+
+**当前基线**：内核已跟进到上游 `v4.0.20`（Oh My Pi 为第 13 个应用、Kimi 官方账号、应用页分组与拖动）。
+
+---
+
+## 1. 三条界面裁决规则（2026-10-24 用户确立，原话）
+
+1. **范围**：只考虑「易改 / 中等」两级成本之中的条目。"no" 级（V3 无对应物）里只动**纯界面附加物**（多余的按钮、徽章、菜单），凡带数据 / 带功能的新增一律保留。
+2. **红线**：改回后不能存在——大量逻辑重构；严重的误导或与事实冲突；严重的视觉或交互体验恶化（遮挡、溢出、盲滚、触屏不可用、失去防误操作保护）。
+3. **动机**：只改那些会让 V3 老用户产生较大**陌生感**的：按钮样式与颜色、徽章、品牌元素、页面命名、多余入口。纯行为优化（返回目标、默认值）与单纯的信息增减不动。
+
+三条全满足才改回 / 适配；任一不满足即保留 V4。
+
+## 2. 五类裁决
+
+| 裁决 | 含义 | 默认适用 |
+|---|---|---|
+| `adopt` | 直接跟进（照上游并进来） | 后端 / 内核、配置修复、事实修正、测试 |
+| `adapt` | 跟进，但界面按 V3 形态适配后融入 | 新功能要露 UI；我方已 V3 化区域的逻辑增强 |
+| `coreOnly` | 只取上游逻辑 / 数据层，界面维持我方 V3 形态 | 上游对已恢复区域做的 V4 风改版 |
+| `skip` | 不跟进 | 上游纯 V4 皮肤变化、与 Classic 定位冲突项 |
+| `verify` | 机器拿不准，列给人复核 | 规则相抵触、影响面大、涉 updater / 发布 |
+
+## 3. 判例集（先例优先，不可违背）
+
+1. **入口类移除的教训（供应商搜索事件）**：首轮裁决「整体移除搜索」，用户事后改为**恢复 V3 浮动搜索面板**（`d21738b9`）。教训：对「V3 没有的入口」类条目，优先「恢复成 V3 已有的形态」而不是「删除功能」；删除功能仅在功能本身无价值时。
+2. **应用管理归属**：内嵌于「设置 → 关于」优于独立页（`77d6b112`），V3 原味方向。
+3. **防误操作保护一律保留**：未保存离开确认、删除确认与撤销、禁用原因悬停说明、搜索时禁用收起、直连格式警告。
+4. **决策记录在案的保留项不动**：模式查看与实际生效分离、触屏 / 窄屏直显卡片操作、会话结构化时间线、技能批量操作折叠区、目录草稿保护。改动需先重写决策记录。
+5. **事实准确性压过 V3 文案**：工具清单含新 CLI、空状态描述、倍率与连通检测不复活。V3 文案与当前事实不符时以事实为准。
+6. **结构性冲突维持 V4 并记录**：提示词页内页头、MCP 编辑抽屉（键名模型）、会话阅读器结构。恢复 V3 形态会杀掉保留的 V4 功能时不做。
+7. **说明可见性**：页面级结构恢复（手风琴 / 小节形态）时，该结构内的常驻说明随之恢复；但**单独的**字段提示 / 小字可见性不反向恢复。
+8. **行为优化与默认值保留 V4**：设置返回目标、配置档默认隐藏等。显式例外：额度显示默认已翻转为「已用」（设置项保留）。
+9. **视觉底层修复保留 V4**：滚动条常显、自绘勾选框 / 输入框、浮层动画、主题瞬切、中文字体栈、键盘才显示焦点框。
+10. **混合适配模式（adapt 标准做法）**：V3 形态 + V4 数据并存。实例：用量玻璃汇总卡保留成功率 / 币种换算；查询失败态恢复 V3「查询失败」胶囊、报错详情挪悬停与展开；关于页 V3 版式保留近期更新与便携提示。
+11. **常驻按钮优先于 ⋯ 菜单**：设为默认 Zap、账号行「重新登录 / 使用此账号 / ×」、Pi 模板行编辑 / 删除均直显。⋯ 菜单里只留 V4 新功能项（复制命令名等）。
+12. **i18n 惯例**：四语言（zh / zh-TW / en / ja）优先照抄 v3.20.4 原文；上游新增 key 四语言同步；文案裁决必须还原成实际中文再比对，不比较 i18n key。
+
+---
+
+## 4. 已恢复的第三版清单（回归检查表）
+
+每次合并上游后逐项确认没有被 V4 改版覆盖：
+
+Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品牌字动效（指向本项目仓库）；页头用量入口与独立更新按钮；二级页长标题；官方徽章与整卡变淡移除；队列上下移按钮移除；设为默认常驻 Zap；加入按钮蓝色；额度默认显示「已用」（设置保留）；认证中心标题 / 简介头 / 组名副标题 / 账号行常驻按钮；MCP 按钮文案与「自定义」胶囊；Pi 模板行直显按钮；路由页手风琴；配置目录紧凑单列；通用页小节形态与内联说明；关于页第三版版式；应用页卡片网格与环境徽章；会话恢复命令预览条与常驻删除；数据来源页内三卡；models.dev 整卡；用量玻璃汇总卡；设置页签蓝色胶囊；弹窗毛玻璃遮罩与标题底条带。
+
+事后追加：供应商搜索恢复 V3 浮动面板；查询失败态「查询失败」胶囊 + 详情挪悬停；关于页内嵌应用管理；仓库指向切换至本项目。
+
+---
+
+## 5. 已废弃决策（**不得复活**）
+
+以下条目是用户明确拍板废弃的，后续 Agent 不得以「上游有」「更完整」「代码里还有残留」为由恢复。发现残留代码一律清掉。
+
+| 决策 | 日期 | 结论 | 落地形态 |
+|---|---|---|---|
+| **土耳其语（tr）** | 2026-10-26 | 整语言删除，永不维护 | `src/i18n/locales/tr.json` 已删；`i18n/index.ts`、`useSettingsForm`、`types.ts`、托盘（`tray.rs` / `tray_panel.rs`）、`config.rs` 文案、语言选项全部移除；旧设置里的 `"tr"` 回落到英文。**四语言**：zh / zh-TW / en / ja |
+| **置顶赞助商预设** | 2026-10-26 | 整体删除，只保留知名直营 | 删除 372 个带 `primePartner` / `partnerPromotionKey` 的转售 / 聚合预设；仅保留 **Kimi / Kimi Global / Kimi For Coding / Kimi For Coding Global**（月之暗面）、**火山 Agent Plan / 火山 Coding Plan / Volcengine Doubao / BytePlus**（字节跳动）、**Google Official**（Google）。`primePartner` 字段与「尊享合作伙伴」置顶 / 爱心角标已删；`isPartner` 角标仅剩字节系预设 |
+| **预设供应商默认展开** | 2026-10-26 | 改为默认折叠的可展开区 | `ProviderPresetSelector` 的预设区默认收起（`defaultOpen=false`），标题行显示数量，点击展开；绝大多数用户直接手填 |
+| **用量设置抽屉（V4）** | 2026-10-26 | 不跟进 | 上游 v4.0.20 的 `UsageSettingsSheet` / `RequestLogColumnsMenu` / `ChecklistMenu` / `settingsStyles` 已删除；用量显示设置与列选择仍在「设置」页签内（`UsageDisplaySection`） |
+| **用量页指标条 + 级联筛选（V4）** | 2026-10-26 | 不跟进 | 保留 V3：玻璃汇总卡、供应商 / 模型两个独立下拉、趋势图自带指标切换。上游 v4.0.20 唯一采纳的用量页改进是**明细页签数量一次全显** |
+| **应用页整表形态（V4）** | 2026-10-26 | 只取分组 + 拖动 | 保留 V3 卡片网格；新增「已安装 / 未安装」分组与左上角拖动把手（把手独立于整卡，避免与按钮抢指针） |
+| **账号行 ⋯ 菜单（V4）** | 2026-10-26 | 不跟进 | 认证中心 / Kimi 账号行沿用 V3 常驻按钮 |
+| **上游专用仓库文件** | 2026-10-25 | 不带回 | `dependabot.yml`、`CODEOWNERS`、`FUNDING.yml`、上游 workflows（claude / sync-r2 / wsl2-nightly）、`.agents/`、`AGENTS.md`、`CLAUDE.md` 均不入库 |
+| **融合版分支 `codex/v3-ui-v4-core`** | 2026-10-25 | 已彻底删除 | 勿恢复、勿在文档中引用 |
+
+---
+
+## 6. 版本与发布
+
+- **双段版本**：Classic 主版本（`src/lib/classicVersion.ts` + `misc.rs` 的 `CLASSIC_VERSION`，两处同步）从 `1.0.0` 起；内核版本跟随上游。关于页同时显示 `v{Classic}` 与 `内核 v{内核}`。
+- **发布什么就升什么**：跟进内核升 minor，纯界面修复升 patch。
+- 发布 = 推 tag `v{classic}`；Release 工作流全平台构建：Windows x64/ARM64 **NSIS** + 便携 zip、Linux x64/ARM64 AppImage/deb/rpm、macOS universal 未签名 dmg/zip。
+- 便携包命名：`CC-Switch-Classic-v{classic}-Windows[-arm64]-Portable.zip`。
+- **必须非 prerelease**：应用内更新读 `releases/latest/download/latest.json`，GitHub 的 latest 指针不含 prerelease。
+- Windows 安装器**只能用 NSIS**（MSI 同 ProductVersion 无法覆盖安装）。
+- 发布前在 `src/whats-new/{classic}.json` 写**已跟进的内核变更**，不引用未跟进的上游版本。
+
+## 7. 更新机制（红线）
+
+- 更新检查走 `get_classic_update`（读本仓库 latest release 的 tag，与 `CLASSIC_VERSION` 比较）；**仅 Classic 主版本更新才提示**，内核变化不提示。
+- `tauri.conf.json` 的 updater endpoints 指向本仓库 `releases/latest/download/latest.json`；**禁止**恢复直连上游 endpoint。
+- `install_update_and_restart` 里的 `version_comparator` 钩子别删，口径必须与 `get_classic_update` 一致（插件默认拿 latest.json 的版本与内核版本严格大于比较，双段版本下永远为假）。
+- 签名密钥：私钥 `C:/Users/jzcan/.tauri/cc-switch-classic.key`（空密码，勿入库勿外传）；GitHub secrets `TAURI_SIGNING_PRIVATE_KEY`（**密钥内容**，不是路径）/ `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`（空）。
+- macOS 未签名：App 内自动更新在 macOS 不可用；`latest.json` 的 platforms 只含 windows×2 + linux×2。
+
+## 8. 同步到远端 main
+
+远端 main 是干净树，用孤儿提交整树镜像：
+
+```bash
+git fetch classic
+C=$(git commit-tree HEAD^{tree} -p "$(git rev-parse classic/main)" -m "提交说明")
+git push classic "$C:refs/heads/main"
+```
+
+⚠️ **推送前必查网页端直改**：用户会直接在 GitHub 网页编辑 README 等文件，整树镜像会覆盖。先查最新提交是否含 "Update README.md" 类网页提交；若有，先 `git show <sha>:README.md > README.md` 恢复再镜像（2026-10-25 实际覆盖过三次）。
+
+---
+
+## 9. 工程约定
+
+- **i18n**：四语言（zh / zh-TW / en / ja）。上游新增 key 四语言同步；zh / zh-TW / en / ja 优先照抄 v3.20.4 原文。
+- **Rust 工具链**：本机 1.95 初始化失败时用 `RUSTUP_TOOLCHAIN=stable`（不改仓库 `rust-toolchain.toml`）；跑 Rust 测试须防 HOME 回退污染真实 `~/.cc-switch`。
+- **推送前三关**：`pnpm format:check`、`pnpm typecheck`、`cargo fmt --check --manifest-path src-tauri/Cargo.toml`（CI 三平台同样检查；Rust 改动加跑 clippy）。
+- CI 的 `CARGO_PROFILE_DEV_DEBUG=0` 与 Linux 清理预装大件的步骤别删（删了会复现 ubuntu-22.04 磁盘爆满）。
+- 全局共享 UI 原语（`ui/dialog.tsx`、`ui/tabs.tsx`）已 V3 化，合并上游时逐项对照，不可直接采用上游版本。
+- 提交信息中文，风格参照 `git log`；不提交 `.agents/notes` 之外的临时文件。
+- **测试判例**：全量跑挂的用例先单文件复跑再定性——本机并发负载会造成超时假失败；只有单跑仍挂才算回归。
+- **测试夹具与实现同步**：改动界面结构后，先跑受影响测试文件；`data-*` 钩子（`data-tool-row`、`data-account-row`）是测试契约，改名要同步改测试。
+
+---
+
+## 10. 文档地图
+
+| 文件 | 是否入库 | 作用 |
+|---|---|---|
+| `MAINTENANCE.md`（本文） | 入库 | **唯一必读**：裁决规则、先例、已恢复清单、已废弃决策、发布与更新红线 |
+| `AGENTS.md` | 不入库（gitignore） | 本地 Agent 速查，开头指向本文 |
+| `.agents/notes/guides/v3-upgrade-triage.md` | 不入库 | 历史版裁决手册（内容已并入本文，仅作溯源） |
+| `docs/release-notes/` | 入库 | 每个内核版本的发布说明（上游原文） |
+| `CHANGELOG.md` | 入库 | 上游变更记录 |
+| git 历史 `918035d9:.agents/notes/implemented/architecture/2026-10-23-v3-ui-v4-core.md` | 历史提交 | 架构决策记录全文 |
+| `C:/Users/jzcan/Documents/cc-switch-dev-archive/cc-switch-classic/` | 仓库外 | 开发文档归档（PI / agy / 会话管理等长文） |
