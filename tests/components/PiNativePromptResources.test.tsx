@@ -26,7 +26,8 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     // 没有 defaultValue 时原样返回键名；有就套上插值，方便断言恢复的 V3 文案
     t: (key: string, opts?: Record<string, unknown>) => {
-      const raw = typeof opts?.defaultValue === "string" ? opts.defaultValue : key;
+      const raw =
+        typeof opts?.defaultValue === "string" ? opts.defaultValue : key;
       return raw.replace(/\{\{(\w+)\}\}/g, (_match, name: string) =>
         String(opts?.[name] ?? ""),
       );
@@ -431,9 +432,7 @@ describe("Pi native prompt resources", () => {
     await user.click(
       screen.getByRole("button", { name: "prompts.deleteAria" }),
     );
-    expect(
-      await screen.findByText("删除 /empty？"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("删除 /empty？")).toBeInTheDocument();
     expect(
       screen.getByText("此操作会永久删除 prompts/empty.md。"),
     ).toBeInTheDocument();

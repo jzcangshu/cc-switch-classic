@@ -308,9 +308,7 @@ describe("ProviderList Component", () => {
     fireEvent.change(input, { target: { value: "alpha" } });
 
     await waitFor(() =>
-      expect(
-        screen.queryByTestId("provider-card-b"),
-      ).not.toBeInTheDocument(),
+      expect(screen.queryByTestId("provider-card-b")).not.toBeInTheDocument(),
     );
     expect(screen.getByTestId("provider-card-a")).toBeInTheDocument();
 
@@ -352,9 +350,11 @@ describe("ProviderList Component", () => {
     // 切到 codex：面板收起，过滤词清空，卡片全部回来
     view.rerender(
       <QueryClientProvider
-        client={new QueryClient({
-          defaultOptions: { queries: { retry: false } },
-        })}
+        client={
+          new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+          })
+        }
       >
         <ProviderList
           {...baseProps}

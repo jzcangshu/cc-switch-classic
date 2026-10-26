@@ -129,11 +129,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     ["Zhipu GLM", "glm-5.3", ["low", "high", "max"], "max"],
     ["Zhipu GLM", "glm-5-turbo", ["max"]],
     ["Zhipu GLM en", "glm-5.3", ["low", "high", "max"], "max"],
-    // SiliconFlow .com 的 M3：平台级 enable_thinking 布尔开关（后端按平台
     // 推断兜底），M3 官方可关思考 → 两态
-    ["SiliconFlow en", "MiniMaxAI/MiniMax-M3", ["none", "high"]],
-    // SiliconFlow .cn：平台仅 high/max，显式 high 与预设配置一致。
-    ["SiliconFlow", "deepseek-ai/DeepSeek-V4-Flash", ["high", "max"], "high"],
     // 聚合平台尚未确认新 GLM 的开关/effort；单档不下发推理控制参数。
     ["AtlasCloud", "zai-org/glm-5.3", ["high"]],
     ["Novita AI", "zai-org/glm-5.3", ["high"]],
@@ -190,15 +186,6 @@ describe("Codex preset pre-filled reasoning levels", () => {
     ["Kimi For Coding", "kimi-for-coding-highspeed", ["high"]],
     ["Kimi For Coding", "k3", ["low", "high", "max"], "high"],
     ["Kimi For Coding", "k3-256k", ["low", "high", "max"], "high"],
-    // OpenCode Go（Zen 网关）：opencode 客户端 variants() 严格按各模型在
-    // models.dev 的 reasoning_options 声明发 reasoning_effort（provider/
-    // transform.ts）——GLM5.3 两款有 low/high/max，Kimi K3.1 Pro 仅 max。
-    // 代理转换层按同一张表逐模型钳制；GLM 默认 high 与预设配置一致。
-    ["OpenCode Go", "glm-5.3", ["low", "high", "max"], "high"],
-    ["OpenCode Go", "glm-5.3-flash", ["low", "high", "max"], "high"],
-    ["OpenCode Go", "kimi-k3.1-pro", ["max"]],
-    ["OpenCode Go", "deepseek-v4-pro", ["high", "max"]],
-    ["OpenCode Go", "deepseek-v4.1-flash", ["low", "high", "max"]],
     // 千问官方 Codex 页只发布一份 model-catalog.local.json，且该元数据段落
     // 位于套餐分页之前（help.aliyun.com/zh/model-studio/codex，2026-09-08
     // 核对）：qwen3.8-max 档位 low/medium/xhigh、默认 xhigh（≠ 模板回落的
@@ -227,11 +214,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     // llama.cpp 本机（原生 Responses 直连）：Qwen3-Coder 不思考，llama-server 把
     // reasoning_effort 交给模型模板（PR #26941，2026-10-14），该模板不读，照
     // Nebius 先例只钉单档 high
-    [
-      "llama.cpp",
-      "ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF",
-      ["high"],
-    ],
+    ["llama.cpp", "ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF", ["high"]],
     // vLLM 本机（原生 Responses 直连）：vLLM 用户没设 enable_thinking 时按
     // effort != "none" 开关思考（responses/protocol.py，v0.31.0，2026-10-14），
     // Qwen3.6 模板只有开关，故两态
@@ -351,11 +334,9 @@ describe("Codex preset pre-filled reasoning levels", () => {
   );
 
   it("keeps deliberately-unfilled presets unfilled", () => {
-    // OpenCode Go 的 MiMo 无 effort 声明，与 opencode 客户端一致（代理侧
     // 无表不发 reasoning_effort）。ModelScope 是否透传思考字段未证实，不造
     // 两态假开关。
     const UNFILLED: Array<[string, string]> = [
-      ["OpenCode Go", "mimo-v2.6-pro"],
       ["ModelScope", "ZhipuAI/GLM-5.2"],
       // StepFun 无后缀 3.5-flash：官方未暴露 effort，单一常开思考态
       ["StepFun", "step-3.5-flash"],

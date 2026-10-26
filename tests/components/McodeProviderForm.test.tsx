@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { openPresets } from "../utils/openPresets";
 import { McodeProviderForm } from "@/components/providers/forms/McodeProviderForm";
 import { mcodeProviderPresets } from "@/config/mcodeProviderPresets";
 import { piProviderPresets } from "@/config/piProviderPresets";
@@ -31,12 +32,15 @@ vi.mock("@/components/JsonEditor", () => ({
   ),
 }));
 
-const render = (ui: ReactElement) =>
-  rtlRender(
+const render = (ui: ReactElement) => {
+  const view = rtlRender(
     <QueryClientProvider client={createTestQueryClient()}>
       {ui}
     </QueryClientProvider>,
   );
+  openPresets();
+  return view;
+};
 
 const original = {
   kind: "custom",

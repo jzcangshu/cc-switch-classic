@@ -55,10 +55,10 @@ describe("kimiProviderPresets", () => {
       new Set(["vendor", "thirdparty", "cloud", "local"]),
     );
     for (const name of [
-      "88API",
-      "A6API",
-      "AICodeMirror",
+      "AiHubMix",
+      "CherryIN",
       "OpenRouter",
+      "TheRouter",
       "TokenFactory",
     ]) {
       expect(presetGroup(find(name))).toBe("thirdparty");
@@ -182,7 +182,7 @@ describe("kimiProviderPresets", () => {
           expect(config.support_efforts).toContain(config.default_effort);
       }
     }
-    expect(model("PackyCode", "claude-opus-5-5")).toMatchObject({
+    expect(model("AiHubMix", "claude-opus-5-5")).toMatchObject({
       adaptive_thinking: true,
       max_output_size: 128000,
     });

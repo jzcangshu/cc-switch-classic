@@ -29,9 +29,7 @@ vi.mock("@/lib/clipboard", () => ({ copyText: mocks.copy }));
 // 第三版形态：账号行的「使用此账号 / 重新登录 / ×」都直显，不再收进「…」菜单
 function accountRow(accountId: string) {
   return within(
-    document.querySelector(
-      `[data-account-row="${accountId}"]`,
-    ) as HTMLElement,
+    document.querySelector(`[data-account-row="${accountId}"]`) as HTMLElement,
   );
 }
 

@@ -65,6 +65,16 @@ function openAdvancedOptions() {
   );
 }
 
+// 预设供应商默认折叠；要点预设时先展开
+function openPresets() {
+  const toggle = document.querySelector<HTMLButtonElement>(
+    'button[aria-controls="provider-preset-body"]',
+  );
+  if (toggle?.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+}
+
 describe("PiProviderForm", () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
@@ -93,6 +103,7 @@ describe("PiProviderForm", () => {
         onCancel={() => {}}
       />,
     );
+    openPresets();
     await user.click(
       screen.getByRole("button", { name: /^providerPreset\.group\.vendor / }),
     );
@@ -863,6 +874,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     fireEvent.click(screen.getByText("Kimi", { selector: "span" }));
     fireEvent.change(screen.getByLabelText("pi.form.credential"), {
       target: { value: "literal-key" },
@@ -937,6 +949,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     fireEvent.click(screen.getByText("Kimi", { selector: "span" }));
     const configEditor = screen.getByLabelText(
       "provider.configJson",
@@ -988,6 +1001,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     fireEvent.click(screen.getByText("Kimi", { selector: "span" }));
     fireEvent.change(screen.getByLabelText("pi.form.credential"), {
       target: { value: "literal-key" },
@@ -1115,6 +1129,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     fireEvent.click(screen.getByText("Kimi", { selector: "span" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Save invalid preset" }),
@@ -1656,6 +1671,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     await user.click(screen.getByText("Kimi", { selector: "span" }));
     const configEditor = screen.getByLabelText(
       "provider.configJson",
@@ -1772,6 +1788,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     await user.click(screen.getByText("DeepSeek", { selector: "span" }));
     await user.click(
       screen.getAllByRole("button", {
@@ -1931,6 +1948,7 @@ describe("PiProviderForm", () => {
       />,
     );
 
+    openPresets();
     await user.click(screen.getByText("Kimi", { selector: "span" }));
     const configEditor = screen.getByLabelText(
       "provider.configJson",

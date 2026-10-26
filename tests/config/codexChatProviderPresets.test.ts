@@ -70,20 +70,6 @@ const expectedChatPresets = new Map<
     },
   ],
   [
-    "SiliconFlow",
-    {
-      baseUrl: "https://api.siliconflow.cn/v1",
-      contextWindows: { "deepseek-ai/DeepSeek-V4-Flash": 1048576 },
-    },
-  ],
-  [
-    "SiliconFlow en",
-    {
-      baseUrl: "https://api.siliconflow.com/v1",
-      contextWindows: { "MiniMaxAI/MiniMax-M3": 1048576 },
-    },
-  ],
-  [
     "AtlasCloud",
     {
       baseUrl: "https://api.atlascloud.ai/v1",
@@ -102,20 +88,6 @@ const expectedChatPresets = new Map<
     {
       baseUrl: "https://integrate.api.nvidia.com/v1",
       contextWindows: { "moonshotai/kimi-k2.6": 262144 },
-    },
-  ],
-  [
-    "OpenCode Go",
-    {
-      baseUrl: "https://opencode.ai/zen/go/v1",
-      contextWindows: {
-        "glm-5.3": 1000000,
-        "glm-5.3-flash": 1000000,
-        "kimi-k3.1-pro": 1048576,
-        "deepseek-v4-pro": 1048576,
-        "deepseek-v4.1-flash": 1048576,
-        "mimo-v2.6-pro": 1048576,
-      },
     },
   ],
 ]);
@@ -373,32 +345,5 @@ describe("Codex Chat provider presets", () => {
       // 原生（直连）不走 Chat 转换，因此不需要 codexChatReasoning。
       expect(preset?.codexChatReasoning).toBeUndefined();
     }
-  });
-
-  it("ships per-model reasoningLevels for OpenCode Go mirroring models.dev", () => {
-    // Zen 网关的合法 effort 档位是逐模型的（models.dev reasoning_options，
-    // 2026-09-10）：统一并集映射会把 high 发给仅声明 max 的 kimi-k3.1-pro（原 kimi-k3），
-    // 此测试锁住逐模型表，防回退。
-    const preset = codexProviderPresets.find(
-      (item) => item.name === "OpenCode Go",
-    );
-
-    expect(preset, "OpenCode Go preset").toBeDefined();
-    expect(preset?.codexChatReasoning?.effortValueMode).toBe("zen");
-    expect(
-      Object.fromEntries(
-        (preset?.modelCatalog ?? []).map((model) => [
-          model.model,
-          model.reasoningLevels ?? null,
-        ]),
-      ),
-    ).toEqual({
-      "glm-5.3": ["low", "high", "max"],
-      "glm-5.3-flash": ["low", "high", "max"],
-      "kimi-k3.1-pro": ["max"],
-      "deepseek-v4-pro": ["high", "max"],
-      "deepseek-v4.1-flash": ["low", "high", "max"],
-      "mimo-v2.6-pro": null,
-    });
   });
 });

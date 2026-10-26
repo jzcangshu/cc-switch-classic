@@ -14,6 +14,16 @@ beforeAll(() => {
   Element.prototype.scrollIntoView ??= vi.fn();
 });
 
+// 预设供应商默认折叠；要点预设时先展开
+function openPresets() {
+  const toggle = document.querySelector<HTMLButtonElement>(
+    'button[aria-controls="provider-preset-body"]',
+  );
+  if (toggle?.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+}
+
 vi.mock("@/components/JsonEditor", () => ({
   default: ({
     id,
@@ -171,7 +181,7 @@ describe("KimiProviderForm", () => {
 
   it.each([
     { group: "vendor", name: "Kimi" },
-    { group: "thirdparty", name: "88API" },
+    { group: "thirdparty", name: "AiHubMix" },
     { group: "cloud", name: "Microsoft Foundry" },
     { group: "local", name: "Ollama" },
     { group: "local", name: "LM Studio" },
@@ -194,6 +204,7 @@ describe("KimiProviderForm", () => {
           />
         </QueryClientProvider>,
       );
+      openPresets();
       await user.click(
         screen.getByRole("button", {
           name: new RegExp(`^providerPreset\\.group\\.${group} `),
@@ -361,6 +372,7 @@ describe("KimiProviderForm", () => {
         />
       </QueryClientProvider>,
     );
+    openPresets();
     await user.click(
       screen.getByRole("button", { name: /^providerPreset\.group\.vendor / }),
     );

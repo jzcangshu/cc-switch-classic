@@ -82,11 +82,6 @@ describe("Pi thinking profiles", () => {
           profileId: "deepseekV4",
         }),
         expect.objectContaining({
-          preset: "OpenCode Go",
-          modelId: "glm-5.3",
-          profileId: "openCodeGoGlm52",
-        }),
-        expect.objectContaining({
           preset: "AWS Bedrock",
           modelId: "global.anthropic.claude-opus-5",
           profileId: "xhighAndMax",

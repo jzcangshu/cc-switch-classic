@@ -130,6 +130,16 @@ function captureDraftProjections(liveToml = "") {
   return requests;
 }
 
+// 预设供应商默认折叠；这些用例要直接点预设，渲染后先展开（没有预设区时是空操作）
+function openPresets() {
+  const toggle = document.querySelector<HTMLButtonElement>(
+    'button[aria-controls="provider-preset-body"]',
+  );
+  if (toggle?.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+}
+
 function renderForm(
   meta?: ProviderMeta,
   onEditorBaseChange?: ProviderFormProps["onEditorBaseChange"],
@@ -157,6 +167,7 @@ function renderForm(
       />
     </QueryClientProvider>,
   );
+  openPresets();
   if (!meta) {
     fireEvent.click(screen.getByRole("button", { name: /GitHub Copilot/ }));
   }

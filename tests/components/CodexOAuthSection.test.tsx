@@ -177,9 +177,7 @@ describe("CodexOAuthSection", () => {
     render(<CodexOAuthSection />);
 
     // 删除是账号行尾常驻的 × 按钮（V3 形态），点击后仍走确认弹窗
-    await user.click(
-      screen.getAllByRole("button", { name: "移除账号" })[0],
-    );
+    await user.click(screen.getAllByRole("button", { name: "移除账号" })[0]);
     expect(authResult.removeAccount).not.toHaveBeenCalled();
 
     const dialog = await screen.findByRole("alertdialog");

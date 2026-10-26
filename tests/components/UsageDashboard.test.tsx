@@ -354,9 +354,7 @@ describe("UsageDashboard", () => {
     expect(
       screen.getByRole("button", { name: "Claude Code" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Codex" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Codex" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Gemini/, pressed: true }),
     ).toBeInTheDocument();

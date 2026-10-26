@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { openPresets } from "../utils/openPresets";
 import {
   ProviderForm,
   type ProviderFormValues,
@@ -126,7 +127,7 @@ vi.mock("@/components/providers/forms/hooks", async (importOriginal) => {
 
 function renderCodexForm(onSubmit: (values: ProviderFormValues) => void) {
   const queryClient = createTestQueryClient();
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <ProviderForm
         appId="codex"
@@ -136,11 +137,13 @@ function renderCodexForm(onSubmit: (values: ProviderFormValues) => void) {
       />
     </QueryClientProvider>,
   );
+  openPresets();
+  return view;
 }
 
 function renderClaudeCodexForm(onSubmit: (values: ProviderFormValues) => void) {
   const queryClient = createTestQueryClient();
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <ProviderForm
         appId="claude"
@@ -156,6 +159,8 @@ function renderClaudeCodexForm(onSubmit: (values: ProviderFormValues) => void) {
       />
     </QueryClientProvider>,
   );
+  openPresets();
+  return view;
 }
 
 describe("ProviderForm Codex Official managed account", () => {

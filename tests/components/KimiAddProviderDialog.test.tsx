@@ -7,6 +7,7 @@ import {
 } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { openPresets } from "../utils/openPresets";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
 import { kimiOAuthApi, type KimiOAuthStatus } from "@/lib/api/kimiOAuth";
 import { createTestQueryClient } from "../utils/testQueryClient";
@@ -93,6 +94,7 @@ function setup() {
 }
 
 async function selectAccount() {
+  openPresets();
   fireEvent.click(
     await screen.findByRole("button", { name: "kimi.oauth.title" }),
   );
