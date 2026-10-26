@@ -563,7 +563,7 @@ function PresetPicker({
         <button
           type="button"
           onClick={onManageUniversalProviders}
-          className="rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
+          className="min-w-max whitespace-nowrap rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
         >
           {t("providerPreset.manageUniversal")}
         </button>
