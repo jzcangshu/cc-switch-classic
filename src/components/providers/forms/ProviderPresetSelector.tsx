@@ -142,12 +142,18 @@ interface ProviderPresetSelectorProps {
 export function ProviderPresetSelector({
   appId,
   selectedPresetId,
-  presetEntries,
+  presetEntries: allPresetEntries,
   onPresetChange,
   onUniversalPresetSelect,
   onManageUniversalProviders,
 }: Readonly<ProviderPresetSelectorProps>) {
   const { t } = useTranslation();
+  // 新增供应商仅提供账号登录预设；统一供应商由独立列表提供。
+  // 保留原始预设 ID，表单仍按原数组下标读取登录配置。
+  const presetEntries = useMemo(
+    () => allPresetEntries.filter((entry) => presetGroup(entry.preset) === "login"),
+    [allPresetEntries],
+  );
   const ref = useRef<HTMLDivElement>(null);
   const edited = useFormEditedSince(ref, selectedPresetId ?? "custom");
   const [pending, setPending] = useState<PresetEntry | null>(null);
@@ -552,7 +558,7 @@ function PresetPicker({
         <button
           type="button"
           onClick={onManageUniversalProviders}
-          className="rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
+          className="min-w-max whitespace-nowrap rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
         >
           {t("providerPreset.manageUniversal")}
         </button>
