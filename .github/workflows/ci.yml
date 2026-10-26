@@ -32,6 +32,10 @@ jobs:
       - name: Checkout
         if: github.event_name == 'push'
         uses: actions/checkout@v6
+        with:
+          # 路径过滤要 diff「本次推送前」那个提交；默认 depth=1 取不到父提交，
+          # 过滤会静默判成「无改动」，整套检查被跳过。取全量历史最稳。
+          fetch-depth: 0
 
       - name: Detect changed paths
         id: filter
