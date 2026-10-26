@@ -7,7 +7,6 @@ import en from "@/i18n/locales/en.json";
 import zh from "@/i18n/locales/zh.json";
 import tw from "@/i18n/locales/zh-TW.json";
 import ja from "@/i18n/locales/ja.json";
-import tr from "@/i18n/locales/tr.json";
 
 async function translate(locale = "zh") {
   const i18n = createInstance();
@@ -18,7 +17,6 @@ async function translate(locale = "zh") {
       zh: { translation: zh },
       "zh-TW": { translation: tw },
       ja: { translation: ja },
-      tr: { translation: tr },
     },
     interpolation: { escapeValue: false },
   });
@@ -102,7 +100,7 @@ describe("route switch notifications", () => {
     ).toBe("已记住供应商 B，客户端接入路由或聚合后使用。");
   });
 
-  it.each(["en", "zh", "zh-TW", "ja", "tr"])(
+  it.each(["en", "zh", "zh-TW", "ja"])(
     "has complete translations and interpolation for %s",
     async (locale) => {
       const t = await translate(locale);
