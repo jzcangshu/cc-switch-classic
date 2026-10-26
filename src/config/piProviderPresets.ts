@@ -41,7 +41,6 @@ export interface PiProviderPreset extends PresetFamilyFields {
   };
   category?: ProviderCategory;
   isPartner?: boolean;
-  primePartner?: boolean;
   partnerPromotionKey?: string;
   theme?: PresetTheme;
   icon?: string;
@@ -52,12 +51,6 @@ const OPENAI_COMPLETIONS_COMPAT = {
   supportsStore: false,
   supportsDeveloperRole: false,
   maxTokensField: "max_tokens",
-} as const;
-
-const DEEPSEEK_THINKING_COMPAT = {
-  ...OPENAI_COMPLETIONS_COMPAT,
-  requiresReasoningContentOnAssistantMessages: true,
-  thinkingFormat: "deepseek",
 } as const;
 
 // 1823/132248: thinking.type defaults to "enabled"; disabling requires an explicit
@@ -134,7 +127,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       ],
     },
     category: "cn_official",
-    primePartner: true,
     partnerPromotionKey: "kimi",
     icon: "kimi",
     iconColor: "#6366F1",
@@ -200,7 +192,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       ],
     },
     category: "cn_official",
-    primePartner: true,
     icon: "kimi",
     iconColor: "#6366F1",
   },
@@ -231,241 +222,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     iconColor: "#6366F1",
   },
   {
-    name: "PackyCode",
-    providerKey: "cc-switch-packy-code",
-    websiteUrl: "https://www.packyapi.ai",
-    apiKeyUrl: "https://www.packyapi.ai/register?aff=cc-switch",
-    settingsConfig: {
-      name: "PackyCode",
-      baseUrl: "https://www.packyapi.ai",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "packycode",
-    icon: "packycode",
-  },
-  {
-    name: "APINebula",
-    providerKey: "cc-switch-apinebula",
-    websiteUrl: "https://apinebula.ai",
-    apiKeyUrl: "https://apinebula.ai/VjM74M",
-    settingsConfig: {
-      name: "APINebula",
-      baseUrl: "https://apinebula.ai/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "apinebula",
-    icon: "apinebula",
-  },
-  {
-    name: "AICodeMirror",
-    providerKey: "cc-switch-aicode-mirror",
-    websiteUrl: "https://www.aicodemirror.ai",
-    apiKeyUrl: "https://www.aicodemirror.ai/register?invitecode=9915W3",
-    settingsConfig: {
-      name: "AICodeMirror",
-      baseUrl: "https://api.aicodemirror.ai/api/claudecode",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "aicodemirror",
-    icon: "aicodemirror",
-    iconColor: "#000000",
-  },
-  {
-    name: "hao.ai",
-    providerKey: "cc-switch-hao-ai",
-    websiteUrl: "https://hao.ai",
-    apiKeyUrl: "https://hao.ai/invite/DTBZS3OR",
-    settingsConfig: {
-      name: "hao.ai",
-      baseUrl: "https://api.hao.ai/anthropic",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", {
-          id: "anthropic/claude-opus-5-5",
-        }),
-        piModel("anthropic/claude-sonnet-5.5", {
-          id: "anthropic/claude-sonnet-5-5",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "haoai",
-    icon: "haoai",
-  },
-  {
-    name: "FennoAI",
-    providerKey: "cc-switch-fenno-ai",
-    websiteUrl: "https://api.fenno.ai",
-    apiKeyUrl:
-      "https://api.fenno.ai/register?redirect=/purchase?tab=subscription%26group=16&aff=P9MR3D3PLCNL",
-    settingsConfig: {
-      name: "FennoAI",
-      baseUrl: "https://api.fenno.ai/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "fenno",
-    icon: "fenno",
-  },
-  {
-    name: "RunAPI",
-    providerKey: "cc-switch-run-api",
-    websiteUrl: "https://runapi.co",
-    apiKeyUrl: "https://runapi.co/register?aff=iOKB",
-    settingsConfig: {
-      name: "RunAPI",
-      baseUrl: "https://runapi.co",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
-        }),
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "runapi",
-    icon: "runapi",
-  },
-  {
-    name: "OpenModel",
-    providerKey: "cc-switch-open-model",
-    websiteUrl: "https://www.openmodel.ai",
-    apiKeyUrl: "https://www.openmodel.ai?ref=cc-switch",
-    settingsConfig: {
-      name: "OpenModel",
-      baseUrl: "https://api.openmodel.ai",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "openmodel",
-    icon: "openmodel",
-  },
-  {
-    name: "EveryAPI",
-    providerKey: "cc-switch-everyapi",
-    websiteUrl: "https://everyapi.ai",
-    apiKeyUrl:
-      "https://app.everyapi.ai/signin?aff=FqlMa2eVVY&utm_source=ccswitch&utm_medium=invite",
-    // GPT 系列只开放 Responses（api.everyapi.ai/api/pricing 的
-    // supported_endpoint_types 为 openai-response，2026-10-17 核对）
-    settingsConfig: {
-      name: "EveryAPI",
-      baseUrl: "https://api.everyapi.ai/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "everyapi",
-    icon: "everyapi",
-  },
-  {
-    name: "GrooRoute Pro",
-    providerKey: "cc-switch-grooroute-pro",
-    websiteUrl: "https://grooroute.pro",
-    apiKeyUrl: "https://grooroute.pro/sign-up?aff=qqm9",
-    settingsConfig: {
-      name: "GrooRoute Pro",
-      baseUrl: "https://grooroute.pro",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "grooroute",
-    icon: "grooroute",
-  },
-  {
-    name: "DIT.ai",
-    providerKey: "cc-switch-dit-ai",
-    websiteUrl: "https://dit.ai",
-    apiKeyUrl: "https://dit.ai/register",
-    settingsConfig: {
-      name: "DIT.ai",
-      baseUrl: "https://api.dit.ai",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "dit",
-    icon: "dit",
-  },
-  {
     name: "TokenFactory",
     nameKey: "providerForm.presets.tokenfactory",
     providerKey: "cc-switch-tokenfactory",
@@ -484,6 +240,13 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
         piModel("deepseek/deepseek-v4-pro", {
           id: "deepseek-v4-pro-0813",
           contextWindow: 1_048_576,
+        }),
+        // V4.1 Flash 1017 为较新的带日期构建，窗口与最大输出取站点目录
+        piModel("deepseek/deepseek-flash", {
+          id: "deepseek-v4.1-flash-1017",
+          name: "DeepSeek V4.1 Flash 1017",
+          contextWindow: 1_000_000,
+          maxTokens: 384_000,
         }),
         // V4.1 Flash 平台标注可看图，目录里的 V4 Flash 只收文本
         piModel("deepseek/deepseek-v4-flash", {
@@ -505,134 +268,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     category: "aggregator",
     icon: "tokenfactory",
   },
-  {
-    name: "Shengsuanyun",
-    nameKey: "providerForm.presets.shengsuanyun",
-    providerKey: "cc-switch-shengsuanyun",
-    websiteUrl: "https://www.shengsuanyun.com/?from=CH_4HHXMRYF",
-    apiKeyUrl: "https://www.shengsuanyun.com/?from=CH_4HHXMRYF",
-    settingsConfig: {
-      name: "Shengsuanyun",
-      baseUrl: "https://router.shengsuanyun.com/api",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "anthropic/claude-opus-5",
-        }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "anthropic/claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5.5", {
-          id: "anthropic/claude-opus-5.5",
-        }),
-        piModel("anthropic/claude-fable-5.1", {
-          id: "anthropic/claude-fable-5.1",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "shengsuanyun",
-    icon: "shengsuanyun",
-  },
-  {
-    name: "AIGoCode",
-    providerKey: "cc-switch-aigo-code",
-    websiteUrl: "https://aigocode.net",
-    apiKeyUrl: "https://aigocode.net/invite/CC-SWITCH",
-    settingsConfig: {
-      name: "AIGoCode",
-      baseUrl: "https://api.aigocode.dev",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "aigocode",
-    icon: "aigocode",
-    iconColor: "#5B7FFF",
-  },
-  {
-    name: "Qiniu",
-    nameKey: "providerForm.presets.qiniu",
-    providerKey: "cc-switch-qiniu",
-    websiteUrl: "https://s.qiniu.com/nMvAvy",
-    apiKeyUrl: "https://s.qiniu.com/nMvAvy",
-    settingsConfig: {
-      name: "Qiniu",
-      baseUrl: "https://api.qnaigc.com/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-        piModel("moonshotai/kimi-k3", {
-          id: "moonshotai/kimi-k3",
-        }),
-        piModel("zai/glm-5.3", { id: "z-ai/glm-5.3" }),
-        piModel("zai/glm-5.3-flash", { id: "z-ai/glm-5.3-flash" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "qiniu",
-    icon: "qiniu",
-  },
-  {
-    name: "AICoding",
-    providerKey: "cc-switch-aicoding",
-    websiteUrl: "https://aicoding.inc",
-    apiKeyUrl: "https://aicoding.inc/i/CCSWITCH",
-    settingsConfig: {
-      name: "AICoding",
-      baseUrl: "https://api.aicoding.inc",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "aicoding",
-    icon: "aicoding",
-    iconColor: "#000000",
-  },
-  {
-    name: "SubRouter",
-    providerKey: "cc-switch-sub-router",
-    websiteUrl: "https://subrouter.ai",
-    apiKeyUrl: "https://subrouter.ai/register?aff=l3ri",
-    settingsConfig: {
-      name: "SubRouter",
-      baseUrl: "https://subrouter.ai/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "subrouter",
-    icon: "subrouter",
-  },
   // FluxA AgentMarket 以合作价转售的百度智能云 TokenPlan：产品页写明
   // "purchase it through AgentMarket, then use Baidu AI Cloud's endpoint and
   // API key directly"，端点取其所链的百度国际站 Token Plan Enterprise 文档
@@ -644,115 +279,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   // 能力取用、id 写真实 wire 名。思考档位（thinkingProfile）不填：国内版
   // 有、国际 team 部署未实测，与 Codex 侧不声明 codexChatReasoning 同理
   {
-    name: "FluxA Token Plan",
-    providerKey: "cc-switch-fluxa-token-plan",
-    websiteUrl: "https://agentmarket.fluxapay.xyz/",
-    apiKeyUrl: "https://agentmarket.fluxapay.xyz/marketplace/tokenplans",
-    settingsConfig: {
-      name: "FluxA Token Plan",
-      baseUrl: "https://api.baiduqianfan.ai/v2/tokenplan/team",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("deepseek/deepseek-v4-pro", { id: "deepseek-v4-pro" }),
-        piModel("deepseek/deepseek-v4-flash", {
-          id: "deepseek-v4-flash-0731",
-          name: "DeepSeek V4 Flash 0731",
-        }),
-        piModel("deepseek/deepseek-v4-flash", { id: "deepseek-v4-flash" }),
-        piModel("deepseek/deepseek-v3.2", { id: "deepseek-v3.2" }),
-        piModel("zai/glm-5.2", { id: "glm-5.2" }),
-        piModel("zai/glm-5.1", { id: "glm-5.1" }),
-        piModel("zai/glm-5", { id: "glm-5" }),
-        piModel("moonshotai/kimi-k2.6", { id: "kimi-k2.6" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "fluxa",
-    icon: "fluxa",
-  },
-  {
-    name: "88API",
-    providerKey: "cc-switch-88api",
-    websiteUrl: "https://88api.ai",
-    apiKeyUrl: "https://88api.ai/sign-up?aff=HSGY",
-    settingsConfig: {
-      name: "88API",
-      baseUrl: "https://api.88api.ai",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
-        }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "88api",
-    icon: "88api",
-  },
-  {
-    name: "APIKEY.FUN",
-    providerKey: "cc-switch-apikey-fun",
-    websiteUrl: "https://apikey.fan",
-    apiKeyUrl: "https://apikey.fan/register?aff=CCSwitch",
-    settingsConfig: {
-      name: "APIKEY.FUN",
-      baseUrl: "https://api.apikey.fan",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "apikeyfun",
-    icon: "apikeyfun",
-  },
-  {
-    name: "9527CODE",
-    providerKey: "cc-switch-9527-code",
-    websiteUrl: "https://9527.codes",
-    apiKeyUrl: "https://9527.codes/register?aff=e5zI",
-    settingsConfig: {
-      name: "9527CODE",
-      baseUrl: "https://9527.codes",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
-        }),
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "9527code",
-    icon: "9527code",
-  },
-  {
     name: "Code0",
     providerKey: "cc-switch-code0",
     websiteUrl: "https://code0.ai",
@@ -763,94 +289,14 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
+        piModel("openai/gpt-6.1-sol", {
+          id: "gpt-6.1-sol",
         }),
         piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
       ],
     },
     category: "aggregator",
     icon: "code0",
-  },
-  {
-    name: "TeamoRouter",
-    providerKey: "cc-switch-teamo-router",
-    websiteUrl: "https://teamorouter.cn",
-    apiKeyUrl:
-      "https://teamorouter.cn/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
-    settingsConfig: {
-      name: "TeamoRouter",
-      baseUrl: "https://api.teamorouter.cn/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "teamorouter",
-    icon: "teamorouter",
-  },
-  {
-    name: "PPIO",
-    providerKey: "cc-switch-ppio",
-    websiteUrl: "https://ppio.com",
-    apiKeyUrl: "https://ppio.com/activity/ccswitch",
-    settingsConfig: {
-      name: "PPIO",
-      baseUrl: "https://api.ppio.com/openai/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        {
-          ...piModel("deepseek/deepseek-v4-flash", {
-            id: "deepseek/deepseek-v4-flash-0731",
-            name: "Deepseek V4 Flash 0731",
-            contextWindow: 1_048_576,
-            maxTokens: 393_216,
-            thinkingProfile: "deepseekV4",
-          }),
-          compat: { ...DEEPSEEK_THINKING_COMPAT },
-        },
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "ppio",
-    icon: "ppio",
-    iconColor: "#2874FF",
-  },
-  {
-    name: "ClaudeCN",
-    providerKey: "cc-switch-claude-cn",
-    websiteUrl: "https://claudecn.top",
-    apiKeyUrl: "https://claudecn.ai/register?aff=HEL9",
-    settingsConfig: {
-      name: "ClaudeCN",
-      baseUrl: "https://claudecn.top",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
-        }),
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "claudecn",
-    icon: "claudecn",
   },
   {
     name: "火山 Agent Plan",
@@ -945,7 +391,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       apiKey: "",
       models: [
         piModel("volcengine/doubao-seed-2.1-pro", {
-          id: "doubao-seed-2-1-pro-260628",
+          id: "doubao-seed-2-1-pro-260915",
         }),
       ],
     },
@@ -954,343 +400,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     partnerPromotionKey: "doubaoseed",
     icon: "doubao",
     iconColor: "#3370FF",
-  },
-  {
-    name: "A6API",
-    providerKey: "cc-switch-a6-api",
-    websiteUrl: "https://www.a6api.com",
-    apiKeyUrl: "https://a6api.com/register?aff=AqNr",
-    settingsConfig: {
-      name: "A6API",
-      baseUrl: "https://api.a6api.com/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "a6api",
-    icon: "a6api",
-  },
-  {
-    name: "CCSub",
-    providerKey: "cc-switch-ccsub",
-    websiteUrl: "https://www.ccsub.net",
-    apiKeyUrl: "https://www.ccsub.net/register?ref=Y6Z8DXEA",
-    settingsConfig: {
-      name: "CCSub",
-      baseUrl: "https://www.ccsub.net/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-6-astra", {
-          id: "gpt-6-astra",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "ccsub",
-    icon: "ccsub",
-  },
-  {
-    name: "SSSAiCode",
-    providerKey: "cc-switch-sssai-code",
-    websiteUrl: "https://sssaicodeapi.com",
-    apiKeyUrl: "https://sssaicodeapi.com/register?ref=DCP0SM",
-    settingsConfig: {
-      name: "SSSAiCode",
-      baseUrl: "https://node-hk.sssaicodeapi.com/api",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "sssaicode",
-    icon: "sssaicode",
-    iconColor: "#000000",
-  },
-  {
-    name: "SoleAPI",
-    providerKey: "cc-switch-sole-api",
-    websiteUrl: "https://soleapi.com",
-    apiKeyUrl: "https://soleapi.com/r/ccswitch",
-    settingsConfig: {
-      name: "SoleAPI",
-      baseUrl: "https://soleapi.com",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-haiku-4.5-20251001", {
-          id: "claude-haiku-4-5-20251001",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "soleapi",
-    icon: "soleapi",
-  },
-  {
-    name: "Micu",
-    providerKey: "cc-switch-micu",
-    websiteUrl: "https://www.micuapi.ai",
-    apiKeyUrl: "https://www.micuapi.ai/register?aff=aOYQ",
-    settingsConfig: {
-      name: "Micu",
-      baseUrl: "https://www.micuapi.ai",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "micu",
-    icon: "micu",
-    iconColor: "#000000",
-  },
-  {
-    name: "RightCode",
-    providerKey: "cc-switch-right-code",
-    websiteUrl: "https://www.rightapi.ai",
-    apiKeyUrl: "https://www.rightapi.ai/register?aff=CCSWITCH",
-    settingsConfig: {
-      name: "RightCode",
-      baseUrl: "https://www.rightapi.ai/codex/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "rightcode",
-    icon: "rc",
-    iconColor: "#E96B2C",
-  },
-  {
-    name: "Cubence",
-    providerKey: "cc-switch-cubence",
-    websiteUrl: "https://cubence.com",
-    apiKeyUrl: "https://cubence.com/signup?code=CCSWITCH&source=ccs",
-    settingsConfig: {
-      name: "Cubence",
-      baseUrl: "https://api.cubence.com",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "cubence",
-    icon: "cubence",
-    iconColor: "#000000",
-  },
-  {
-    name: "CrazyRouter",
-    providerKey: "cc-switch-crazy-router",
-    websiteUrl: "https://www.crazyrouter.com",
-    apiKeyUrl: "https://www.crazyrouter.com/register?aff=OZcm&ref=cc-switch",
-    settingsConfig: {
-      name: "CrazyRouter",
-      baseUrl: "https://cn.crazyrouter.com",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "crazyrouter",
-    icon: "crazyrouter",
-    iconColor: "#000000",
-  },
-  {
-    name: "DMXAPI",
-    providerKey: "cc-switch-dmxapi",
-    websiteUrl: "https://www.dmxapi.cn",
-    apiKeyUrl: "https://www.dmxapi.cn",
-    settingsConfig: {
-      name: "DMXAPI",
-      baseUrl: "https://www.dmxapi.cn",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "dmxapi",
-    icon: "dmxapi",
-  },
-  {
-    name: "SudoCode.chat",
-    family: "sudocode",
-    providerKey: "cc-switch-sudo-code-chat",
-    websiteUrl: "https://sudocode.chat",
-    apiKeyUrl:
-      "https://sudocode.chat/sign-up?aff=CC-SWITCH&utm_source=cc-switch&utm_medium=sponsor&utm_campaign=ccswitch",
-    settingsConfig: {
-      name: "SudoCode.chat",
-      baseUrl: "https://api.sudocode.chat/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-luna", { id: "gpt-6-luna" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "sudocode",
-    icon: "sudocode",
-  },
-  {
-    name: "SudoCode.us",
-    family: "sudocode",
-    providerKey: "cc-switch-sudo-code-us",
-    websiteUrl: "https://sudocode.us",
-    apiKeyUrl: "https://sudocode.us",
-    settingsConfig: {
-      name: "SudoCode.us",
-      baseUrl: "https://sudocode.us/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    icon: "sudocode-us",
-  },
-  {
-    name: "Modelflare",
-    providerKey: "cc-switch-modelflare",
-    websiteUrl: "https://modelflare.dev",
-    apiKeyUrl:
-      "https://modelflare.dev/sign-up?utm_medium=referral&utm_source=ccswitch",
-    // Responses + /v1（docs.modelflare.dev/guides/endpoints，2026-10-15
-    // 核对）；阵容同 OpenCode
-    settingsConfig: {
-      name: "Modelflare",
-      baseUrl: "https://modelflare.dev/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "modelflare",
-    icon: "modelflare",
-  },
-  {
-    name: "AllTokens",
-    providerKey: "cc-switch-alltokens",
-    websiteUrl: "https://alltokens.cc",
-    apiKeyUrl: "https://alltokens.cc/register",
-    // Sub2API 网关：Key 绑定单个分组，须用 GPT 分组的 Key；GPT 账号池原生走
-    // Responses（分组与模型见 alltokens.cc/api/v1/model-plaza，2026-10-17 核对）
-    settingsConfig: {
-      name: "AllTokens",
-      baseUrl: "https://alltokens.cc/v1",
-      api: "openai-responses",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "alltokens",
-    icon: "alltokens",
-  },
-  {
-    name: "AllTokens SI",
-    providerKey: "cc-switch-alltokens-si",
-    websiteUrl: "https://alltokens.si",
-    // 站点关闭了个人注册（/api/status 的 register_enabled=false），只能企业注册
-    apiKeyUrl: "https://alltokens.si/enterprise-register",
-    // new-api 网关，目录见 alltokens.si/api/pricing（2026-10-19 核对）：GPT 分组
-    // 只声明 Chat Completions，窗口按中转口径封顶 272K
-    settingsConfig: {
-      name: "AllTokens SI",
-      baseUrl: "https://alltokens.si/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "alltokens_si",
-    icon: "alltokens-si",
   },
   {
     name: "Amux",
@@ -1303,8 +412,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
+        piModel("openai/gpt-6.1-sol", {
+          id: "gpt-6.1-sol",
         }),
         piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
       ],
@@ -1323,10 +432,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("zai/glm-5.1", {
-          id: "zai-org/glm-5.1",
-          name: "GLM 5.1",
-        }),
+        piModel("zai/glm-5.3", { id: "zai-org/glm-5.3" }),
+        piModel("zai/glm-5.3-flash", { id: "zai-org/glm-5.3-flash" }),
+        piModel("moonshotai/kimi-k3", { id: "moonshotai/kimi-k3" }),
       ],
     },
     category: "aggregator",
@@ -1827,18 +935,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       apiKey: "",
       models: [
         {
-          ...piModel("xiaomi/mimo-v2.5-pro", {
-            id: "mimo-v2.5-pro",
-          }),
-          compat: { ...XIAOMI_THINKING_COMPAT },
-        },
-        {
-          ...piModel("xiaomi/mimo-v2.5", {
-            id: "mimo-v2.5",
-          }),
-          compat: { ...XIAOMI_THINKING_COMPAT },
-        },
-        {
           ...piModel("xiaomi/mimo-v2.6-pro", { id: "mimo-v2.6-pro" }),
           compat: XIAOMI_THINKING_COMPAT,
         },
@@ -1871,12 +967,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("xiaomi/mimo-v2.5-pro", {
-          id: "mimo-v2.5-pro",
-        }),
-        piModel("xiaomi/mimo-v2.5", {
-          id: "mimo-v2.5",
-        }),
         {
           ...piModel("xiaomi/mimo-v2.6-pro", { id: "mimo-v2.6-pro" }),
           compat: XIAOMI_THINKING_COMPAT,
@@ -1892,58 +982,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     iconColor: "#000000",
   },
   {
-    name: "OpenCode Go",
-    providerKey: "cc-switch-open-code-go",
-    websiteUrl: "https://opencode.ai/go",
-    apiKeyUrl: "https://opencode.ai/go",
-    settingsConfig: {
-      name: "OpenCode Go",
-      baseUrl: "https://opencode.ai/zen/go/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        {
-          ...piModel("zai/glm-5.2", {
-            id: "glm-5.2",
-            name: "GLM 5.2",
-            thinkingProfile: "openCodeGoGlm52",
-          }),
-          compat: { ...OPENAI_COMPLETIONS_COMPAT },
-        },
-        {
-          ...piModel("moonshotai/kimi-k2.7-code", {
-            id: "kimi-k2.7-code",
-          }),
-          compat: { ...OPENAI_COMPLETIONS_COMPAT },
-        },
-        {
-          ...piModel("deepseek/deepseek-v4-pro", {
-            id: "deepseek-v4-pro",
-            thinkingProfile: "deepseekV4",
-          }),
-          compat: { ...DEEPSEEK_THINKING_COMPAT },
-        },
-        {
-          ...piModel("deepseek/deepseek-v4-flash", {
-            id: "deepseek-v4-flash",
-            thinkingProfile: "deepseekV4",
-          }),
-          compat: { ...DEEPSEEK_THINKING_COMPAT },
-        },
-        {
-          ...piModel("xiaomi/mimo-v2.5-pro", {
-            id: "mimo-v2.5-pro",
-          }),
-          compat: { ...OPENAI_COMPLETIONS_COMPAT },
-        },
-      ],
-    },
-    category: "third_party",
-    partnerPromotionKey: "opencode_go",
-    icon: "opencode",
-    iconColor: "#211E1E",
-  },
-  {
     name: "AiHubMix",
     providerKey: "cc-switch-ai-hub-mix",
     websiteUrl: "https://aihubmix.com",
@@ -1954,13 +992,13 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "anthropic-messages",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
+        piModel("anthropic/claude-opus-5.5", {
+          id: "claude-opus-5-5",
         }),
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "claude-sonnet-5-5",
         }),
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
+        piModel("anthropic/claude-haiku-5.5", { id: "claude-haiku-5-5" }),
         piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
@@ -1979,11 +1017,11 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "anthropic-messages",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "anthropic/claude-sonnet-5",
+        piModel("anthropic/claude-opus-5.5", {
+          id: "anthropic/claude-opus-5.5",
         }),
-        piModel("anthropic/claude-opus-5", {
-          id: "anthropic/claude-opus-5",
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "anthropic/claude-sonnet-5.5",
         }),
         piModel("anthropic/claude-fable-5.1", {
           id: "anthropic/claude-fable-5.1",
@@ -2004,14 +1042,14 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "anthropic-messages",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "anthropic/claude-sonnet-5",
-        }),
-        piModel("anthropic/claude-opus-5", {
-          id: "anthropic/claude-opus-5",
-        }),
         piModel("anthropic/claude-opus-5.5", {
           id: "anthropic/claude-opus-5.5",
+        }),
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "anthropic/claude-sonnet-5.5",
+        }),
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "anthropic/claude-haiku-5.5",
         }),
         piModel("anthropic/claude-fable-5.1", {
           id: "anthropic/claude-fable-5.1",
@@ -2033,20 +1071,23 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-sonnet-5", {
-          id: "anthropic/claude-sonnet-5",
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "anthropic/claude-sonnet-5-5",
         }),
-        piModel("openai/gpt-5.3-codex", {
-          id: "openai/gpt-5.3-codex",
+        piModel("anthropic/claude-fable-5.1", {
+          id: "anthropic/claude-fable-5-1",
         }),
-        piModel("openai/gpt-5.2", {
-          id: "openai/gpt-5.2",
+        piModel("openai/gpt-6.1-sol", {
+          id: "openai/gpt-6.1-sol",
         }),
-        piModel("google/gemini-3.6-flash", {
-          id: "google/gemini-3.6-flash",
+        piModel("openai/gpt-6-astra", {
+          id: "openai/gpt-6-astra",
         }),
-        piModel("qwen/qwen3-coder-480b", {
-          id: "qwen/qwen3-coder-480b",
+        piModel("google/gemini-3.8-flash", {
+          id: "google/gemini-3.8-flash",
+        }),
+        piModel("qwen/qwen3.8-max", {
+          id: "qwen/qwen3.8-max",
         }),
       ],
     },
@@ -2084,8 +1125,15 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
           maxTokens: 262_144,
         }),
         piModel("deepseek/deepseek-flash", {
-          id: "deepseek-ai/DeepSeek-V4.1-Flash",
+          id: "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+          name: "DeepSeek V4.1 Flash 1017",
           contextWindow: 1_048_576,
+          maxTokens: 262_144,
+        }),
+        piModel("zai/glm-5.3", {
+          id: "zai-org/GLM-5.3-Fast",
+          name: "GLM-5.3 Fast",
+          input: ["text", "image"],
           maxTokens: 262_144,
         }),
       ],
@@ -2104,12 +1152,17 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("zai/glm-5.1", {
-          id: "zai-org/glm-5.1",
-        }),
         piModel("zai/glm-5.3", { id: "zai-org/glm-5.3" }),
         piModel("zai/glm-5.3-flash", { id: "zai-org/glm-5.3-flash" }),
-        piModel("moonshotai/kimi-k3", { id: "moonshotai/kimi-k3" }),
+        piModel("moonshotai/kimi-k3.1-pro", { id: "moonshotai/kimi-k3.1-pro" }),
+        piModel("deepseek/deepseek-flash", {
+          id: "deepseek/deepseek-v4.1-flash",
+        }),
+        piModel("minimax/minimax-m3.1-flash", {
+          id: "minimax/minimax-m3.1-flash",
+        }),
+        piModel("qwen/qwen3.8-max", { id: "qwen/qwen3.8-max" }),
+        piModel("xiaomi/mimo-v2.6-pro", { id: "xiaomimimo/mimo-v2.6-pro" }),
       ],
     },
     category: "aggregator",
@@ -2127,8 +1180,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-completions",
       apiKey: "",
       models: [
-        piModel("moonshotai/kimi-k3", {
-          id: "moonshotai/kimi-k3",
+        piModel("moonshotai/kimi-k2.6", {
+          id: "moonshotai/kimi-k2.6",
         }),
         piModel("zai/glm-5.3", { id: "z-ai/glm-5.3" }),
         piModel("zai/glm-5.3-flash", { id: "z-ai/glm-5.3-flash" }),
@@ -2295,8 +1348,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         {
           ...piModel("deepseek/deepseek-v4-flash", {
-            id: "deepseek-ai/DeepSeek-V4-Flash-0731",
-            name: "DeepSeek V4 Flash 0731",
+            id: "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+            name: "DeepSeek V4.1 Flash 1017",
             contextWindow: 1_048_576,
             thinkingProfile: "deepseekV4",
           }),
@@ -2317,11 +1370,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
           thinkingProfile: "kimi3",
         }),
         piModel("zai/glm-5.3", { id: "zai-org/GLM-5.3" }),
-        piModel("zai/glm-5.2", {
-          id: "zai-org/GLM-5.2",
-          contextWindow: 1_048_576,
-          maxTokens: 163_840,
-        }),
+        piModel("zai/glm-5.3-flash", { id: "zai-org/GLM-5.3-Flash" }),
       ],
     },
     category: "aggregator",
@@ -2350,8 +1399,15 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
         piModel("anthropic/claude-sonnet-5.5", {
           id: "anthropic/claude-sonnet-5.5",
         }),
+        piModel("anthropic/claude-fable-5.1", {
+          id: "anthropic/claude-fable-5.1",
+        }),
         piModel("openai/gpt-6-astra", {
           id: "openai/gpt-6-astra",
+          contextWindow: 1_050_000,
+        }),
+        piModel("openai/gpt-6-luna", {
+          id: "openai/gpt-6-luna",
           contextWindow: 1_050_000,
         }),
         piModel("google/gemini-3.8-flash", {
@@ -2391,6 +1447,13 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
         piModel("moonshotai/kimi-k3", {
           id: "moonshotai/Kimi-K3",
           contextWindow: 1_024_000,
+        }),
+        piModel("deepseek/deepseek-flash", {
+          id: "deepseek-ai/DeepSeek-V4.1-Flash",
+        }),
+        piModel("minimax/minimax-m3", { id: "MiniMaxAI/MiniMax-M3" }),
+        piModel("minimax/minimax-m3.1-flash", {
+          id: "MiniMaxAI/MiniMax-M3.1-Flash",
         }),
         piModel("moonshotai/kimi-k2.7-code", {
           id: "moonshotai/Kimi-K2.7-Code",
@@ -2522,6 +1585,12 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
         piModel("zai/glm-5.3", { id: "zai-org/GLM-5.3:baseten" }),
         piModel("zai/glm-5.3-flash", { id: "zai-org/GLM-5.3-Flash:baseten" }),
         piModel("moonshotai/kimi-k3", { id: "moonshotai/Kimi-K3:baseten" }),
+        piModel("deepseek/deepseek-flash", {
+          id: "deepseek-ai/DeepSeek-V4.1-Flash-1017:baseten",
+          name: "DeepSeek V4.1 Flash 1017",
+          contextWindow: 1_048_576,
+          maxTokens: 262_144,
+        }),
         piModel("deepseek/deepseek-v4-pro", {
           id: "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
           contextWindow: 1_048_576,
@@ -2570,16 +1639,16 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "anthropic-messages",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
+        piModel("anthropic/claude-opus-5.5", {
+          id: "claude-opus-5-5",
           name: "claude-opus-5",
         }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "claude-sonnet-5-5",
           name: "claude-sonnet-5",
         }),
-        piModel("anthropic/claude-haiku-4.5-20251001", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
           name: "claude-haiku-4-5-20251001",
         }),
       ],
@@ -2598,8 +1667,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-responses",
       apiKey: "",
       models: [
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
+        piModel("openai/gpt-6.1-sol", {
+          id: "gpt-6.1-sol",
           name: "gpt-5.6-sol",
         }),
         piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
@@ -2621,16 +1690,15 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "openai-responses",
       apiKey: "",
       models: [
-        piModel("openai/gpt-5.2-codex", {
-          id: "gpt-5.2-codex",
+        piModel("openai/gpt-6.1-sol", {
+          id: "gpt-6.1-sol",
           name: "gpt-5.2-codex",
         }),
-        piModel("openai/gpt-5.3-codex", {
-          id: "gpt-5.3-codex",
+        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
+        piModel("openai/gpt-6-astra", {
+          id: "gpt-6-astra",
           name: "gpt-5.3-codex",
         }),
-        piModel("openai/gpt-6-sol", { id: "gpt-6-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
       ],
     },
     category: "third_party",
@@ -2791,7 +1859,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
           thinkingProfile: "offUnsupported",
         }),
         piModel("moonshotai/kimi-k2.6", { id: "kimi-k2.6" }),
-        piModel("minimax/minimax-m2.7", { id: "minimax-m2.7" }),
         piModel("minimax/minimax-m3", { id: "minimax-m3" }),
         {
           ...piModel("deepseek/deepseek-v4-flash", {
@@ -3177,15 +2244,16 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       api: "anthropic-messages",
       apiKey: "",
       models: [
-        piModel("anthropic/claude-opus-5", {
-          id: "claude-opus-5",
+        piModel("anthropic/claude-opus-5.5", {
+          id: "claude-opus-5-5",
         }),
-        piModel("anthropic/claude-sonnet-5", {
-          id: "claude-sonnet-5",
+        piModel("anthropic/claude-sonnet-5.5", {
+          id: "claude-sonnet-5-5",
         }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3203,13 +2271,17 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       apiKey: "",
       // 聚合网关，上游思考档位语义未逐一核对，交给 Pi 原生默认行为（{}）
       models: [
-        piModel("deepseek/deepseek-v4-flash", {
-          id: "deepseek-v4-flash-0731",
+        piModel("deepseek/deepseek-flash", {
+          id: "deepseek-v4.1-flash",
         }),
-        piModel("deepseek/deepseek-v4-pro", { id: "DeepSeek-V4-Pro" }),
+        piModel("deepseek/deepseek-v4-pro", { id: "DeepSeek-V4-Pro-0813" }),
         piModel("zai/glm-5.3", { id: "GLM-5.3" }),
-        piModel("moonshotai/kimi-k2.7-code", { id: "Kimi-K2.7-Code" }),
-        piModel("qwen/qwen3-coder-plus", { id: "qwen3-coder-plus" }),
+        piModel("zai/glm-5.3-flash", { id: "GLM-5.3-Flash" }),
+        piModel("moonshotai/kimi-k3.1-pro", { id: "kimi-k3.1-pro" }),
+        piModel("qwen/qwen3.8-max", { id: "qwen3.8-max" }),
+        piModel("qwen/qwen3.8-flash", { id: "qwen3.8-flash" }),
+        piModel("minimax/minimax-m3", { id: "MiniMax-M3" }),
+        piModel("stepfun/step-3.7-flash", { id: "Step-3.7-Flash" }),
       ],
     },
     category: "aggregator",
@@ -3228,9 +2300,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3249,9 +2322,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3270,9 +2344,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3291,9 +2366,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3312,10 +2388,11 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       apiKey: "",
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5", { id: "claude-sonnet-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3334,9 +2411,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",
@@ -3358,8 +2436,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
       ],
     },
@@ -3379,9 +2457,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
       models: [
         piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
         piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-haiku-4.5", {
-          id: "claude-haiku-4-5-20251001",
+        piModel("anthropic/claude-haiku-5.5", {
+          id: "claude-haiku-5-5",
         }),
+        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
       ],
     },
     category: "aggregator",

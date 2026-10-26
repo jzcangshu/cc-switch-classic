@@ -34,11 +34,6 @@ describe("usage format helpers", () => {
     expect(getLocaleFromLanguage("zh-HK")).toBe("zh-TW");
   });
 
-  it("resolves Turkish to a Turkish date locale", () => {
-    expect(getLocaleFromLanguage("tr")).toBe("tr-TR");
-    expect(getLocaleFromLanguage("tr-TR")).toBe("tr-TR");
-  });
-
   it("calculates speed from generation time after the first token", () => {
     expect(
       getOutputTokensPerSecond({
@@ -159,6 +154,13 @@ describe("usage format helpers", () => {
     expect(getOutputTokensPerSecond(session)).toBeNull();
     expect(
       getEstimatedTokensPerSecond({ ...session, dataSource: "codex_session" }),
+    ).toBe(90);
+    expect(
+      getEstimatedTokensPerSecond({
+        ...session,
+        dataSource: "kimi_session",
+        firstTokenMs: 4_000,
+      }),
     ).toBe(90);
     // 推出了首字的会话日志：仍按整段耗时估，不当成精确速度
     const withFirstToken = { ...session, firstTokenMs: 4_000 };

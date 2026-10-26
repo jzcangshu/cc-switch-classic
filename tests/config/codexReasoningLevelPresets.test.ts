@@ -44,7 +44,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     // 方舟深度思考文档：本模型无限制的通用四档（minimal=关思考直接回答）
     [
       "Volcengine Doubao",
-      "doubao-seed-2-1-pro-260628",
+      "doubao-seed-2-1-pro-260915",
       ["minimal", "low", "medium", "high"],
     ],
     // 混元官方枚举 low/high；hy3 开源 chat template 对其他值直接 raise
@@ -101,17 +101,22 @@ describe("Codex preset pre-filled reasoning levels", () => {
       "MiniMax-M3.1-Flash",
       ["low", "medium", "high", "xhigh", "max"],
     ],
-    ["Xiaomi MiMo", "mimo-v2.5-pro", ["none", "low", "medium", "high"], "low"],
-    ["Xiaomi MiMo", "mimo-v2.5", ["none", "low", "medium", "high"], "low"],
+    ["Xiaomi MiMo", "mimo-v2.6-pro", ["none", "low", "medium", "high"], "low"],
     [
-      "Xiaomi MiMo Token Plan (China)",
-      "mimo-v2.5-pro",
+      "Xiaomi MiMo",
+      "mimo-v2.6-flash",
       ["none", "low", "medium", "high"],
       "low",
     ],
     [
       "Xiaomi MiMo Token Plan (China)",
-      "mimo-v2.5",
+      "mimo-v2.6-pro",
+      ["none", "low", "medium", "high"],
+      "low",
+    ],
+    [
+      "Xiaomi MiMo Token Plan (China)",
+      "mimo-v2.6-flash",
       ["none", "low", "medium", "high"],
       "low",
     ],
@@ -124,16 +129,10 @@ describe("Codex preset pre-filled reasoning levels", () => {
     ["Zhipu GLM", "glm-5.3", ["low", "high", "max"], "max"],
     ["Zhipu GLM", "glm-5-turbo", ["max"]],
     ["Zhipu GLM en", "glm-5.3", ["low", "high", "max"], "max"],
-    // SiliconFlow .com 的 M3：平台级 enable_thinking 布尔开关（后端按平台
     // 推断兜底），M3 官方可关思考 → 两态
-    ["SiliconFlow en", "MiniMaxAI/MiniMax-M3", ["none", "high"]],
-    // SiliconFlow .cn：平台仅 high/max，显式 high 与预设配置一致。
-    ["SiliconFlow", "deepseek-ai/DeepSeek-V4-Flash", ["high", "max"], "high"],
     // 聚合平台尚未确认新 GLM 的开关/effort；单档不下发推理控制参数。
-    ["AtlasCloud", "zai-org/glm-5.2", ["high"]],
+    ["AtlasCloud", "zai-org/glm-5.3", ["high"]],
     ["Novita AI", "zai-org/glm-5.3", ["high"]],
-    // NIM K3 的官方枚举；显式 high 与预设配置一致。
-    ["Nvidia", "moonshotai/kimi-k3", ["low", "high", "max"], "high"],
     // Groq gpt-oss（Chat 路由）：平台声明的 reasoning_effort 枚举
     // low/medium/high（console.groq.com/docs/reasoning，2026-10-14），含 high，
     // 无需显式默认
@@ -187,15 +186,6 @@ describe("Codex preset pre-filled reasoning levels", () => {
     ["Kimi For Coding", "kimi-for-coding-highspeed", ["high"]],
     ["Kimi For Coding", "k3", ["low", "high", "max"], "high"],
     ["Kimi For Coding", "k3-256k", ["low", "high", "max"], "high"],
-    // OpenCode Go（Zen 网关）：opencode 客户端 variants() 严格按各模型在
-    // models.dev 的 reasoning_options 声明发 reasoning_effort（provider/
-    // transform.ts）——GLM5.3 两款有 low/high/max，Kimi K3 仅 max。
-    // 代理转换层按同一张表逐模型钳制；GLM 默认 high 与预设配置一致。
-    ["OpenCode Go", "glm-5.3", ["low", "high", "max"], "high"],
-    ["OpenCode Go", "glm-5.3-flash", ["low", "high", "max"], "high"],
-    ["OpenCode Go", "kimi-k3", ["max"]],
-    ["OpenCode Go", "deepseek-v4-pro", ["high", "max"]],
-    ["OpenCode Go", "deepseek-v4-flash", ["low", "high", "max"]],
     // 千问官方 Codex 页只发布一份 model-catalog.local.json，且该元数据段落
     // 位于套餐分页之前（help.aliyun.com/zh/model-studio/codex，2026-09-08
     // 核对）：qwen3.8-max 档位 low/medium/xhigh、默认 xhigh（≠ 模板回落的
@@ -224,11 +214,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     // llama.cpp 本机（原生 Responses 直连）：Qwen3-Coder 不思考，llama-server 把
     // reasoning_effort 交给模型模板（PR #26941，2026-10-14），该模板不读，照
     // Nebius 先例只钉单档 high
-    [
-      "llama.cpp",
-      "ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF",
-      ["high"],
-    ],
+    ["llama.cpp", "ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF", ["high"]],
     // vLLM 本机（原生 Responses 直连）：vLLM 用户没设 enable_thinking 时按
     // effort != "none" 开关思考（responses/protocol.py，v0.31.0，2026-10-14），
     // Qwen3.6 模板只有开关，故两态
@@ -242,7 +228,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     ["Baseten", "zai-org/GLM-5.3-Flash", ["low", "high", "max"], "high"],
     [
       "Baseten",
-      "deepseek-ai/DeepSeek-V4.1-Flash",
+      "deepseek-ai/DeepSeek-V4.1-Flash-1017",
       ["none", "high", "max"],
       "high",
     ],
@@ -264,7 +250,7 @@ describe("Codex preset pre-filled reasoning levels", () => {
     // 同 DeepSeek / Kimi / Zhipu GLM 直连预设
     [
       "DeepInfra",
-      "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "deepseek-ai/DeepSeek-V4.1-Flash-1017",
       ["low", "high", "max"],
     ],
     ["DeepInfra", "deepseek-ai/DeepSeek-V4-Pro-0813", ["low", "high", "max"]],
@@ -348,11 +334,9 @@ describe("Codex preset pre-filled reasoning levels", () => {
   );
 
   it("keeps deliberately-unfilled presets unfilled", () => {
-    // OpenCode Go 的 MiMo 无 effort 声明，与 opencode 客户端一致（代理侧
     // 无表不发 reasoning_effort）。ModelScope 是否透传思考字段未证实，不造
     // 两态假开关。
     const UNFILLED: Array<[string, string]> = [
-      ["OpenCode Go", "mimo-v2.5-pro"],
       ["ModelScope", "ZhipuAI/GLM-5.2"],
       // StepFun 无后缀 3.5-flash：官方未暴露 effort，单一常开思考态
       ["StepFun", "step-3.5-flash"],
@@ -362,8 +346,8 @@ describe("Codex preset pre-filled reasoning levels", () => {
       ["Baidu Qianfan Token Plan", "deepseek-v4-flash-0731"],
       ["Baidu Qianfan Token Plan", "glm-5.2"],
       ["Baidu Qianfan Token Plan", "kimi-k2.6"],
-      // DeepInfra GLM-5.2：平台未声明、各处口径不一，未实测前不造档位
-      ["DeepInfra", "zai-org/GLM-5.2"],
+      // DeepInfra GLM-5.2 曾在此列（平台未声明、各处口径不一）；2026-10-24
+      // 已从 DeepInfra 目录移除，不再断言
       // Mistral AI：开推理后流式 content 为分块数组、转换层暂不解析，且
       // 现有 effortValueMode 发不出 "none"，第一版不下发推理参数、不填档位
       ["Mistral AI", "mistral-medium-3-5"],

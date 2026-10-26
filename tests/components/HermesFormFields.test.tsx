@@ -201,9 +201,7 @@ describe("HermesFormFields", () => {
     });
     const onModelsChange = vi.mocked(props.onModelsChange);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "展开或收起模型详情" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "展开或收起模型详情" }));
     const vision = screen.getByRole("switch", { name: "支持图片输入" });
     expect(vision).toHaveAttribute("aria-checked", "true");
 
@@ -260,10 +258,7 @@ describe("HermesFormFields", () => {
       "font-medium",
       "leading-none",
     );
-    expect(input.closest("div.border-l")).toHaveClass(
-      "border-border",
-      "pl-3",
-    );
+    expect(input.closest("div.border-l")).toHaveClass("border-border", "pl-3");
     expect(
       screen.queryByRole("button", { name: "供应商高级选项" }),
     ).not.toBeInTheDocument();

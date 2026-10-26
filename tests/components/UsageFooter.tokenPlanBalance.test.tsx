@@ -95,12 +95,8 @@ describe("UsageFooter token plan", () => {
 
     // 第三版形态：卡片上是「查询失败」胶囊，完整原因放悬停提示
     expect(screen.getByText("usage.queryFailed")).toBeInTheDocument();
-    expect(
-      container.querySelector('[title="查询端点不可用"]'),
-    ).not.toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { name: "usage.refreshUsage" }),
-    );
+    expect(container.querySelector('[title="查询端点不可用"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "usage.refreshUsage" }));
     await waitFor(() => expect(query).toHaveBeenCalledWith("zhipu", "claude"));
   });
 

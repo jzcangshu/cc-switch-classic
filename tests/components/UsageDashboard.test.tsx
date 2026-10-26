@@ -338,7 +338,9 @@ describe("UsageDashboard", () => {
         hermes: true,
         pi: false,
         mcode: false,
+        kimi: false,
         agy: false,
+        omp: false,
       },
     });
     renderDashboard({ initialAppType: "gemini" });
@@ -352,9 +354,7 @@ describe("UsageDashboard", () => {
     expect(
       screen.getByRole("button", { name: "Claude Code" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Codex" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Codex" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Gemini/, pressed: true }),
     ).toBeInTheDocument();

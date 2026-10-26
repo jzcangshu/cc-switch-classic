@@ -10,12 +10,12 @@ body:
       label: Self Checks / 自检
       options:
         - label: |
-            I have read the [FAQ](https://github.com/farion1231/cc-switch#faq) section in README.
-            我已阅读 README 中的[常见问题](https://github.com/farion1231/cc-switch/blob/main/README_ZH.md#常见问题)。
+            I have read the [README](https://github.com/jzcangshu/cc-switch-classic#readme).
+            我已阅读本仓库的 [README](https://github.com/jzcangshu/cc-switch-classic#readme)。
           required: true
         - label: |
-            I have searched for [existing issues](https://github.com/farion1231/cc-switch/issues), including closed ones.
-            我已搜索过[已有的 Issue](https://github.com/farion1231/cc-switch/issues)，包括已关闭的。
+            I have searched for [existing issues](https://github.com/jzcangshu/cc-switch-classic/issues), including closed ones.
+            我已搜索过[已有的 Issue](https://github.com/jzcangshu/cc-switch-classic/issues)，包括已关闭的。
           required: true
 
   - type: dropdown

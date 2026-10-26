@@ -133,9 +133,7 @@ vi.mock("@/components/ui/dialog", () => ({
 }));
 
 vi.mock("@/components/settings/AboutSection", () => ({
-  AboutSection: ({ isPortable }: any) => (
-    <div>about:{String(isPortable)}</div>
-  ),
+  AboutSection: ({ isPortable }: any) => <div>about:{String(isPortable)}</div>,
 }));
 vi.mock("@/components/settings/WebdavSyncSection", () => ({
   WebdavSyncSection: () => <div>webdav-sync-section</div>,

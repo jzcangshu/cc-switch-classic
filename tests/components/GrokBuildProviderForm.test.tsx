@@ -3,6 +3,7 @@ import { renderWithQueryClient as render } from "../utils/testQueryClient";
 import userEvent from "@testing-library/user-event";
 import { parse as parseToml } from "smol-toml";
 import { describe, expect, it, vi } from "vitest";
+import { openPresets } from "../utils/openPresets";
 import { GrokBuildProviderForm } from "@/components/providers/forms/GrokBuildProviderForm";
 
 vi.mock("@/components/JsonEditor", () => ({
@@ -31,19 +32,20 @@ describe("GrokBuildProviderForm", () => {
         onCancel={() => {}}
       />,
     );
+    openPresets();
 
     // 国产官方直连（cn_official）不在 Grok Build 预设列表里
     expect(screen.queryByRole("button", { name: /BytePlus/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Kimi/ })).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: /PatewayAI/ }));
+    await user.click(screen.getByRole("button", { name: /Amux/ }));
 
     const baseUrlInput =
       container.querySelector<HTMLInputElement>("#codexBaseUrl");
     const nameInput =
       container.querySelector<HTMLInputElement>('input[name="name"]');
-    expect(baseUrlInput?.value).toBe("https://api.pateway.ai/v1");
-    expect(nameInput?.value).toBe("PatewayAI");
+    expect(baseUrlInput?.value).toBe("https://api.amux.ai/v1");
+    expect(nameInput?.value).toBe("Amux");
   });
 
   it("points the get-API-key link at the preset's apiKeyUrl", async () => {
@@ -55,16 +57,17 @@ describe("GrokBuildProviderForm", () => {
         onCancel={() => {}}
       />,
     );
+    openPresets();
 
-    await user.click(screen.getByRole("button", { name: /88API/ }));
+    await user.click(screen.getByRole("button", { name: /CherryIN/ }));
 
     const websiteInput = container.querySelector<HTMLInputElement>(
       'input[name="websiteUrl"]',
     );
-    expect(websiteInput?.value).toBe("https://88api.ai");
+    expect(websiteInput?.value).toBe("https://open.cherryin.ai");
     expect(screen.getByRole("link", { name: /API Key/ })).toHaveAttribute(
       "href",
-      "https://88api.ai/sign-up?aff=HSGY",
+      "https://open.cherryin.ai/console/token",
     );
   });
 

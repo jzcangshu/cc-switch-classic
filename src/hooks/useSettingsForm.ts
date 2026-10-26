@@ -12,9 +12,10 @@ export const DIRECTORY_KEYS = [
   "openclawConfigDir",
   "hermesConfigDir",
   "piConfigDir",
+  "ompConfigDir",
 ] as const;
 
-type Language = "zh" | "zh-TW" | "en" | "ja" | "tr";
+type Language = "zh" | "zh-TW" | "en" | "ja";
 
 export type SettingsFormState = Omit<Settings, "language"> & {
   language: Language;
@@ -37,8 +38,13 @@ const normalizeLanguage = (lang?: string | null): Language => {
     return "zh-TW";
   }
 
-  if (normalized === "en" || normalized === "ja" || normalized === "tr") {
+  if (normalized === "en" || normalized === "ja") {
     return normalized;
+  }
+
+  // 土耳其语已停止维护：旧设置里的 "tr" 落到英文，别把人扔进看不懂的中文
+  if (normalized === "tr" || normalized.startsWith("tr-")) {
+    return "en";
   }
 
   if (normalized.startsWith("zh")) {
@@ -52,10 +58,7 @@ const isSupportedLanguage = (lang?: string | null): boolean => {
   if (!lang) return false;
   const normalized = lang.toLowerCase().replace(/_/g, "-");
   return (
-    normalized === "en" ||
-    normalized === "ja" ||
-    normalized === "tr" ||
-    normalized.startsWith("zh")
+    normalized === "en" || normalized === "ja" || normalized.startsWith("zh")
   );
 };
 

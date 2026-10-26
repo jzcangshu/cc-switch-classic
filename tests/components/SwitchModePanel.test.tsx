@@ -884,9 +884,7 @@ describe("SwitchModePanel — mode layer", () => {
       renderPanel("claude", { a: provider("a") });
       await screen.findByTestId("card-a");
       // 第三版页头不带连接状态徽章：分离状态不再渲染任何状态点
-      expect(
-        screen.queryByLabelText(/mode\.status\./),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/mode\.status\./)).not.toBeInTheDocument();
     },
   );
 

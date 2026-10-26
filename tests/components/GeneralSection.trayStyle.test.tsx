@@ -71,9 +71,9 @@ describe("GeneralSection tray style", () => {
   it("saves language from its direct button and orders light, dark, system", () => {
     const onAutoSave = renderSection();
     fireEvent.click(
-      screen.getByRole("button", { name: "settings.languageOptionTurkish" }),
+      screen.getByRole("button", { name: "settings.languageOptionJapanese" }),
     );
-    expect(onAutoSave).toHaveBeenCalledWith({ language: "tr" });
+    expect(onAutoSave).toHaveBeenCalledWith({ language: "ja" });
     const group = screen.getByRole("group", { name: "settings.theme" });
     expect(
       within(group)

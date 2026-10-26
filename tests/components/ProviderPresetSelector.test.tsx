@@ -242,11 +242,11 @@ describe("preset families", () => {
     expect(hits("moonshot")).toEqual([["family:kimi", []]]);
   });
 
-  it("merges Claude's visible presets into 107 rows", () => {
+  it("merges Claude's visible presets into 108 rows", () => {
     const claudeEntries = providerPresets
       .map((item, index) => ({ id: `claude-${index}`, preset: item }))
       .filter((entry) => !entry.preset.hidden);
-    expect(groupPresetRows(claudeEntries)).toHaveLength(107);
+    expect(groupPresetRows(claudeEntries)).toHaveLength(65);
   });
 
   it("orders plans and regions as the design does where a family says so", () => {
@@ -317,8 +317,26 @@ describe("preset families", () => {
       kind: "single",
       dimension: "region",
     });
-    // 两维都没写：用域名区分
-    expect(layoutOf(claude, "sudocode")).toEqual({
+    // 两维都没写：靠域名区分（合成条目直接验规则，真实预设里已没有这种家族）
+    expect(
+      presetVersionLayout([
+        {
+          id: "solo-cn",
+          preset: preset("Solo CN", "third_party", "https://solo-cn.example", {
+            family: "solo",
+          }),
+        },
+        {
+          id: "solo-intl",
+          preset: preset(
+            "Solo Intl",
+            "third_party",
+            "https://solo-intl.example",
+            { family: "solo" },
+          ),
+        },
+      ]),
+    ).toEqual({
       kind: "single",
       dimension: null,
     });
@@ -401,6 +419,7 @@ function OnePage({
     <form {...changes}>
       <div data-testid="picker">
         <ProviderPresetSelector
+          defaultOpen
           appId="claude"
           selectedPresetId={selected}
           presetEntries={presetEntries}
@@ -456,6 +475,7 @@ describe("ProviderPresetSelector", () => {
     const onManageUniversalProviders = vi.fn();
     render(
       <ProviderPresetSelector
+        defaultOpen
         appId="claude"
         selectedPresetId="custom"
         presetEntries={entries}
@@ -493,7 +513,11 @@ describe("ProviderPresetSelector", () => {
     // 自定义配置固定第一格；选预设后无需切换页面即可填写。
     const rows = within(host)
       .getAllByRole("button")
-      .filter((button) => !button.hasAttribute("aria-pressed"));
+      .filter(
+        (button) =>
+          !button.hasAttribute("aria-pressed") &&
+          !button.hasAttribute("aria-expanded"),
+      );
     expect(rows[0]).toHaveTextContent("providerPreset.custom");
     expect(
       within(host).getByRole("button", { name: "AWS Bedrock" }),
@@ -570,7 +594,11 @@ describe("ProviderPresetSelector", () => {
     const rows = () =>
       within(screen.getByTestId("picker"))
         .getAllByRole("button")
-        .filter((button) => !button.hasAttribute("aria-pressed"));
+        .filter(
+          (button) =>
+            !button.hasAttribute("aria-pressed") &&
+            !button.hasAttribute("aria-expanded"),
+        );
     expect(rows()[1]).toHaveAccessibleName("preset.alpha");
     const sort = screen.getByRole("button", {
       name: "providerPreset.sortAriaLabel",
@@ -590,6 +618,7 @@ describe("ProviderPresetSelector", () => {
     ];
     const { rerender } = render(
       <ProviderPresetSelector
+        defaultOpen
         appId="grokbuild"
         selectedPresetId="custom"
         presetEntries={grokEntries}
@@ -601,6 +630,7 @@ describe("ProviderPresetSelector", () => {
     ).toHaveAttribute("aria-description", "providerPreset.loginWith.xai");
     rerender(
       <ProviderPresetSelector
+        defaultOpen
         appId="claude-desktop"
         selectedPresetId="custom"
         presetEntries={[entries[5]]}

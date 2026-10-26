@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { openPresets } from "../utils/openPresets";
 import { ClaudeDesktopProviderForm } from "@/components/providers/forms/ClaudeDesktopProviderForm";
 import { createTestQueryClient } from "../utils/testQueryClient";
 
@@ -92,6 +93,7 @@ function renderForm(
       />
     </QueryClientProvider>,
   );
+  openPresets();
   return { ...view, onSubmit };
 }
 
@@ -185,6 +187,13 @@ describe("ClaudeDesktopProviderForm", () => {
       });
       expect(modelModePicker).toHaveTextContent("模型映射");
       expect(modelModePicker).toBeDisabled();
+      if (providerType === "github_copilot") {
+        const formatControl = screen
+          .getByText("copilot.automaticFormat")
+          .closest("button");
+        expect(formatControl).toBeDisabled();
+        expect(screen.getByText(/copilot.automaticFormatHint/)).toBeVisible();
+      }
     },
   );
 
@@ -203,7 +212,7 @@ describe("ClaudeDesktopProviderForm", () => {
     const onSubmit = vi.fn();
     renderForm(undefined, onSubmit);
 
-    await user.click(screen.getByRole("button", { name: /PackyCode/ }));
+    await user.click(screen.getByRole("button", { name: /Amux/ }));
 
     expect(screen.getByDisplayValue("claude-sonnet-5")).toBeInTheDocument();
     expect(screen.getByDisplayValue("claude-opus-5")).toBeInTheDocument();

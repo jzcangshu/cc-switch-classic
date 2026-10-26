@@ -80,6 +80,10 @@ const TITLE_THEMES: Record<AppType | "all", TitleTheme> = {
     accent: "text-fuchsia-600 dark:text-fuchsia-400",
     iconBg: "bg-fuchsia-500/10",
   },
+  kimi: {
+    accent: "text-teal-600 dark:text-teal-400",
+    iconBg: "bg-teal-500/10",
+  },
   agy: {
     accent: "text-indigo-600 dark:text-indigo-400",
     iconBg: "bg-indigo-500/10",
@@ -205,9 +209,13 @@ export function UsageHero({
   const cacheWrite = summary?.totalCacheCreationTokens ?? 0;
   const cacheRead = summary?.totalCacheReadTokens ?? 0;
   const realTotal = summary?.realTotalTokens ?? 0;
+  const hitRateDenominator = input + cacheWrite + cacheRead;
+  const hitRateKnown = hitRateDenominator > 0;
   const hitRate = summary?.cacheHitRate ?? 0;
-  const totalCost = parseFiniteNumber(summary?.totalCost);
   const requests = summary?.totalRequests ?? 0;
+  // 加载完但一条请求都没有：所有数值都写「—」（命中率分母为 0 同样「—」）
+  const placeholder = isLoading ? "…" : requests === 0 ? "—" : undefined;
+  const totalCost = parseFiniteNumber(summary?.totalCost);
   const successRate = summary?.successRate ?? 0;
 
   if (isLoading) {
@@ -273,9 +281,9 @@ export function UsageHero({
               <div className="flex items-baseline gap-2">
                 <span
                   className="text-2xl leading-none font-bold tracking-tight tabular-nums text-fg-1 md:text-3xl"
-                  title={fmtInt(realTotal, locale)}
+                  title={placeholder ?? fmtInt(realTotal, locale)}
                 >
-                  {fmtInt(realTotal, locale)}
+                  {placeholder ?? fmtInt(realTotal, locale)}
                 </span>
                 <span className="rounded-md bg-subtle px-1.5 py-0.5 text-xs font-medium text-fg-2">
                   <span aria-hidden="true">≈ </span>
@@ -292,7 +300,7 @@ export function UsageHero({
               </span>
               <span className="flex items-center gap-1.5 text-sm font-semibold tabular-nums text-fg-1">
                 <Activity className="h-3.5 w-3.5 text-blue-500" />
-                {fmtInt(requests, locale)}
+                {placeholder ?? fmtInt(requests, locale)}
               </span>
             </div>
             <div className="h-8 w-px bg-border/60" />
@@ -304,7 +312,7 @@ export function UsageHero({
                 className="text-sm font-semibold text-green-500 tabular-nums"
                 title={totalCost == null ? undefined : moneyTitle(totalCost, 6)}
               >
-                {totalCost == null ? "--" : money(totalCost, 2)}
+                {placeholder ?? (totalCost == null ? "—" : money(totalCost, 2))}
               </span>
             </div>
           </div>
@@ -363,7 +371,8 @@ export function UsageHero({
                 </HelpTip>
               </span>
               <span className="font-bold text-emerald-500 tabular-nums">
-                {formatHitRatePercent(hitRate)}
+                {placeholder ??
+                  (hitRateKnown ? formatHitRatePercent(hitRate) : "—")}
               </span>
             </div>
             <div className="relative h-1.5 overflow-hidden rounded-full bg-subtle">

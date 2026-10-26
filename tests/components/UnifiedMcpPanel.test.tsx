@@ -8,6 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import UnifiedMcpPanel from "@/components/mcp/UnifiedMcpPanel";
+import { settingsApi } from "@/lib/api";
 import type { McpApps, McpServer, McpServerSpec } from "@/types";
 
 const mocks = vi.hoisted(() => ({
@@ -452,6 +453,65 @@ describe("UnifiedMcpPanel", () => {
       "mcpPage.toast.written",
       expect.anything(),
     );
+  });
+
+  it("rewrites Oh My Pi cell by cell on retry, because the toggle never reached the DB", async () => {
+    // omp commits only after the config write succeeds (`sync_and_commit`), so a
+    // failed write leaves the row's flag unset: the retry must re-write that
+    // value instead of resyncing from the (unchanged) database state.
+    mocks.visibleApps = ["omp"];
+    mocks.serversMap = { serena: makeServer("serena") };
+    mocks.toggle.mockRejectedValueOnce(new Error("models.yml line 3"));
+    renderPanel();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "appMatrix.cell.off" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText("mcpPage.failNoticeTitle")).toBeInTheDocument(),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "common.retry" }));
+
+    await waitFor(() =>
+      expect(mocks.bulkToggle).toHaveBeenCalledWith({
+        serverIds: ["serena"],
+        app: "omp",
+        enabled: true,
+      }),
+    );
+    expect(mocks.toggle).toHaveBeenCalledTimes(1);
+    expect(mocks.resync).not.toHaveBeenCalled();
+  });
+
+  it("explains Oh My Pi's discovery in its column popover only", async () => {
+    const openExternal = vi
+      .spyOn(settingsApi, "openExternal")
+      .mockResolvedValue(undefined);
+    mocks.visibleApps = ["codex", "omp"];
+    mocks.serversMap = { serena: makeServer("serena") };
+    renderPanel();
+    const [codexColumn, ompColumn] = screen.getAllByRole("button", {
+      name: /appMatrix.columnAria/,
+    });
+
+    await userEvent.click(codexColumn);
+    expect(
+      screen.queryByRole("button", { name: "appMatrix.ompDiscovery.docsLink" }),
+    ).not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(ompColumn);
+    expect(
+      screen.getByRole("button", { name: "appMatrix.ompDiscovery.title" }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "appMatrix.ompDiscovery.docsLink" }),
+    );
+    expect(openExternal).toHaveBeenCalledWith(
+      expect.stringContaining("oh-my-pi/blob/main/docs/context-files.md"),
+    );
+    openExternal.mockRestore();
   });
 
   it("keeps the notice when the resync retry fails again", async () => {

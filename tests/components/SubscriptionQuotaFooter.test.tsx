@@ -275,9 +275,8 @@ describe("credential failures", () => {
     failed("refresh_pending");
     // 失败原因与「查询失败」合并在同一行展示（badge 与外层容器同文本，取多匹配）
     expect(
-      screen.getAllByText(
-        (_, el) => el?.textContent === "查询失败：令牌待刷新",
-      ).length,
+      screen.getAllByText((_, el) => el?.textContent === "查询失败：令牌待刷新")
+        .length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText("登录已过期")).not.toBeInTheDocument();
     expect(screen.queryByText("raw backend message")).not.toBeInTheDocument();
@@ -286,9 +285,8 @@ describe("credential failures", () => {
   it("still says the login expired when it really did", () => {
     failed("expired");
     expect(
-      screen.getAllByText(
-        (_, el) => el?.textContent === "查询失败：登录已过期",
-      ).length,
+      screen.getAllByText((_, el) => el?.textContent === "查询失败：登录已过期")
+        .length,
     ).toBeGreaterThan(0);
   });
 });

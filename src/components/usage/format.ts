@@ -23,7 +23,7 @@ export function fmtInt(
 }
 
 /** 用量金额的显示币种。库里一律存美元，只在显示时按 `rate`（1 美元折多少）换算。 */
-/** 界面语言各自的币种（en→USD、zh→CNY、ja→JPY、zh-TW→TWD、tr→TRY），外加欧元 */
+/** 界面语言各自的币种（en→USD、zh→CNY、ja→JPY、zh-TW→TWD），外加欧元与里拉 */
 export const DISPLAY_CURRENCIES = [
   "USD",
   "CNY",
@@ -400,7 +400,6 @@ export function getLocaleFromLanguage(language: string): string {
   }
   if (normalized.startsWith("zh")) return "zh-CN";
   if (normalized.startsWith("ja")) return "ja-JP";
-  if (normalized.startsWith("tr")) return "tr-TR";
   return "en-US";
 }
 

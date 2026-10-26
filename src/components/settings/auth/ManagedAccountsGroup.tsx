@@ -41,6 +41,10 @@ export interface GroupAccountRow {
   users: ManagedAccountUser[];
   /** 右侧的额度（AccountQuotaColumn）；需要重新登录的账号不传 */
   quota?: React.ReactNode;
+  /** ⋯ 里删除项的文案（Kimi Code 自己的登录是「移出列表」） */
+  removeLabel?: string;
+  /** 删除项不能点的原因（Kimi 正在用的号要先切走），照常列出、原因写在下面 */
+  removeDisabledReason?: string;
 }
 
 export interface GroupLoginFlow {
@@ -49,7 +53,10 @@ export interface GroupLoginFlow {
   /** 已拿到验证码，等用户在浏览器里授权 */
   polling: boolean;
   pollingState: "idle" | "polling" | "success" | "error";
-  deviceCode: ManagedAuthDeviceCodeResponse | null;
+  deviceCode: Pick<
+    ManagedAuthDeviceCodeResponse,
+    "user_code" | "verification_uri"
+  > | null;
   error: string | null;
   onCancel: () => void;
   onRetry: () => void;
@@ -78,6 +85,7 @@ interface ManagedAccountsGroupProps {
   onAdd: () => void;
   /** Copilot 选部署类型的那块；有它时不显示空状态那行 */
   chooser?: React.ReactNode;
+  loginOptions?: React.ReactNode;
   /** 「默认」徽标和 ⋯ 里「设为默认」的文案（Antigravity 是「agy 在用」「切换 agy 到这个账号」） */
   defaultLabel?: string;
   setDefaultLabel?: string;
@@ -87,7 +95,8 @@ interface ManagedAccountsGroupProps {
   onSetDefault: (accountId: string) => void;
   settingDefault: boolean;
   onRemove: (accountId: string, login: string) => void;
-  onRemoveAll: () => void;
+  /** 标题行 ⋯ 里的「删除全部账号」；不传就没有这个菜单（Kimi） */
+  onRemoveAll?: () => void;
   removing: boolean;
   login: GroupLoginFlow;
   /** 确认框等 */
@@ -119,6 +128,7 @@ export function ManagedAccountsGroup({
   loginLabel,
   onAdd,
   chooser,
+  loginOptions,
   defaultLabel,
   setDefaultLabel,
   canReauth,
@@ -254,7 +264,7 @@ export function ManagedAccountsGroup({
             {t("authCenter.addAccount", { defaultValue: "添加账号" })}
           </Button>
         )}
-        {ready && accounts.length > 1 && (
+        {ready && accounts.length > 1 && onRemoveAll && (
           <DropdownMenu>
             <HoverTip content={t("common.more", { defaultValue: "更多" })}>
               <DropdownMenuTrigger asChild>
@@ -361,6 +371,7 @@ export function ManagedAccountsGroup({
       )}
 
       {chooser}
+      {loginOptions}
 
       <div role="status">
         {busy && (
@@ -566,7 +577,10 @@ function AccountRow({
   const separator = " · ";
 
   return (
-    <div className="flex min-h-[56px] items-center gap-3 border-t border-border py-2 pe-2.5 ps-4">
+    <div
+      data-account-row={account.id}
+      className="flex min-h-[56px] items-center gap-3 border-t border-border py-2 pe-2.5 ps-4"
+    >
       <AccountAvatar login={account.login} avatarUrl={account.avatarUrl} />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex min-w-0 items-center gap-1.5">
@@ -642,11 +656,15 @@ function AccountRow({
         variant="ghost"
         size="icon-compact"
         className="text-fg-2 hover:text-danger-text"
-        title={t("authCenter.removeAccountTitle", { defaultValue: "移除账号" })}
-        aria-label={t("authCenter.removeAccountTitle", {
-          defaultValue: "移除账号",
-        })}
-        disabled={removing}
+        disabled={removing || Boolean(account.removeDisabledReason)}
+        title={
+          account.removeDisabledReason ??
+          t("authCenter.removeAccountTitle", { defaultValue: "移除账号" })
+        }
+        aria-label={
+          account.removeLabel ??
+          t("authCenter.removeAccountTitle", { defaultValue: "移除账号" })
+        }
         onClick={() => onRemove(account.id, account.login)}
       >
         <X className="h-4 w-4" strokeWidth={1.5} />

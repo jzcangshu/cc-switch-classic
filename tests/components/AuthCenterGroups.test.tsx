@@ -330,7 +330,12 @@ describe("AccountQuotaColumn", () => {
                       value: "2 次",
                       tone: "warning",
                     },
-                    { key: "b", label: "不会过期", value: "1 次", tone: "normal" },
+                    {
+                      key: "b",
+                      label: "不会过期",
+                      value: "1 次",
+                      tone: "normal",
+                    },
                   ],
                 },
               },
@@ -344,7 +349,9 @@ describe("AccountQuotaColumn", () => {
     await user.click(
       screen.getByRole("button", { name: "查看 3 次重置各自的到期时间" }),
     );
-    const dialog = await screen.findByRole("dialog", { name: "存下的限额重置" });
+    const dialog = await screen.findByRole("dialog", {
+      name: "存下的限额重置",
+    });
     expect(
       within(dialog)
         .getAllByRole("listitem")

@@ -36,6 +36,7 @@ import {
   usageKeys,
   useModelStats,
   useProviderStats,
+  useRequestLogs,
   useSessionUsageLastSync,
 } from "@/lib/query/usage";
 import { useSettingsQuery } from "@/lib/query";
@@ -81,6 +82,9 @@ const normalizeRefreshInterval = (value: number | undefined) =>
   isRefreshIntervalOption(value) ? value : DEFAULT_REFRESH_INTERVAL_MS;
 
 const STATUS_CODE_OPTIONS = [200, 400, 401, 429, 500] as const;
+
+/** 页签计数按表格首页的条数查：参数和表格一致，react-query 才能合并成一次请求 */
+const LOG_PAGE_SIZE = 20;
 
 // 「设置」放显示币种和模型定价（原「定价」页签并进来）
 type UsageTab = "logs" | "providers" | "models" | "settings";
@@ -752,11 +756,60 @@ export function UsageDashboard({
 
   const scopedAppType = appType === "all" ? undefined : appType;
 
+  // ── 页签计数 ─────────────────────────────────────────────────────────
+  // 和三个表格同一组查询参数，react-query 会合并成一次请求；三个页签都查
+  // （只查当前页签时，没点过的页签一直没有数字），换筛选时沿用上一份数据直到
+  // 新数到达，三个数字原地更新，不会先整体消失再冒出来把页签栏挤得抖一下。
+  const logCount = useRequestLogs({
+    filters: { appType: scopedAppType, providerName, model, statusCode },
+    range,
+    page: 0,
+    pageSize: LOG_PAGE_SIZE,
+    options: refetch,
+  });
+  const providerCount = useProviderStats(
+    range,
+    { appType, providerName, model },
+    refetch,
+  );
+  const modelCount = useModelStats(
+    range,
+    { appType, providerName, model },
+    refetch,
+  );
+  const tabCount: Record<UsageTab, number | undefined> = {
+    logs: logCount.data?.total,
+    providers: providerCount.data?.length,
+    models: modelCount.data?.length,
+    settings: undefined,
+  };
+  // 计数用徽章跟在页签名后面；aria-hidden 让页签的可访问名仍是名字本身，
+  // 读屏和测试都不必跟着数字变
+  const tabItems = TABS.map((id) => {
+    const count = tabCount[id];
+    return {
+      value: id,
+      label: (
+        <span className="inline-flex items-center gap-1.5">
+          {tabLabel[id]}
+          {count != null && (
+            <span
+              aria-hidden="true"
+              className="rounded-[4px] bg-subtle px-1.5 text-caption font-medium tabular-nums text-fg-3"
+            >
+              {fmtInt(count, locale)}
+            </span>
+          )}
+        </span>
+      ),
+    };
+  });
+
   const tabsSection = (
     <section aria-label={t("usage.tabs.label")} className="flex flex-col">
       <PageTabs<UsageTab>
         aria-label={t("usage.tabs.label")}
-        items={TABS.map((id) => ({ value: id, label: tabLabel[id] }))}
+        items={tabItems}
         value={tab}
         onValueChange={setTab}
         idPrefix="usage-tab"

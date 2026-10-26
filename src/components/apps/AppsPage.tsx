@@ -1,6 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   AlertTriangle,
   ArrowUpCircle,
@@ -8,6 +25,7 @@ import {
   ChevronDown,
   Copy,
   Download,
+  GripVertical,
   LayoutGrid,
   Loader2,
   MoreHorizontal,
@@ -19,7 +37,7 @@ import type { AppId } from "@/lib/api";
 import { providersApi } from "@/lib/api/providers";
 import type { ToolInstallationReport } from "@/lib/api/settings";
 import type { VisibleApps } from "@/types";
-import { DEFAULT_VISIBLE_APPS } from "@/config/appConfig";
+import { DEFAULT_VISIBLE_APPS, orderAppIds } from "@/config/appConfig";
 import { useSettings } from "@/hooks/useSettings";
 import { isUpdateAvailable } from "@/lib/version";
 import { cn } from "@/lib/utils";
@@ -83,13 +101,25 @@ const SOURCE_LABEL: Record<string, string> = {
 
 type Row = { kind: "tool"; tool: ToolName } | { kind: "desktop" };
 
-const ROWS: Row[] = [
-  { kind: "tool", tool: "claude" },
-  { kind: "desktop" },
-  ...TOOL_NAMES.filter((tool) => tool !== "claude").map(
-    (tool): Row => ({ kind: "tool", tool }),
-  ),
-];
+const ROW_BY_APP = Object.fromEntries([
+  ["claude-desktop", { kind: "desktop" }],
+  ...TOOL_NAMES.map((tool) => [TOOL_APP_IDS[tool], { kind: "tool", tool }]),
+]) as Record<AppId, Row>;
+
+type RowSection = { key: string; title: string; rows: Row[] };
+
+/** 本机有这个命令行应用：探到了版本、装了但跑不起来，或探测报告里有安装位置（和「卸载」出现的条件一致）。 */
+function isToolPresent(
+  info: { version?: string | null; installed_but_broken?: boolean } | undefined,
+  report: ToolInstallationReport | undefined,
+): boolean {
+  return Boolean(
+    info?.version || info?.installed_but_broken || report?.installs.length,
+  );
+}
+
+const rowKey = (row: Row): AppId =>
+  row.kind === "desktop" ? "claude-desktop" : TOOL_APP_IDS[row.tool];
 
 const CARD_CLASS =
   "flex min-h-[150px] flex-col gap-3 rounded-panel border border-border bg-surface p-4";
@@ -124,6 +154,74 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
   const { t, i18n } = useTranslation();
   const tools = useToolManagement();
   const { settings, updateSettings, autoSaveSettings } = useSettings();
+  const { data: desktopStatus, isPending: isDesktopStatusPending } = useQuery({
+    queryKey: ["claude-desktop-status"],
+    queryFn: () => providersApi.getClaudeDesktopStatus(),
+    staleTime: 30_000,
+  });
+
+  // 按「已安装 / 未安装」分两组。Claude Desktop 没有命令可探，用后端按数据目录 / 应用包推断的结果。
+  // 首次探测还没出结果时不分组，免得各卡片探完一个跳一个；之后重新检查时沿用上次结果，位置不动。
+  const rowInstalled = (row: Row): boolean | null => {
+    if (row.kind === "desktop") {
+      return isDesktopStatusPending ? null : Boolean(desktopStatus?.installed);
+    }
+    const info = tools.toolVersionByName.get(row.tool);
+    if (!info && tools.isLoadingTools) return null;
+    return isToolPresent(info, tools.installReports?.[row.tool]);
+  };
+  // 两组共用一份顺序（拖动后写进设置，侧栏也按它排），每组只是按装没装过滤
+  const appOrder = orderAppIds(settings?.appOrder);
+  const orderedRows = appOrder.map((app) => ROW_BY_APP[app]);
+  const rowStates = orderedRows.map((row) => ({
+    row,
+    installed: rowInstalled(row),
+  }));
+  const sections: RowSection[] = rowStates.some((s) => s.installed === null)
+    ? [{ key: "all", title: t("appsPage.columnApp"), rows: orderedRows }]
+    : (
+        [
+          { key: "installed", installed: true },
+          { key: "notInstalled", installed: false },
+        ] as const
+      )
+        .map(({ key, installed }) => {
+          const rows = rowStates
+            .filter((s) => s.installed === installed)
+            .map((s) => s.row);
+          return {
+            key,
+            title: t(
+              installed
+                ? "appsPage.sectionInstalled"
+                : "appsPage.sectionNotInstalled",
+              { count: rows.length },
+            ),
+            rows,
+          };
+        })
+        .filter((section) => section.rows.length > 0);
+
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // 在整份顺序里移动：组内两卡之间夹着的别组应用相对次序不变
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!settings || !over || active.id === over.id) return;
+    const oldIndex = appOrder.indexOf(active.id as AppId);
+    const newIndex = appOrder.indexOf(over.id as AppId);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = arrayMove(appOrder, oldIndex, newIndex);
+    const previous = settings.appOrder;
+    updateSettings({ appOrder: next });
+    void autoSaveSettings({ appOrder: next }).catch(() =>
+      updateSettings({ appOrder: previous }),
+    );
+  };
 
   const [showCommands, setShowCommands] = useState(false);
   const [showUninstallCommands, setShowUninstallCommands] = useState(false);
@@ -144,11 +242,6 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tools.toolDiagnostics]);
-  const { data: desktopStatus } = useQuery({
-    queryKey: ["claude-desktop-status"],
-    queryFn: () => providersApi.getClaudeDesktopStatus(),
-    staleTime: 30_000,
-  });
 
   const visibleApps: VisibleApps = {
     ...DEFAULT_VISIBLE_APPS,
@@ -265,6 +358,30 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
     </>
   );
 
+  const renderRow = (row: Row) =>
+    row.kind === "desktop" ? (
+      <DesktopCard
+        status={desktopStatus}
+        visibility={visibilitySwitch("claude-desktop")}
+      />
+    ) : (
+      <ToolCard
+        tool={row.tool}
+        tools={tools}
+        onUninstall={() => setPendingUninstall(row.tool)}
+        onOpenInstallCommands={() => setShowCommands(true)}
+        onOpenUninstallCommands={() => setShowUninstallCommands(true)}
+        expanded={expanded[row.tool] ?? false}
+        onToggleExpanded={() =>
+          setExpanded((prev) => ({
+            ...prev,
+            [row.tool]: !prev[row.tool],
+          }))
+        }
+        visibility={visibilitySwitch(TOOL_APP_IDS[row.tool])}
+      />
+    );
+
   return (
     <>
       {embedded ? (
@@ -299,34 +416,48 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
         id={embedded ? undefined : "main-content"}
         className="min-h-0 flex-1 overflow-y-auto scroll-stable"
       >
-        <div className="grid gap-3 px-6 pb-10 pt-4 sm:grid-cols-2 xl:grid-cols-3">
-          {ROWS.map((row) =>
-            row.kind === "desktop" ? (
-              <DesktopCard
-                key="claude-desktop"
-                status={desktopStatus}
-                visibility={visibilitySwitch("claude-desktop")}
-              />
+        {sections.map((section) => (
+          <section key={section.key} aria-label={section.title}>
+            {sections.length > 1 && (
+              <h3 className="mb-2 mt-4 px-1 text-caption font-semibold text-fg-2 first:mt-0">
+                {section.title}
+              </h3>
+            )}
+            {section.key === "installed" ? (
+              // 只有已安装的能拖：未安装的排在哪无所谓；首次探测时还不知道装没装，也先不给拖
+              <DndContext
+                sensors={dragSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={section.rows.map(rowKey)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid gap-3 pb-10 pt-0 sm:grid-cols-2 xl:grid-cols-3">
+                    {section.rows.map((row) => (
+                      <SortableAppCard
+                        key={rowKey(row)}
+                        id={rowKey(row)}
+                        handleLabel={t("appsPage.dragHandle", {
+                          name: APP_DISPLAY_NAME[rowKey(row)],
+                        })}
+                      >
+                        {renderRow(row)}
+                      </SortableAppCard>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             ) : (
-              <ToolCard
-                key={row.tool}
-                tool={row.tool}
-                tools={tools}
-                onUninstall={() => setPendingUninstall(row.tool)}
-                onOpenInstallCommands={() => setShowCommands(true)}
-                onOpenUninstallCommands={() => setShowUninstallCommands(true)}
-                expanded={expanded[row.tool] ?? false}
-                onToggleExpanded={() =>
-                  setExpanded((prev) => ({
-                    ...prev,
-                    [row.tool]: !prev[row.tool],
-                  }))
-                }
-                visibility={visibilitySwitch(TOOL_APP_IDS[row.tool])}
-              />
-            ),
-          )}
-        </div>
+              <div className="grid gap-3 pb-10 pt-0 sm:grid-cols-2 xl:grid-cols-3">
+                {section.rows.map((row) => (
+                  <div key={rowKey(row)}>{renderRow(row)}</div>
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
       </div>
 
       <Dialog open={showCommands} onOpenChange={setShowCommands}>
@@ -414,7 +545,7 @@ function DesktopCard({
         ? t("appsPage.desktopConnected")
         : t("appsPage.desktopNotConnected");
   return (
-    <div data-tool-row className={CARD_CLASS}>
+    <div data-tool-row="claude-desktop" className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <AppGlyph app="claude-desktop" size={20} badgeClassName="bg-subtle" />
@@ -483,7 +614,7 @@ function ToolCard({
   const broken = Boolean(info?.installed_but_broken);
   const isBusy = tools.busyTools.has(tool);
   const busyAction = tools.busyTools.get(tool);
-  const canUninstall = Boolean(info?.version || broken || defaultInstall);
+  const canUninstall = isToolPresent(info, report);
   const action: Exclude<ToolLifecycleAction, "uninstall"> | null =
     (busyAction !== "uninstall" ? busyAction : undefined) ??
     (isVersionLoading || broken
@@ -693,7 +824,7 @@ function ToolCard({
   );
 
   return (
-    <div data-tool-row className={CARD_CLASS}>
+    <div data-tool-row={TOOL_APP_IDS[tool]} className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <AppGlyph
@@ -792,6 +923,58 @@ function ToolCard({
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+/** 可拖动的卡片：把手在左上角，悬停或聚焦时出现；拖动中描边高亮。 */
+function SortableAppCard({
+  id,
+  handleLabel,
+  children,
+}: {
+  id: AppId;
+  /** 拖动把手的可访问名（带上应用名，键盘用户才知道在拖哪张卡） */
+  handleLabel: string;
+  children: React.ReactNode;
+}) {
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style: CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    position: "relative",
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group relative rounded-panel",
+        isDragging && "border border-border shadow-v7-md",
+      )}
+    >
+      {/* 拖动只挂在把手上：整卡可拖会和卡片上的按钮抢指针 */}
+      <button
+        type="button"
+        aria-label={handleLabel}
+        className={cn(
+          "absolute start-1 top-1 z-10 flex h-6 w-5 cursor-grab items-center justify-center rounded text-fg-3 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing",
+          isDragging && "cursor-grabbing opacity-100",
+        )}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      {children}
     </div>
   );
 }

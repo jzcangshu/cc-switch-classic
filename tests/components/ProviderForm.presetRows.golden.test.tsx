@@ -279,6 +279,10 @@ async function submitPresetRow(appId: GoldenAppId, testCase: GoldenCase) {
   const onSubmit = vi.fn();
   const { container } = renderForm(appId, onSubmit);
 
+  // 预设区默认折叠，先展开再点
+  fireEvent.click(
+    screen.getByRole("button", { name: /providerPreset\.label/ }),
+  );
   clickPreset(appId, testCase.preset);
 
   for (const [key, value] of Object.entries(testCase.templateValues ?? {})) {

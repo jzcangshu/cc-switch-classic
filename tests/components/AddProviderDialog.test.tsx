@@ -42,6 +42,11 @@ let mockProjectedBase: Record<string, unknown> | null = null;
 // 投影成那份底的草稿（预设或模板）。
 let mockProjectedDraft: Record<string, unknown> | undefined;
 let submitReadyCallbacks: Array<(isReady: boolean) => void> = [];
+// 对话框是否把「统一供应商」入口交给表单：只有 `showUniversalTab` 为真时才传。
+let universalProps: {
+  onUniversalPresetSelect?: unknown;
+  onManageUniversalProviders?: unknown;
+} = {};
 
 vi.mock("@/components/providers/forms/ProviderForm", () => ({
   ProviderForm: ({
@@ -49,6 +54,8 @@ vi.mock("@/components/providers/forms/ProviderForm", () => ({
     onSubmitReadyChange,
     onManageAuthAccounts,
     onEditorBaseChange,
+    onUniversalPresetSelect,
+    onManageUniversalProviders,
   }: {
     onSubmit: (values: ProviderFormValues) => void;
     onSubmitReadyChange?: (isReady: boolean) => void;
@@ -57,7 +64,10 @@ vi.mock("@/components/providers/forms/ProviderForm", () => ({
       base: Record<string, unknown> | null,
       draft?: Record<string, unknown>,
     ) => void;
+    onUniversalPresetSelect?: unknown;
+    onManageUniversalProviders?: unknown;
   }) => {
+    universalProps = { onUniversalPresetSelect, onManageUniversalProviders };
     useEffect(() => {
       if (onSubmitReadyChange) {
         submitReadyCallbacks.push(onSubmitReadyChange);
@@ -519,5 +529,53 @@ context_window = 500000
 
     act(() => staleCallback?.(true));
     expect(reopenedButton).toBeDisabled();
+  });
+
+  // Oh My Pi 用 Pi 的表单：标识与模型都在表单里，必填项对话框看不见，按钮必须等表单报告就绪。
+  it("Oh My Pi 添加表单报告未就绪时禁用添加按钮", async () => {
+    mockFormReady = false;
+    render(
+      <AddProviderDialog
+        open
+        onOpenChange={vi.fn()}
+        appId="omp"
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const addButton = await screen.findByRole("button", { name: "common.add" });
+    await waitFor(() => expect(addButton).toBeDisabled());
+
+    act(() => submitReadyCallbacks.at(-1)?.(true));
+    await waitFor(() => expect(addButton).toBeEnabled());
+  });
+
+  // 统一供应商只能投影到 Claude Code / Codex / Gemini（后端 `UniversalProviderApps`），
+  // 所以对话框对 omp 不能把入口交给表单；Claude Code 作为对照必须照旧传。
+  it("只有能接收统一供应商的应用才拿到统一预设入口", async () => {
+    const { rerender } = render(
+      <AddProviderDialog
+        open
+        onOpenChange={vi.fn()}
+        appId="omp"
+        onSubmit={vi.fn()}
+      />,
+    );
+    await screen.findByRole("button", { name: "common.add" });
+    expect(universalProps.onUniversalPresetSelect).toBeUndefined();
+    expect(universalProps.onManageUniversalProviders).toBeUndefined();
+
+    rerender(
+      <AddProviderDialog
+        open
+        onOpenChange={vi.fn()}
+        appId="claude"
+        onSubmit={vi.fn()}
+      />,
+    );
+    await waitFor(() =>
+      expect(universalProps.onUniversalPresetSelect).toBeTypeOf("function"),
+    );
+    expect(universalProps.onManageUniversalProviders).toBeTypeOf("function");
   });
 });

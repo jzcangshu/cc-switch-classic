@@ -21,36 +21,6 @@ describe("mcodeProviderPresets", () => {
     }
   });
 
-  it("gives adaptive-thinking Claude models effort options alongside their compat", () => {
-    const pi = piPreset("PackyCode");
-    const mcode = mcodePreset("PackyCode");
-    expect(mcode).toBeDefined();
-    expect(Object.keys(mcode!.settingsConfig.models)).toEqual(
-      pi.settingsConfig.models.map((model) => model.id),
-    );
-    const opus = mcode!.settingsConfig.models["claude-opus-5-5"];
-    expect(opus.compat).toEqual({ forceAdaptiveThinking: true });
-    expect(opus.thinking).toEqual({
-      effortOptions: ["low", "medium", "high", "xhigh", "max"],
-    });
-  });
-
-  it("keeps dialect presets, relying on compat instead of effort options", () => {
-    const deepseek = Object.values(mcodePreset("PPIO")!.settingsConfig.models);
-    expect(deepseek[0].compat).toMatchObject({
-      thinkingFormat: "deepseek",
-      requiresReasoningContentOnAssistantMessages: true,
-    });
-    expect(deepseek[0]).not.toHaveProperty("thinking");
-
-    const qwen =
-      mcodePreset("千问AI平台")!.settingsConfig.models["qwen3.8-max"];
-    expect(qwen.compat).toEqual({
-      thinkingFormat: "qwen",
-      supportsDeveloperRole: false,
-    });
-  });
-
   it("skips only the models whose compat MCode cannot express", () => {
     const models = Object.keys(mcodePreset("Kimi")!.settingsConfig.models);
     expect(models).toContain("kimi-k2.7-code");

@@ -289,7 +289,7 @@ export function presetVersionLayout(
       ? { kind: "single", dimension: "region" }
       : { kind: "list" };
   }
-  // 两维都没变化：靠域名区分（SudoCode）；连域名都一样就只能下拉
+  // 两维都没变化：靠域名区分；连域名都一样就只能下拉
   return unique(versions.map((entry) => presetDomain(entry.preset)))
     ? { kind: "single", dimension: null }
     : { kind: "list" };
@@ -472,6 +472,8 @@ export function loginAccountKey(
       return "google";
     case "grokbuild":
       return "xai";
+    case "kimi":
+      return "kimi";
     default:
       return "claude";
   }

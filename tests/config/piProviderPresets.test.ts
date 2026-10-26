@@ -67,8 +67,8 @@ describe("Pi provider presets", () => {
 
     expect(requestUrls).toMatchObject({
       "Kimi For Coding": "https://api.kimi.com/coding/v1/messages",
-      PackyCode: "https://www.packyapi.ai/v1/messages",
-      AICodeMirror: "https://api.aicodemirror.ai/api/claudecode/v1/messages",
+      AiHubMix: "https://aihubmix.com/v1/messages",
+      "Tu-zi": "https://api.tu-zi.com/v1/messages",
       OpenRouter: "https://openrouter.ai/api/v1/messages",
     });
   });
@@ -84,21 +84,11 @@ describe("Pi provider presets", () => {
     ).toMatchObject({
       Kimi: "openai-completions",
       "Kimi For Coding": "anthropic-messages",
-      RightCode: "openai-responses",
+      AICodeWith: "openai-responses",
       "AWS Bedrock": "bedrock-converse-stream",
     });
   });
 
-  it("uses Pi's 272K context value for every GPT-5.6 Sol preset", () => {
-    const models = piProviderPresets.flatMap((preset) =>
-      preset.settingsConfig.models.filter(
-        (model) => model.id === "gpt-5.6-sol",
-      ),
-    );
-
-    expect(models.length).toBeGreaterThan(0);
-    expect(models.every((model) => model.contextWindow === 272_000)).toBe(true);
-  });
 
   // #7859: 官方 V4.1 Flash 识图，V4 Pro 仍是纯文本
   it("declares image input for official DeepSeek V4.1 Flash only", () => {
@@ -152,23 +142,7 @@ describe("Pi provider presets", () => {
       deferredToolsMode: "kimi",
     });
 
-    const openCodeBase = {
-      supportsStore: false,
-      supportsDeveloperRole: false,
-      maxTokensField: "max_tokens",
-    };
-    expect(model("OpenCode Go", "glm-5.2").compat).toEqual(openCodeBase);
-    expect(model("OpenCode Go", "kimi-k2.7-code").compat).toEqual(openCodeBase);
-    expect(model("OpenCode Go", "mimo-v2.5-pro").compat).toEqual(openCodeBase);
-    for (const id of ["deepseek-v4-pro", "deepseek-v4-flash"]) {
-      expect(model("OpenCode Go", id).compat).toEqual({
-        ...openCodeBase,
-        requiresReasoningContentOnAssistantMessages: true,
-        thinkingFormat: "deepseek",
-      });
-    }
-
-    for (const id of ["mimo-v2.5-pro", "mimo-v2.5"]) {
+    for (const id of ["mimo-v2.6-pro", "mimo-v2.6-flash"]) {
       expect(model("Xiaomi MiMo", id).compat).toEqual({
         requiresReasoningContentOnAssistantMessages: true,
         thinkingFormat: "deepseek",

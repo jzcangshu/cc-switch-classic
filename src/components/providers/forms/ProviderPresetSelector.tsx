@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
   ArrowUpAZ,
-  Heart,
+  ChevronRight,
   Search,
   SlidersHorizontal,
   Star,
@@ -23,6 +23,8 @@ import type { OpenClawProviderPreset } from "@/config/openclawProviderPresets";
 import type { HermesProviderPreset } from "@/config/hermesProviderPresets";
 import type { McodeProviderPreset } from "@/config/mcodeProviderPresets";
 import type { PiProviderPreset } from "@/config/piProviderPresets";
+import type { KimiProviderPreset } from "@/config/kimiProviderPresets";
+import type { OmpProviderPreset } from "@/config/ompProviderPresets";
 import type { ProviderCategory } from "@/types";
 import type { AppId } from "@/lib/api";
 import {
@@ -74,7 +76,9 @@ export type AnyPreset =
   | OpenClawProviderPreset
   | HermesProviderPreset
   | PiProviderPreset
-  | McodeProviderPreset;
+  | McodeProviderPreset
+  | KimiProviderPreset
+  | OmpProviderPreset;
 
 export type PresetEntry = {
   id: string;
@@ -136,6 +140,8 @@ interface ProviderPresetSelectorProps {
   onUniversalPresetSelect?: (preset: UniversalProviderPreset) => void;
   onManageUniversalProviders?: () => void;
   category?: ProviderCategory;
+  /** 预设区默认折叠；测试或「从预设添加」的入口可传 true 直接展开 */
+  defaultOpen?: boolean;
 }
 
 /** 第三版的同页预设网格，保留第四版的版本分组与套餐、地区切换。 */
@@ -146,6 +152,7 @@ export function ProviderPresetSelector({
   onPresetChange,
   onUniversalPresetSelect,
   onManageUniversalProviders,
+  defaultOpen = false,
 }: Readonly<ProviderPresetSelectorProps>) {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
@@ -179,6 +186,7 @@ export function ProviderPresetSelector({
         selectedPresetId={selectedPresetId}
         onUniversalPresetSelect={onUniversalPresetSelect}
         onManageUniversalProviders={onManageUniversalProviders}
+        defaultOpen={defaultOpen}
       />
       {entry && versions.length > 1 && (
         <VersionSwitch
@@ -434,6 +442,8 @@ interface PresetPickerProps {
   onPick: (id: string) => void;
   onUniversalPresetSelect?: (preset: UniversalProviderPreset) => void;
   onManageUniversalProviders?: () => void;
+  /** 预设区默认折叠：绝大多数人是自己手填，预设是少数人的入口 */
+  defaultOpen?: boolean;
 }
 
 function PresetPicker({
@@ -443,8 +453,10 @@ function PresetPicker({
   onPick,
   onUniversalPresetSelect,
   onManageUniversalProviders,
+  defaultOpen = false,
 }: PresetPickerProps) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(defaultOpen);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [sortByName, setSortByName] = useState(false);
@@ -484,17 +496,16 @@ function PresetPicker({
   const matching = useMemo(() => {
     const rows = getVisiblePresetRows(entries, { query, t });
     if (sortByName) return rows;
-    // 第三版的默认顺序：官方、尊享合作伙伴、合作伙伴，其余按名称。
+    // 第三版的默认顺序：官方在前，其余按名称；赞助商预设已整体删除，不再有「尊享合作伙伴」置顶
     const rank = ({ row }: VisiblePresetRow) => {
       const preset = row.versions[0].preset;
       if (preset.category === "official") return 0;
-      if (preset.primePartner) return 1;
-      return preset.isPartner ? 2 : 3;
+      return preset.isPartner ? 1 : 2;
     };
     return rows.sort((a, b) => {
       const priority = rank(a) - rank(b);
       if (priority !== 0) return priority;
-      if (rank(a) === 3) return 0;
+      if (rank(a) === 2) return 0;
       return (
         entries.indexOf(a.row.versions[0]) - entries.indexOf(b.row.versions[0])
       );
@@ -552,7 +563,7 @@ function PresetPicker({
         <button
           type="button"
           onClick={onManageUniversalProviders}
-          className="rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
+          className="min-w-max whitespace-nowrap rounded-lg bg-accent px-3 py-2 text-start text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/80"
         >
           {t("providerPreset.manageUniversal")}
         </button>
@@ -605,138 +616,164 @@ function PresetPicker({
 
   return (
     <div className="space-y-3">
+      {/* 「自定义」常驻：绝大多数人直接手填，预设是展开后才看的模板库 */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+        {customRow}
+      </div>
       <div
         className="flex flex-wrap items-center justify-between gap-2"
         data-unsaved-ignore
       >
-        <span className="text-sm font-medium">{t("providerPreset.label")}</span>
-        <div className="flex items-center gap-2">
-          {searchOpen && (
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3"
-                strokeWidth={1.5}
-              />
-              <Input
-                ref={searchRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    setQuery("");
-                    setSearchOpen(false);
-                  }
-                }}
-                placeholder={t("providerPreset.searchPlaceholder")}
-                aria-label={t("providerPreset.searchAriaLabel")}
-                className="h-8 w-60 pe-9 ps-9"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuery("");
-                    searchRef.current?.focus();
-                  }}
-                  aria-label={t("providerPreset.clearSearch")}
-                  className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-control text-fg-3 hover:bg-subtle hover:text-fg-1"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={t("providerPreset.searchAriaLabel")}
-            aria-pressed={searchOpen}
-            onClick={() => {
-              setSearchOpen(!searchOpen);
-              if (searchOpen) setQuery("");
-            }}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={t("providerPreset.sortAriaLabel")}
-            aria-pressed={sortByName}
-            onClick={() => setSortByName(!sortByName)}
-          >
-            <ArrowUpAZ className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div
-          role="group"
-          aria-label={t("providerPreset.categoriesLabel")}
-          data-unsaved-ignore
-          className="flex flex-wrap items-center gap-1.5"
+        {/* 预设供应商默认折叠：日常都是手填，这里只在想套模板时展开 */}
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="provider-preset-body"
+          onClick={() => setOpen((value) => !value)}
+          className="group flex min-w-0 items-center gap-1.5 text-sm font-medium text-fg-1"
         >
-          {navItems.map((key) => (
-            <CategoryButton
-              key={key}
-              label={t(`providerPreset.group.${key}`)}
-              count={countFor(key)}
-              active={category === key}
-              dim={searching && countFor(key) === 0}
-              onClick={() => setCategory(key)}
-            />
-          ))}
-          {onUniversalPresetSelect && (
-            <CategoryButton
-              label={t("providerPreset.group.universal")}
-              count={countFor("universal")}
-              active={category === "universal"}
-              dim={searching && countFor("universal") === 0}
-              onClick={() => setCategory("universal")}
-            />
-          )}
-        </div>
-
-        <div className="min-w-0">
-          {category !== "all" && (
-            <p className="mb-2 text-caption text-fg-2">
-              {t(`providerPreset.groupHint.${category}`)}
-            </p>
-          )}
-
-          {nothing ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-center">
-              <p className="text-body text-fg-1">
-                {t("providerPreset.noResults", { query: query.trim() })}
-              </p>
-              <p className="text-caption text-fg-2">
-                {t("providerPreset.noResultsHint")}
-              </p>
-              <Button
-                type="button"
-                variant="neutral"
-                size="compact"
-                className="mt-1"
-                onClick={() => onPick("custom")}
-              >
-                {t("providerPreset.useCustom")}
-              </Button>
-            </div>
-          ) : category === "universal" ? (
-            universalGrid
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
-              {customRow}
-              {shown.map(renderRow)}
-            </div>
-          )}
-        </div>
-        {category === "all" && universalGrid}
+          <ChevronRight
+            aria-hidden="true"
+            className={cn(
+              "h-4 w-4 shrink-0 text-fg-3 transition-transform duration-150",
+              open && "rotate-90",
+            )}
+          />
+          <span className="truncate">{t("providerPreset.label")}</span>
+          <span className="text-caption font-normal text-fg-3">
+            {entries.length}
+          </span>
+        </button>
+        {open && (
+          <div className="flex items-center gap-2">
+            {searchOpen && (
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3"
+                  strokeWidth={1.5}
+                />
+                <Input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      setQuery("");
+                      setSearchOpen(false);
+                    }
+                  }}
+                  placeholder={t("providerPreset.searchPlaceholder")}
+                  aria-label={t("providerPreset.searchAriaLabel")}
+                  className="h-8 w-60 pe-9 ps-9"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      searchRef.current?.focus();
+                    }}
+                    aria-label={t("providerPreset.clearSearch")}
+                    className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-control text-fg-3 hover:bg-subtle hover:text-fg-1"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("providerPreset.searchAriaLabel")}
+              aria-pressed={searchOpen}
+              onClick={() => {
+                setSearchOpen(!searchOpen);
+                if (searchOpen) setQuery("");
+              }}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("providerPreset.sortAriaLabel")}
+              aria-pressed={sortByName}
+              onClick={() => setSortByName(!sortByName)}
+            >
+              <ArrowUpAZ className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
+
+      {open && (
+        <div id="provider-preset-body" className="space-y-3">
+          <div
+            role="group"
+            aria-label={t("providerPreset.categoriesLabel")}
+            data-unsaved-ignore
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            {navItems.map((key) => (
+              <CategoryButton
+                key={key}
+                label={t(`providerPreset.group.${key}`)}
+                count={countFor(key)}
+                active={category === key}
+                dim={searching && countFor(key) === 0}
+                onClick={() => setCategory(key)}
+              />
+            ))}
+            {onUniversalPresetSelect && (
+              <CategoryButton
+                label={t("providerPreset.group.universal")}
+                count={countFor("universal")}
+                active={category === "universal"}
+                dim={searching && countFor("universal") === 0}
+                onClick={() => setCategory("universal")}
+              />
+            )}
+          </div>
+
+          <div className="min-w-0">
+            {category !== "all" && (
+              <p className="mb-2 text-caption text-fg-2">
+                {t(`providerPreset.groupHint.${category}`)}
+              </p>
+            )}
+
+            {nothing ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-center">
+                <p className="text-body text-fg-1">
+                  {t("providerPreset.noResults", { query: query.trim() })}
+                </p>
+                <p className="text-caption text-fg-2">
+                  {t("providerPreset.noResultsHint")}
+                </p>
+                <Button
+                  type="button"
+                  variant="neutral"
+                  size="compact"
+                  className="mt-1"
+                  onClick={() => onPick("custom")}
+                >
+                  {t("providerPreset.useCustom")}
+                </Button>
+              </div>
+            ) : category === "universal" ? (
+              universalGrid
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+                {shown.map(renderRow)}
+              </div>
+            )}
+          </div>
+          {category === "all" && universalGrid}
+        </div>
+      )}
     </div>
   );
 }
@@ -863,13 +900,7 @@ function PresetRow({
         )}
       </span>
       {needsRoute && <NeedsRouteBadge />}
-      {preset?.primePartner ? (
-        <Heart
-          className="absolute -right-1 -top-1 h-5 w-5 fill-amber-500 text-amber-500 drop-shadow-sm"
-          strokeWidth={0}
-          aria-hidden="true"
-        />
-      ) : preset?.isPartner ? (
+      {preset?.isPartner ? (
         <span
           aria-hidden="true"
           className="absolute -right-1 -top-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-white shadow-sm"
