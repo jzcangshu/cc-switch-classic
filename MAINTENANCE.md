@@ -3,6 +3,7 @@
 > **唯一必读，也是唯一的记忆库。** 所有 Agent 的裁决、经验、踩坑都追加到这里，不再另写 memory / notes 文档。
 > 本文会入库，**禁止写入个人路径、密钥、账号、本机目录等隐私信息**；本地专属的操作细节留在不入库的 `AGENTS.md`。
 > 与代码或旧笔记冲突时以本文为准；要推翻任何一条，先改本文并写清理由，再改代码。
+> **每个环节动手前必读本文对应章节**（发版 / 更新 / 备份 / 镜像 / 裁决……），禁止凭记忆执行清单——2026-10-27 v1.1.1 版本常量漏 bump 事故即源于「规则在文中、执行凭记忆」（§6 判例）。
 
 ---
 
@@ -83,8 +84,9 @@ Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品
 - Windows 安装器**只能用 NSIS**（MSI 同 ProductVersion 无法覆盖安装）。
 - macOS 未签名：App 内自动更新不可用；`latest.json` 的 platforms 只含 windows×2 + linux×2。
 - 发布前在 `src/whats-new/{classic}.json` 写**已跟进的内核变更**，不引用未跟进的上游版本。
-- **发布清单（每次 release 逐项过）**：① bump `src/lib/classicVersion.ts` 的 `CLASSIC_VERSION`；② 写 `src/whats-new/{classic}.json`；③ bump README 头部 `Classic`、`内核` 两个 shields 徽标（v1.1.0 发布时漏了，滞留 v1.0.1/v4.0.18 到 2026-10-27 才补）；④ 涉及面大时补 `docs/release-notes/`；⑤ 推 tag。
+- **发布清单（每次 release 逐项过）**：① bump **两处** Classic 版本常量且必须同值：`src/lib/classicVersion.ts` 的 `CLASSIC_VERSION`（关于页显示）与 `src-tauri/src/commands/misc.rs` 的 `CLASSIC_VERSION`（更新判定基准）。两处不同步会被守卫单测 `classic_version_stays_in_sync_with_the_frontend_constant`（misc.rs 测试模块，`include_str!` 读 TS 文件断言相等）直接拦下；原测试模块的影子常量副本已于 v1.1.2 删除，勿再引入；② 写 `src/whats-new/{classic}.json`；③ bump README 头部 `Classic`、`内核` 两个 shields 徽标（v1.1.0 发布时漏了，滞留 v1.0.1/v4.0.18 到 2026-10-27 才补）；④ 涉及面大时补 `docs/release-notes/`；⑤ 推 tag。
 - **版本口径判例（2026-10-27）**：应用内指向 classic 仓库 release tag 的链接（关于页「更新日志」、新版布局弹窗「查看更新说明」）必须用 `CLASSIC_VERSION` 拼 tag——`getVersion()` 读到的是**内核版本**，classic 仓库没有对应 tag，拼上去 404。以后新增任何「带版本号的站外链接」先问一句：这是 Classic 版还是内核版？可用更新的目标版本用 `updateInfo.availableVersion`（它本来就是 Classic 口径）。
+- **版本常量两处同步判例（2026-10-27，v1.1.1 事故，用户裁决「不要再犯」）**：Classic 版本常量有两处——TS `src/lib/classicVersion.ts`（关于页显示）与 Rust `src-tauri/src/commands/misc.rs`（更新判定：`get_classic_update` 与 `install_update_and_restart` 的 version_comparator 都以它为准）。v1.1.1 发布只 bump 了 TS 一侧，Rust 滞留 `1.1.0`，导致所有 v1.1.1 用户关于页永久提示「新版本 v1.1.1」，点「立即更新」还会按同一判定把 v1.1.1 重装一遍、重启后继续提示（自我更新死循环），只能再发 v1.1.2 止血。教训：**清单必须逐文件枚举**——「两处同步」写在速览里而旧清单①只列了一个文件，照单执行照样漏。守卫（随 v1.1.2 落地）：Rust 单测 `include_str!` 读 classicVersion.ts，断言两常量相等。
 
 ## 7. 更新机制（红线）
 

@@ -81,7 +81,7 @@ describe("NewLayoutDialog", () => {
     await waitFor(() =>
       expect(mocks.openExternal).toHaveBeenCalledWith(
         // Release tag 用 Classic 版本号（classicVersion.ts），内核版本只用于显示
-        "https://github.com/jzcangshu/cc-switch-classic/releases/tag/v1.1.1",
+        "https://github.com/jzcangshu/cc-switch-classic/releases/tag/v1.1.2",
       ),
     );
     await waitFor(() =>
