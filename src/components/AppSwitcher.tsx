@@ -153,6 +153,10 @@ export function AppSwitcher({
     return () => observer.disconnect();
   }, [appCount]);
 
+  // 仅一个应用可见时没有可切换的对象，隐藏整个切换器
+  // （设置 → 应用可见性的说明文案描述了这一行为；hooks 已全部执行完才返回）
+  if (appCount <= 1) return null;
+
   const visibleList = appsToShow.slice(0, Math.max(1, visibleCount));
   // 激活应用被收进溢出区时，顶替最后一个可见位，保证始终可点亮
   if (appsToShow.includes(activeApp) && !visibleList.includes(activeApp)) {

@@ -873,13 +873,15 @@
     "unifyCodexHistoryRestoreSkippedToggleOn": "統一會話歷史開關已重新開啟，已跳過還原",
     "appVisibility": {
       "title": "主頁面顯示",
-      "description": "選擇在主頁面顯示的應用程式",
+      "description": "選擇在主頁面顯示的應用程式。當僅啟用一個應用程式時，此控制項會自動隱藏。",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI",
       "showProfileSwitcher": "顯示專案切換",
-      "showProfileSwitcherDescription": "在主頁面頂部顯示專案切換入口"
+      "showProfileSwitcherDescription": "在主頁面頂部顯示專案切換入口",
+      "showModeSwitcher": "顯示 直連/路由/聚合 選擇器",
+      "showModeSwitcherDescription": "在主頁面顯示模式切換開關；隱藏後目前模式保持不變"
     },
     "terminal": {
       "title": "首選終端機",
@@ -962,7 +964,7 @@
     "viewReleaseNotes": "檢視該版本更新日誌",
     "viewCurrentReleaseNotes": "檢視目前版本更新日誌",
     "github": "GitHub",
-    "starPrompt": "如果 CC Switch 幫到了你，請在 GitHub 點個 Star，這對我們意義重大",
+    "starPrompt": "如果 CC Switch Classic 幫到了你，請在 GitHub 點個 Star，這對我們意義重大",
     "starOnGithub": "去點 Star",
     "officialWebsite": "官方網站",
     "manualInstallCommands": "手動安裝指令",

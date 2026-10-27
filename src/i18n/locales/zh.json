@@ -873,13 +873,15 @@
     "unifyCodexHistoryRestoreSkippedToggleOn": "统一会话历史开关已重新开启，已跳过还原",
     "appVisibility": {
       "title": "主页面显示",
-      "description": "选择在主页面显示的应用",
+      "description": "选择在主页面显示的应用。当仅开启一个应用时，此控件会被自动隐藏。",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI",
       "showProfileSwitcher": "显示项目切换",
-      "showProfileSwitcherDescription": "在主页面顶部显示项目切换入口"
+      "showProfileSwitcherDescription": "在主页面顶部显示项目切换入口",
+      "showModeSwitcher": "显示 直连/路由/聚合 选择器",
+      "showModeSwitcherDescription": "在主页面显示模式切换开关；隐藏后当前模式保持不变"
     },
     "terminal": {
       "title": "首选终端",
@@ -962,7 +964,7 @@
     "viewReleaseNotes": "查看该版本更新日志",
     "viewCurrentReleaseNotes": "查看当前版本更新日志",
     "github": "GitHub",
-    "starPrompt": "如果 CC Switch 帮到了你，请在 GitHub 点个 Star，这对我们意义重大",
+    "starPrompt": "如果 CC Switch Classic 帮到了你，请在 GitHub 点个 Star，这对我们意义重大",
     "starOnGithub": "去点 Star",
     "officialWebsite": "官方网站",
     "manualInstallCommands": "手动安装命令",

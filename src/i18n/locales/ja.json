@@ -873,13 +873,15 @@
     "unifyCodexHistoryRestoreSkippedToggleOn": "統一セッション履歴が再度有効化されたため、復元をスキップしました",
     "appVisibility": {
       "title": "ホームページ表示",
-      "description": "ホームページに表示するアプリを選択",
+      "description": "ホームページに表示するアプリを選択。有効なアプリが 1 つだけの場合、この切替えは自動的に非表示になります。",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI",
       "showProfileSwitcher": "プロジェクト切り替えを表示",
-      "showProfileSwitcherDescription": "メイン画面上部にプロジェクト切り替えを表示します"
+      "showProfileSwitcherDescription": "メイン画面上部にプロジェクト切り替えを表示します",
+      "showModeSwitcher": "直接接続/ルーティング/集約セレクターを表示",
+      "showModeSwitcherDescription": "メイン画面にモード切替を表示します。非表示にしても現在のモードは変わりません"
     },
     "terminal": {
       "title": "優先ターミナル",
@@ -962,7 +964,7 @@
     "viewReleaseNotes": "このバージョンのリリースノートを見る",
     "viewCurrentReleaseNotes": "現在のバージョンのリリースノートを見る",
     "github": "GitHub",
-    "starPrompt": "CC Switch がお役に立てたなら、GitHub でスターをお願いします。私たちにとって大きな励みになります",
+    "starPrompt": "CC Switch Classic がお役に立てたなら、GitHub でスターをお願いします。私たちにとって大きな励みになります",
     "starOnGithub": "GitHub でスター",
     "officialWebsite": "公式サイト",
     "manualInstallCommands": "手動インストールコマンド",

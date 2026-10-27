@@ -476,31 +476,34 @@ export function SwitchModePanel({
 
   return (
     <>
-      <ModeTabs
-        modes={modes}
-        active={active}
-        view={view}
-        onView={setView}
-        failover={
-          hasFailover && view === "route" && active === "route"
-            ? {
-                enabled: failoverOn,
-                disabled: setFailover.isPending,
-                onChange: handleFailoverChange,
-              }
-            : undefined
-        }
-        onOpenRouteSettings={
-          hasFailover && view === "route" && active === "route"
-            ? () => setRouteSettingsOpen(true)
-            : undefined
-        }
-        onOpenStackSettings={
-          app === "codex" && view === "stack" && active === "stack"
-            ? () => setStackSettingsOpen(true)
-            : undefined
-        }
-      />
+      {/* 设置「显示 直连/路由/聚合 选择器」关掉时只隐藏选择器本身，当前模式与页面内容不受影响 */}
+      {(settings?.showModeSwitcher ?? true) && (
+        <ModeTabs
+          modes={modes}
+          active={active}
+          view={view}
+          onView={setView}
+          failover={
+            hasFailover && view === "route" && active === "route"
+              ? {
+                  enabled: failoverOn,
+                  disabled: setFailover.isPending,
+                  onChange: handleFailoverChange,
+                }
+              : undefined
+          }
+          onOpenRouteSettings={
+            hasFailover && view === "route" && active === "route"
+              ? () => setRouteSettingsOpen(true)
+              : undefined
+          }
+          onOpenStackSettings={
+            app === "codex" && view === "stack" && active === "stack"
+              ? () => setStackSettingsOpen(true)
+              : undefined
+          }
+        />
+      )}
       <div
         ref={scrollRef}
         id="main-content"
