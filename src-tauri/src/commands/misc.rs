@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 /// CLASSIC_VERSION 必须与 src/lib/classicVersion.ts 同值 bump——v1.1.1 只改了 TS 侧，
 /// 更新判定滞留 1.1.0 造成全量用户更新提示死循环；测试模块有守卫单测拦不同步。
 pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-pub(crate) const CLASSIC_VERSION: &str = "1.1.2";
+pub(crate) const CLASSIC_VERSION: &str = "1.1.3";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -6334,7 +6334,11 @@ mod tests {
             .lines()
             .find_map(|l| l.trim().strip_prefix("export const CLASSIC_VERSION ="))
             .expect("classicVersion.ts 必须定义 export const CLASSIC_VERSION");
-        let ts_version = value_line.trim().trim_end_matches(';').trim().trim_matches('"');
+        let ts_version = value_line
+            .trim()
+            .trim_end_matches(';')
+            .trim()
+            .trim_matches('"');
         assert_eq!(
             ts_version, CLASSIC_VERSION,
             "classicVersion.ts（{ts_version}）与 misc.rs（{CLASSIC_VERSION}）的 \

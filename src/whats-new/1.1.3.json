@@ -1,0 +1,33 @@
+{
+  "version": "1.1.3",
+  "items": [
+    {
+      "type": "new",
+      "zh": "新设置「显示 直连/路由/聚合 选择器」，可隐藏主页模式切换",
+      "zh-TW": "新增「顯示 直連/路由/聚合 選擇器」設定，可隱藏主頁模式切換",
+      "en": "New setting to show or hide the direct/route/stack selector on the main page",
+      "ja": "メイン画面の直接接続/ルーティング/集約セレクター表示切り替え設定を追加"
+    },
+    {
+      "type": "new",
+      "zh": "仅开启一个应用时，主页面应用切换器自动隐藏",
+      "zh-TW": "僅啟用一個應用程式時，主頁面應用切換器自動隱藏",
+      "en": "The app switcher hides itself when only one app is enabled",
+      "ja": "有効なアプリが 1 つだけの時、アプリ切替を自動的に非表示にします"
+    },
+    {
+      "type": "fix",
+      "zh": "关于页品牌名补全为 CC Switch Classic",
+      "zh-TW": "關於頁品牌名稱補全為 CC Switch Classic",
+      "en": "About page now says CC Switch Classic everywhere",
+      "ja": "バージョン情報のブランド名を CC Switch Classic に統一"
+    },
+    {
+      "type": "improve",
+      "zh": "设置页托盘样式与首选终端补上图标，风格统一",
+      "zh-TW": "設定頁托盤樣式與首選終端機補上圖示，風格統一",
+      "en": "Tray style and terminal rows in settings get matching icons",
+      "ja": "設定のトレイスタイルと優先ターミナルに行アイコンを追加し統一"
+    }
+  ]
+}
