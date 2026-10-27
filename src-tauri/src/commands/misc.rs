@@ -9,10 +9,12 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-/// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
+/// CC Switch Classic 仓库与版本（Rust 侧唯一来源；版本规则见仓库根 MAINTENANCE.md §6）。
 /// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
+/// CLASSIC_VERSION 必须与 src/lib/classicVersion.ts 同值 bump——v1.1.1 只改了 TS 侧，
+/// 更新判定滞留 1.1.0 造成全量用户更新提示死循环；测试模块有守卫单测拦不同步。
 pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-pub(crate) const CLASSIC_VERSION: &str = "1.1.0";
+pub(crate) const CLASSIC_VERSION: &str = "1.1.2";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -6323,10 +6325,22 @@ mod tests {
     }
     use std::path::{Path, PathBuf};
 
-    /// CC Switch Classic 仓库与版本（唯一来源；版本规则见仓库根 AGENTS.md）。
-    /// Classic 主版本更新才推送更新提示；内核版本在 tauri.conf 的 version 里跟随上游。
-    const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-    const CLASSIC_VERSION: &str = "1.1.0";
+    #[test]
+    fn classic_version_stays_in_sync_with_the_frontend_constant() {
+        // v1.1.1 事故守卫：classicVersion.ts 与本文件顶部的 CLASSIC_VERSION 必须同值，
+        // 否则关于页显示一个版本、更新判定用另一个（MAINTENANCE.md §6 判例）。
+        let ts = include_str!("../../../src/lib/classicVersion.ts");
+        let value_line = ts
+            .lines()
+            .find_map(|l| l.trim().strip_prefix("export const CLASSIC_VERSION ="))
+            .expect("classicVersion.ts 必须定义 export const CLASSIC_VERSION");
+        let ts_version = value_line.trim().trim_end_matches(';').trim().trim_matches('"');
+        assert_eq!(
+            ts_version, CLASSIC_VERSION,
+            "classicVersion.ts（{ts_version}）与 misc.rs（{CLASSIC_VERSION}）的 \
+             CLASSIC_VERSION 不同步：发布必须两处同值 bump（MAINTENANCE.md §6①）"
+        );
+    }
 
     #[tokio::test]
     async fn lifecycle_coordinator_serializes_writes_and_rejects_duplicate_tools() {

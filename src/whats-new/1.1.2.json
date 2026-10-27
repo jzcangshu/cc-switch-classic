@@ -1,0 +1,12 @@
+{
+  "version": "1.1.2",
+  "items": [
+    {
+      "type": "fix",
+      "zh": "修复：更新检查误报“新版本 v1.1.1”并反复重装同一版本的问题",
+      "zh-TW": "修復：更新檢查誤報「新版本 v1.1.1」並反覆重裝同一版本的問題",
+      "en": "Fix: update check kept flagging v1.1.1 as new and could reinstall the same build in a loop",
+      "ja": "修正：更新チェックが誤って v1.1.1 を新バージョン扱いし再インストールを繰り返す問題"
+    }
+  ]
+}
