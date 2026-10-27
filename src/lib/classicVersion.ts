@@ -8,4 +8,4 @@
  * - 内核版本：上游 farion1231/cc-switch 的版本，即 tauri.conf 的 version
  *   （getVersion() 读到的就是它），跟随上游更新。
  */
-export const CLASSIC_VERSION = "1.1.2";
+export const CLASSIC_VERSION = "1.1.3";
