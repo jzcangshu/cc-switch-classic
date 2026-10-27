@@ -76,6 +76,7 @@ Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品
 
 - **双段版本**：Classic 主版本从 `1.0.0` 起（两处常量同步）；内核版本跟随上游。关于页同时显示两者。
 - **发布什么就升什么**：跟进内核升 minor，纯界面修复升 patch。
+- **版本号判例（2026-10-27，v1.1.1，用户裁决）**：minor **只**跟内核版本走；凡未跟内核的发布**一律升 patch——哪怕包含新功能/新能力**（如 OMP 用量导入归入 v1.1.1）。禁止套用通用 semver 的"有新功能就该升 minor"直觉；这条优先于上一条的模糊读法。
 - 发布 = 推 tag `v{classic}`。Release 工作流全平台构建：Windows x64/ARM64 **NSIS** + 便携 zip、Linux x64/ARM64 AppImage/deb/rpm、macOS universal 未签名 dmg/zip。
 - 便携包命名：`CC-Switch-Classic-v{classic}-Windows[-arm64]-Portable.zip`。
 - **必须非 prerelease**：应用内更新读 `releases/latest/download/latest.json`，GitHub 的 latest 指针不含 prerelease。
