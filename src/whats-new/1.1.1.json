@@ -1,0 +1,33 @@
+{
+  "version": "1.1.1",
+  "items": [
+    {
+      "type": "new",
+      "zh": "OMP 的会话用量纳入用量统计，不开路由也能看到",
+      "zh-TW": "OMP 的工作階段用量納入用量統計，不開路由也能看到",
+      "en": "Oh My Pi session usage now feeds the dashboard, even without routing",
+      "ja": "Oh My Pi のセッション利用量を統計に集計"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Kimi Code 与 OMP 在「主页面显示」里没有开关",
+      "zh-TW": "修復 Kimi Code 與 OMP 在「主頁面顯示」裡沒有開關",
+      "en": "Fixed Kimi Code and OMP missing from the home-page visibility settings",
+      "ja": "Kimi Code と OMP のホームページ表示スイッチがない問題を修正"
+    },
+    {
+      "type": "fix",
+      "zh": "修复更新提示每次启动都弹出，现在每版只提醒一次",
+      "zh-TW": "修復更新提示每次啟動都彈出，現在每版只提醒一次",
+      "en": "Fixed the what's-new dialog showing on every launch; once per version now",
+      "ja": "更新通知が起動のたびに表示される問題を修正"
+    },
+    {
+      "type": "new",
+      "zh": "用量趋势图可切换新版或旧版样式，选择会记住",
+      "zh-TW": "用量趨勢圖可切換新版或舊版樣式，選擇會記住",
+      "en": "The usage trend chart can switch between the new and old styles",
+      "ja": "トレンドチャートの新旧スタイル切替に対応"
+    }
+  ]
+}

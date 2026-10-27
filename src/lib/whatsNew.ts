@@ -43,7 +43,7 @@ function isKernelEraVersion(version: string | undefined): boolean {
 }
 
 /** 已看版本换算到 Classic 纪元：内核纪元的记录视为未记录 */
-function classicSeen(seen: string | undefined): string | undefined {
+export function classicSeen(seen: string | undefined): string | undefined {
   return isKernelEraVersion(seen) ? undefined : seen;
 }
 
@@ -96,7 +96,10 @@ export function markSeen(
   current: string | undefined,
 ): string | undefined {
   if (!current) return seen;
-  return seen && compareVersions(seen, current) > 0 ? seen : current;
+  const effective = classicSeen(seen);
+  return effective && compareVersions(effective, current) > 0
+    ? effective
+    : current;
 }
 
 export function resolveWhatsNewLanguage(language: string): WhatsNewLanguage {

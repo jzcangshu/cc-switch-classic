@@ -6,7 +6,11 @@ import "./tray-panel.css";
 import "../i18n";
 import { FrontendErrorBoundary } from "@/components/FrontendErrorBoundary";
 import { installGlobalErrorHandlers } from "@/lib/frontendLogger";
+import { disableContextMenu } from "@/lib/disableContextMenu";
 import { TrayPanel } from "./TrayPanel";
+
+// 尽早屏蔽 WebView 默认右键菜单，避免 React 渲染前右键也弹菜单
+disableContextMenu();
 
 installGlobalErrorHandlers();
 

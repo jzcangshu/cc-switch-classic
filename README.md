@@ -8,7 +8,7 @@
 
 *Classic V3-style UI on the cc-switch V4 core.*
 
-[![Classic](https://img.shields.io/badge/Classic-v1.1.0-blue)](https://github.com/jzcangshu/cc-switch-classic/releases)
+[![Classic](https://img.shields.io/badge/Classic-v1.1.1-blue)](https://github.com/jzcangshu/cc-switch-classic/releases)
 [![内核](https://img.shields.io/badge/内核-v4.0.20-green)](https://github.com/farion1231/cc-switch)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](#license)
 [![平台](https://img.shields.io/badge/平台-Windows%20%7C%20Linux%20%7C%20macOS%20(未签名)-9cf)](#下载与更新)

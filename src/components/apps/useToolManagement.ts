@@ -132,6 +132,12 @@ const AGY_WINDOWS_INSTALL_COMMAND = `powershell -NoProfile -ExecutionPolicy Bypa
   "irm https://antigravity.google/cli/install.ps1 | iex",
 )}`;
 
+// 与后端 OMP_INSTALL_WINDOWS_SCRIPT 保持一致：官方安装器在缺少 bun 时下载预编译
+// 二进制，不能只写 bun 命令（与「安装时运行官方安装脚本」的提示也对不上）。
+const OMP_WINDOWS_INSTALL_COMMAND = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${powershellEncodedCommand(
+  "irm https://omp.sh/install.ps1 | iex",
+)}`;
+
 // 与后端 npm_install_command_for("claude") 保持一致：原生依赖和 postinstall 缺一不可，
 // 否则 bin/claude.exe 会保留文本占位文件，在 Windows 上报兼容性错误。
 const CLAUDE_NPM_INSTALL_COMMAND =
@@ -165,7 +171,7 @@ ${posixScriptInstallCommand("https://code.kimi.com/kimi-code/install.sh")}
 # Antigravity CLI
 ${posixScriptInstallCommand("https://antigravity.google/cli/install.sh")}
 # Oh My Pi
-bun install -g @oh-my-pi/pi-coding-agent@latest`;
+${posixScriptInstallCommand("https://omp.sh/install")}`;
 
 const WINDOWS_ONE_CLICK_INSTALL_COMMANDS = `# Claude Code
 ${CLAUDE_NPM_INSTALL_COMMAND}
@@ -190,7 +196,7 @@ ${KIMI_WINDOWS_INSTALL_COMMAND}
 # Antigravity CLI
 ${AGY_WINDOWS_INSTALL_COMMAND}
 # Oh My Pi
-bun install -g @oh-my-pi/pi-coding-agent@latest`;
+${OMP_WINDOWS_INSTALL_COMMAND}`;
 
 export const ONE_CLICK_INSTALL_COMMANDS = isWindows()
   ? WINDOWS_ONE_CLICK_INSTALL_COMMANDS

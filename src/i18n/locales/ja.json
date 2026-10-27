@@ -963,6 +963,8 @@
     "viewCurrentReleaseNotes": "現在のバージョンのリリースノートを見る",
     "github": "GitHub",
     "starPrompt": "CC Switch がお役に立てたなら、GitHub でスターをお願いします。私たちにとって大きな励みになります",
+    "starOnGithub": "GitHub でスター",
+    "officialWebsite": "公式サイト",
     "manualInstallCommands": "手動インストールコマンド",
     "manualUninstallCommands": "手動アンインストールコマンド",
     "manualUninstallHint": "各アプリの実行環境は既定で自動検出されます。手動で別の環境に切り替えることもできます。インストール時に使用した方法を選び、削除したいアプリのコマンドをコピーしてターミナルで実行してください。完了後に「更新を確認」をクリックすると状態が更新されます。",
@@ -975,7 +977,7 @@
     "copyToolUninstallCommand": "{{tool}} のアンインストールコマンドをコピー",
     "uninstallCommandCopied": "アンインストールコマンドをコピーしました",
     "uninstallCommandCopyFailed": "コピーに失敗しました。コマンドを選択して手動でコピーしてください。",
-    "oneClickInstallHint": "Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Oh My Pi をインストールまたは更新",
+    "oneClickInstallHint": "Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Kimi Code / Oh My Pi をインストールまたは更新",
     "localEnvCheck": "ローカル環境チェック",
     "updateAllTools": "すべて更新（{{count}}）",
     "currentVersion": "現在のバージョン",
@@ -1109,6 +1111,7 @@
     "hermes": "Hermes",
     "pi": "Pi",
     "mcode": "MiniMax Code",
+    "kimi": "Kimi Code",
     "agy": "Antigravity",
     "omp": "Oh My Pi"
   },
@@ -2222,6 +2225,7 @@
     "freshInput": "新規入力",
     "cacheHitRate": "キャッシュヒット率",
     "requestLogs": "リクエストログ",
+    "sortedByRequests": "リクエスト数順",
     "providerStats": "プロバイダー統計",
     "modelStats": "モデル統計",
     "time": "時間",
@@ -2258,6 +2262,8 @@
       "grokbuild": "Grok Build",
       "pi": "Pi",
       "mcode": "MiniMax Code",
+      "kimi": "Kimi Code",
+      "omp": "Oh My Pi",
       "label": "アプリで絞り込み"
     },
     "rawInputLabel": "原始",
@@ -2421,10 +2427,14 @@
       "minutesAgo": "{{count}} 分前に同期",
       "syncing": "同期中…",
       "tip": "クリックして今すぐ同期",
-      "tipOff": "自動スキャンはオフです。クリックして今すぐ同期"
+      "tipOff": "自動スキャンはオフです。クリックして今すぐ同期",
+      "off": "セッションログ · 自動スキャンはオフ",
+      "auto": "セッションログ · 自動スキャン",
+      "tipAuto": "バックグラウンドでは 10 分ごとにスキャン。このページを開いている間は右側の間隔でスキャンします"
     },
     "refreshMenu": {
-      "label": "{{seconds}} 秒ごとにスキャン"
+      "label": "{{seconds}} 秒ごとにスキャン",
+      "seconds": "{{seconds}} 秒"
     },
     "dataSources": "データソース",
     "display": {
@@ -2444,6 +2454,7 @@
       },
       "sidebarTodayLimit": "最大 {{count}} 項目まで",
       "logColumns": "リクエストログの列",
+      "logColumnsSummary": "{{shown}} / {{total}} 列",
       "trendChartType": "トレンドグラフの種類",
       "trendChartTypes": {
         "bar": "棒グラフ",
@@ -2485,13 +2496,17 @@
       "requestsLegend": "リクエスト数",
       "titleMetric": "{{metric}} · {{granularity}}",
       "hourly": "1 時間ごと",
-      "daily": "1 日ごと"
+      "daily": "1 日ごと",
+      "styleLabel": "グラフの表示",
+      "styleNew": "新",
+      "styleOld": "旧"
     },
     "tabs": {
       "label": "明細",
       "providers": "プロバイダー",
       "models": "モデル",
-      "pricing": "料金"
+      "pricing": "料金",
+      "settings": "設定"
     },
     "app": "アプリ",
     "speed": "速度",
@@ -4243,6 +4258,7 @@
       "hermes": "公式インストールスクリプトでインストール",
       "pi": "npm でインストール",
       "mcode": "公式インストールスクリプトで入れ、失敗したら npm を使います",
+      "kimi": "公式インストールスクリプトでインストール",
       "agy": "公式インストールスクリプトでインストール",
       "omp": "公式インストールスクリプトでインストール"
     }

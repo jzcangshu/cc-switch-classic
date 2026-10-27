@@ -337,12 +337,14 @@ export function SkillsStorageSettings({
               </span>
             </label>
           )}
-          <p
-            id="skills-storage-unified-warn"
-            className="m-0 pl-[26px] text-caption text-warning-text"
-          >
-            {t("skills.storageSheet.unifiedWarning")}
-          </p>
+          {pendingLocation === "unified" && (
+            <p
+              id="skills-storage-unified-warn"
+              className="m-0 pl-[26px] text-caption text-warning-text"
+            >
+              {t("skills.storageSheet.unifiedWarning")}
+            </p>
+          )}
         </div>
         <div className="flex items-center justify-between gap-3 pt-0.5">
           <p

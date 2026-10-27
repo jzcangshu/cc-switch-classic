@@ -122,7 +122,7 @@ const rowKey = (row: Row): AppId =>
   row.kind === "desktop" ? "claude-desktop" : TOOL_APP_IDS[row.tool];
 
 const CARD_CLASS =
-  "flex min-h-[150px] flex-col gap-3 rounded-panel border border-border bg-surface p-4";
+  "flex h-full min-h-[9.5rem] flex-col rounded-panel border border-border bg-surface p-4";
 
 function formatCheckedAt(timestamp: number, locale: string): string {
   const date = new Date(timestamp);
@@ -386,7 +386,7 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
     <>
       {embedded ? (
         /* 关于页内嵌：节内标题行（第三版本地环境检查形态），操作沿用页头同一组 */
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pt-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 pt-4">
           <div className="flex min-w-0 items-center gap-0.5">
             <h3 className="m-0 truncate text-strong font-semibold text-fg-1">
               {t("nav.apps")}
@@ -414,50 +414,59 @@ export function AppsPage({ embedded = false }: AppsPageProps = {}) {
 
       <div
         id={embedded ? undefined : "main-content"}
-        className="min-h-0 flex-1 overflow-y-auto scroll-stable"
+        className={cn(
+          // 左右留同样的内边距（内嵌时与节标题的 px-5 对齐）；滚动条槽两边都留，
+          // 免得右侧被 8px 滚动条吃掉、卡片左右看起来一边宽一边窄。
+          "min-h-0 flex-1 overflow-y-auto scroll-stable pb-10 [scrollbar-gutter:stable_both-edges]",
+          embedded ? "px-5" : "px-6",
+        )}
       >
-        {sections.map((section) => (
-          <section key={section.key} aria-label={section.title}>
-            {sections.length > 1 && (
-              <h3 className="mb-2 mt-4 px-1 text-caption font-semibold text-fg-2 first:mt-0">
-                {section.title}
-              </h3>
-            )}
-            {section.key === "installed" ? (
-              // 只有已安装的能拖：未安装的排在哪无所谓；首次探测时还不知道装没装，也先不给拖
-              <DndContext
-                sensors={dragSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={section.rows.map(rowKey)}
-                  strategy={rectSortingStrategy}
+        <div className="space-y-5">
+          {sections.map((section) => (
+            <section key={section.key} aria-label={section.title}>
+              {sections.length > 1 && (
+                <h3 className="mb-2 text-caption font-semibold text-fg-2">
+                  {section.title}
+                </h3>
+              )}
+              {section.key === "installed" ? (
+                // 只有已安装的能拖：未安装的排在哪无所谓；首次探测时还不知道装没装，也先不给拖
+                <DndContext
+                  sensors={dragSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className="grid gap-3 pb-10 pt-0 sm:grid-cols-2 xl:grid-cols-3">
-                    {section.rows.map((row) => (
-                      <SortableAppCard
-                        key={rowKey(row)}
-                        id={rowKey(row)}
-                        handleLabel={t("appsPage.dragHandle", {
-                          name: APP_DISPLAY_NAME[rowKey(row)],
-                        })}
-                      >
-                        {renderRow(row)}
-                      </SortableAppCard>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div className="grid gap-3 pb-10 pt-0 sm:grid-cols-2 xl:grid-cols-3">
-                {section.rows.map((row) => (
-                  <div key={rowKey(row)}>{renderRow(row)}</div>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
+                  <SortableContext
+                    items={section.rows.map(rowKey)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {section.rows.map((row) => (
+                        <SortableAppCard
+                          key={rowKey(row)}
+                          id={rowKey(row)}
+                          handleLabel={t("appsPage.dragHandle", {
+                            name: APP_DISPLAY_NAME[rowKey(row)],
+                          })}
+                        >
+                          {renderRow(row)}
+                        </SortableAppCard>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                <div className="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {section.rows.map((row) => (
+                    <div key={rowKey(row)} className="h-full min-w-0">
+                      {renderRow(row)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
       </div>
 
       <Dialog open={showCommands} onOpenChange={setShowCommands}>
@@ -547,7 +556,7 @@ function DesktopCard({
   return (
     <div data-tool-row="claude-desktop" className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <AppGlyph app="claude-desktop" size={20} badgeClassName="bg-subtle" />
           <div className="min-w-0">
             <div className="truncate text-body font-medium text-fg-1">
@@ -557,7 +566,7 @@ function DesktopCard({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">{visibility}</div>
       </div>
-      <div className="flex items-center gap-1.5 text-caption text-fg-2">
+      <div className="mt-auto flex items-center gap-1.5 pt-3 text-caption text-fg-2">
         <span
           className={cn(
             "rounded-[5px] px-1.5 text-badge leading-5",
@@ -668,7 +677,7 @@ function ToolCard({
 
   const wslControls =
     info?.env_type === "wsl" ? (
-      <div className="flex flex-wrap items-center gap-2 text-caption text-fg-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2 text-caption text-fg-2">
         <span>Shell</span>
         <Select
           value={tools.wslShellByTool[tool]?.wslShell || "auto"}
@@ -826,20 +835,20 @@ function ToolCard({
   return (
     <div data-tool-row={TOOL_APP_IDS[tool]} className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <AppGlyph
             app={TOOL_APP_IDS[tool]}
             size={20}
             badgeClassName="bg-subtle"
           />
-          <div className="min-w-0">
-            <div className="truncate text-body font-medium text-fg-1">
-              <span>{toolDisplayName(tool)}</span>
-            </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="min-w-0 max-w-full truncate text-body font-medium text-fg-1">
+              {toolDisplayName(tool)}
+            </span>
             {envBadgeConfig && (
               <span
                 className={cn(
-                  "mt-1 inline-flex w-fit rounded-full border px-1.5 py-0.5 text-[9px]",
+                  "inline-flex shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] leading-4",
                   envBadgeConfig.className,
                 )}
               >
@@ -858,7 +867,7 @@ function ToolCard({
         </div>
       </div>
 
-      <div className="space-y-1.5 text-caption">
+      <div className="mt-2.5 space-y-1 text-caption">
         <div className="flex items-center justify-between gap-3">
           <span className="text-fg-2">{t("settings.currentVersion")}</span>
           <span
@@ -886,7 +895,7 @@ function ToolCard({
       {wslControls}
 
       {(otherInstalls > 0 || conflictList) && (
-        <div className="space-y-2">
+        <div className="mt-2.5 space-y-2">
           {otherInstalls > 0 && (
             <button
               type="button"
@@ -907,21 +916,25 @@ function ToolCard({
         </div>
       )}
 
-      <div className="mt-auto flex items-center justify-end gap-2">
-        {isVersionLoading ? (
-          <span className="text-caption text-fg-2">{t("common.loading")}</span>
-        ) : broken ? (
-          // 已安装但跑不起来：重装无济于事，不给按钮，给一句指向环境的提示。
-          <span className="text-caption text-warning-text">
-            {t("settings.toolCheckEnv")}
-          </span>
-        ) : action ? (
-          actionButton
-        ) : (
-          <span className="text-caption text-fg-2">
-            {t("settings.toolReady")}
-          </span>
-        )}
+      <div className="mt-auto pt-3">
+        <div className="flex items-center justify-end gap-2 border-t border-border pt-2.5">
+          {isVersionLoading ? (
+            <span className="text-caption text-fg-2">
+              {t("common.loading")}
+            </span>
+          ) : broken ? (
+            // 已安装但跑不起来：重装无济于事，不给按钮，给一句指向环境的提示。
+            <span className="text-caption text-warning-text">
+              {t("settings.toolCheckEnv")}
+            </span>
+          ) : action ? (
+            actionButton
+          ) : (
+            <span className="text-caption text-fg-2">
+              {t("settings.toolReady")}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -957,7 +970,7 @@ function SortableAppCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative rounded-panel",
+        "group relative h-full min-w-0 rounded-panel",
         isDragging && "border border-border shadow-v7-md",
       )}
     >

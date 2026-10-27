@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "",
+        "title": "CC Switch Classic",
         "titleBarStyle": "Overlay",
         "trafficLightPosition": {
           "x": 14,

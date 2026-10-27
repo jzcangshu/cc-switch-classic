@@ -98,30 +98,45 @@ describe("UsageTrendChart styles", () => {
     refreshIntervalMs: 0,
   };
 
-  // 样式在用量「设置」里选，存在 settings.usageDisplay.trendChartType
-  const renderWithChartType = (trendChartType?: string) => {
+  // 样式在用量「设置」里选，存在 settings.usageDisplay.trendChartType；图里也有快捷切换
+  const renderWithChartType = (
+    trendChartType?: string,
+    extraProps: Partial<ComponentProps<typeof UsageTrendChart>> = {},
+  ) => {
     const client = createTestQueryClient();
     // 不让挂载时的重新拉取用 mock 后端的默认设置覆盖掉这里给的值
     client.setDefaultOptions({
       queries: { retry: false, staleTime: Infinity },
     });
     client.setQueryData(["settings"], { usageDisplay: { trendChartType } });
-    return rtlRender(<UsageTrendChart {...props} />, {
+    return rtlRender(<UsageTrendChart {...props} {...extraProps} />, {
       wrapper: ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
       ),
     });
   };
 
-  it("draws a bar chart by default without a style switch on the chart", () => {
-    const { container } = renderWithChartType(undefined);
+  it("switches between the new bar style and the old area style in the chart", async () => {
+    const user = userEvent.setup();
+    const onChartTypeChange = vi.fn();
+    const { container } = renderWithChartType(undefined, {
+      onChartTypeChange,
+    });
     expect(container.querySelector(".recharts-bar-rectangle")).not.toBeNull();
     expect(container.querySelector(".recharts-area")).toBeNull();
-    expect(
-      screen.queryByRole("button", {
-        name: "usage.display.trendChartTypes.area",
-      }),
-    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "usage.trend.styleOld" }),
+    );
+    expect(onChartTypeChange).toHaveBeenCalledWith("area");
+    expect(container.querySelector(".recharts-area")).not.toBeNull();
+    expect(container.querySelector(".recharts-bar-rectangle")).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: "usage.trend.styleNew" }),
+    );
+    expect(onChartTypeChange).toHaveBeenLastCalledWith("bar");
+    expect(container.querySelector(".recharts-bar-rectangle")).not.toBeNull();
   });
 
   it.each(["tokens", "requests", "cost"] as const)(

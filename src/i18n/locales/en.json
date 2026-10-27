@@ -963,6 +963,8 @@
     "viewCurrentReleaseNotes": "View current version release notes",
     "github": "GitHub",
     "starPrompt": "If CC Switch has helped you, please star us on GitHub — it means a lot to us",
+    "starOnGithub": "Star on GitHub",
+    "officialWebsite": "Official Website",
     "manualInstallCommands": "Manual Install Commands",
     "manualUninstallCommands": "Manual uninstall commands",
     "manualUninstallHint": "Each app’s environment is detected automatically by default, and you can select a different environment manually. Select the original installation method, then copy the command for the app you want to remove and run it in a terminal. Click “Check for updates” afterwards to refresh its status.",
@@ -975,7 +977,7 @@
     "copyToolUninstallCommand": "Copy the uninstall command for {{tool}}",
     "uninstallCommandCopied": "Uninstall command copied",
     "uninstallCommandCopyFailed": "Copy failed. Please select and copy the command manually.",
-    "oneClickInstallHint": "Install or upgrade Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Oh My Pi",
+    "oneClickInstallHint": "Install or upgrade Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Kimi Code / Oh My Pi",
     "localEnvCheck": "Local environment check",
     "updateAllTools": "Update All ({{count}})",
     "currentVersion": "Current Version",
@@ -1109,6 +1111,7 @@
     "hermes": "Hermes",
     "pi": "Pi",
     "mcode": "MiniMax Code",
+    "kimi": "Kimi Code",
     "agy": "Antigravity",
     "omp": "Oh My Pi"
   },
@@ -2222,6 +2225,7 @@
     "freshInput": "Fresh Input",
     "cacheHitRate": "Cache Hit Rate",
     "requestLogs": "Request Logs",
+    "sortedByRequests": "Sorted by requests",
     "providerStats": "Provider Stats",
     "modelStats": "Model Stats",
     "time": "Time",
@@ -2258,6 +2262,8 @@
       "grokbuild": "Grok Build",
       "pi": "Pi",
       "mcode": "MiniMax Code",
+      "kimi": "Kimi Code",
+      "omp": "Oh My Pi",
       "label": "Filter by app"
     },
     "rawInputLabel": "Raw",
@@ -2421,10 +2427,14 @@
       "minutesAgo": "Synced {{count}} min ago",
       "syncing": "Syncing…",
       "tip": "Click to sync now",
-      "tipOff": "Auto scan is off. Click to sync now"
+      "tipOff": "Auto scan is off. Click to sync now",
+      "off": "Session logs · auto scan off",
+      "auto": "Session logs · auto scan",
+      "tipAuto": "Scanned every 10 minutes in the background, and at the interval on the right while this page is open"
     },
     "refreshMenu": {
-      "label": "Scan every {{seconds}}s"
+      "label": "Scan every {{seconds}}s",
+      "seconds": "{{seconds}}s"
     },
     "dataSources": "Data sources",
     "display": {
@@ -2444,6 +2454,7 @@
       },
       "sidebarTodayLimit": "Pick up to {{count}}",
       "logColumns": "Request log columns",
+      "logColumnsSummary": "{{shown}} of {{total}} columns",
       "trendChartType": "Trend chart",
       "trendChartTypes": {
         "bar": "Bar",
@@ -2485,13 +2496,17 @@
       "requestsLegend": "Requests",
       "titleMetric": "{{metric}} · {{granularity}}",
       "hourly": "hourly",
-      "daily": "daily"
+      "daily": "daily",
+      "styleLabel": "Chart style",
+      "styleNew": "New",
+      "styleOld": "Old"
     },
     "tabs": {
       "label": "Details",
       "providers": "Providers",
       "models": "Models",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "settings": "Settings"
     },
     "app": "App",
     "speed": "Speed",
@@ -4243,6 +4258,7 @@
       "hermes": "Installs with the official script",
       "pi": "Installs with npm",
       "mcode": "Installs with the official script, falls back to npm",
+      "kimi": "Installs with the official script",
       "agy": "Installs with the official script",
       "omp": "Installs with the official script"
     }

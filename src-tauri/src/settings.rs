@@ -51,7 +51,10 @@ pub struct VisibleApps {
     pub hermes: bool,
     #[serde(default = "default_true")]
     pub pi: bool,
-    #[serde(default)]
+    // 上游 2afe8cdb 把 OMP 改成默认显示，但漏了这个字段缺省值（仍是 false，
+    // 与 Default 实现和前端 DEFAULT_VISIBLE_APPS 相反），老配置升级后会默认
+    // 隐藏。与同是「默认显示」的其他应用字段对齐。
+    #[serde(default = "default_true")]
     pub omp: bool,
     #[serde(default = "default_true")]
     pub mcode: bool,
@@ -1649,6 +1652,57 @@ mod tests {
         .expect("visible apps");
 
         assert!(visible.is_visible(&AppType::ClaudeDesktop));
+    }
+
+    #[test]
+    fn visible_apps_old_settings_default_omp_visible_hermes_hidden() {
+        // 老配置（还没有 omp/hermes 字段）反序列化时，字段缺省必须与
+        // Default 实现同口径：OMP 默认显示（上游 2afe8cdb 的意图），
+        // hermes 维持有意的默认隐藏。
+        let visible: VisibleApps = serde_json::from_value(serde_json::json!({
+            "claude": true,
+            "codex": true
+        }))
+        .expect("visible apps");
+
+        assert!(visible.is_visible(&AppType::Omp));
+        assert!(!visible.is_visible(&AppType::Hermes));
+    }
+
+    #[test]
+    fn upgrade_from_pre_omp_settings_makes_omp_visible_via_real_load_path() {
+        // v4.0.19 时代真实形态的 settings.json：visibleApps 已存在（老应用
+        // 列表），没有 omp 字段。走应用真正的 lenient 加载口径，OMP 必须默认
+        // 可见；且下次保存把显式 omp:true 落盘，缺省值不再二次生效。
+        // 与上游 PR #8938 同款测试。
+        let content = serde_json::json!({
+            "language": "zh",
+            "nativeTrayMenu": true,
+            "visibleApps": {
+                "claude": true,
+                "claude-desktop": true,
+                "codex": true,
+                "gemini": true,
+                "grokbuild": true,
+                "opencode": true,
+                "openclaw": false,
+                "hermes": true,
+                "pi": true,
+                "mcode": true,
+                "kimi": true,
+                "agy": true
+            }
+        })
+        .to_string();
+
+        let (settings, lossy) = parse_settings_lenient(&content);
+        assert!(!lossy);
+        let visible = settings.visible_apps.clone().expect("visible apps kept");
+        assert!(visible.is_visible(&AppType::Omp));
+        assert_eq!(
+            serde_json::to_value(&settings).expect("serialize settings")["visibleApps"]["omp"],
+            serde_json::json!(true)
+        );
     }
 
     #[test]
