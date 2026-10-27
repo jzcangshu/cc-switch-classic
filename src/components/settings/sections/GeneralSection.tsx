@@ -5,8 +5,11 @@ import {
   EyeOff,
   Monitor,
   Moon,
+  PanelBottom,
   Power,
   Sun,
+  Terminal,
+  Waypoints,
 } from "lucide-react";
 import type { SettingsFormState } from "@/hooks/useSettings";
 import { useTheme } from "@/components/theme-provider";
@@ -179,6 +182,17 @@ export function GeneralSection({
               void onAutoSave({ showProfileSwitcher: value })
             }
           />
+          <ToggleRow
+            icon={<Waypoints className="h-4 w-4 text-violet-500" />}
+            title={t("settings.appVisibility.showModeSwitcher")}
+            description={t(
+              "settings.appVisibility.showModeSwitcherDescription",
+            )}
+            checked={settings.showModeSwitcher ?? true}
+            onCheckedChange={(value) =>
+              void onAutoSave({ showModeSwitcher: value })
+            }
+          />
           <AppVisibilitySettings
             settings={settings}
             onChange={(updates) => void onAutoSave(updates)}
@@ -260,13 +274,18 @@ export function GeneralSection({
           {/* Linux（AppIndicator）只能出原生菜单，没得选 */}
           {!isLinux() && (
             <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">
-                  {t("settings.general.trayStyle")}
-                </p>
-                <p className="text-xs text-fg-2">
-                  {t("settings.general.trayStyleHelp")}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface ring-1 ring-border">
+                  <PanelBottom className="h-4 w-4 text-purple-500" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {t("settings.general.trayStyle")}
+                  </p>
+                  <p className="text-xs text-fg-2">
+                    {t("settings.general.trayStyleHelp")}
+                  </p>
+                </div>
               </div>
               <SegmentedControl
                 size="sm"
@@ -300,13 +319,18 @@ export function GeneralSection({
             />
           )}
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">
-                {t("settings.terminal.title")}
-              </p>
-              <p className="text-xs text-fg-2">
-                {t("settings.general.terminalHelp")}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface ring-1 ring-border">
+                <Terminal className="h-4 w-4 text-cyan-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {t("settings.terminal.title")}
+                </p>
+                <p className="text-xs text-fg-2">
+                  {t("settings.general.terminalHelp")}
+                </p>
+              </div>
             </div>
             <TerminalSelect
               className="h-8 w-[160px]"

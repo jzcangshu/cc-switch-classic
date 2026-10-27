@@ -873,13 +873,15 @@
     "unifyCodexHistoryRestoreSkippedToggleOn": "Unified session history was re-enabled; restore skipped",
     "appVisibility": {
       "title": "Homepage Display",
-      "description": "Choose which apps to show on the homepage",
+      "description": "Choose which apps to show on the homepage. The switcher hides itself when only one app is enabled.",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI",
       "showProfileSwitcher": "Show project switcher",
-      "showProfileSwitcherDescription": "Show the project switcher in the main page header"
+      "showProfileSwitcherDescription": "Show the project switcher in the main page header",
+      "showModeSwitcher": "Show Direct / Routing / Aggregation selector",
+      "showModeSwitcherDescription": "Show the mode switcher on the main page; hiding it keeps the current mode"
     },
     "terminal": {
       "title": "Preferred Terminal",
@@ -962,7 +964,7 @@
     "viewReleaseNotes": "View release notes for this version",
     "viewCurrentReleaseNotes": "View current version release notes",
     "github": "GitHub",
-    "starPrompt": "If CC Switch has helped you, please star us on GitHub — it means a lot to us",
+    "starPrompt": "If CC Switch Classic has helped you, please star us on GitHub — it means a lot to us",
     "starOnGithub": "Star on GitHub",
     "officialWebsite": "Official Website",
     "manualInstallCommands": "Manual Install Commands",

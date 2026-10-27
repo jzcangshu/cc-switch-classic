@@ -456,6 +456,10 @@ pub struct AppSettings {
     /// Whether to show the project profile switcher on the main page header
     #[serde(default)]
     pub show_profile_switcher: bool,
+    /// Whether to show the direct/route/stack mode selector on the main page
+    /// (default on; users who never switch modes can hide it)
+    #[serde(default = "default_true")]
+    pub show_mode_switcher: bool,
     /// Check installed CLI tools for new versions at startup (off by default:
     /// many users do not want to chase every release).
     #[serde(default)]
@@ -655,6 +659,7 @@ impl Default for AppSettings {
             session_auto_sync_enabled: true,
             enable_failover_toggle: false,
             show_profile_switcher: false,
+            show_mode_switcher: true,
             check_tool_updates_on_startup: false,
             native_tray_menu: false,
             preserve_codex_official_auth_on_switch: false,
@@ -1667,6 +1672,20 @@ mod tests {
 
         assert!(visible.is_visible(&AppType::Omp));
         assert!(!visible.is_visible(&AppType::Hermes));
+    }
+
+    #[test]
+    fn old_settings_without_show_mode_switcher_default_to_visible() {
+        // 2026-10-27 新增：老配置还没有 showModeSwitcher 字段时，缺省必须与
+        // Default 同口径——主页面模式选择器默认显示，只有显式关闭才隐藏。
+        let (settings, _changed) = parse_settings_lenient(
+            &serde_json::json!({
+                "language": "zh",
+                "nativeTrayMenu": true
+            })
+            .to_string(),
+        );
+        assert!(settings.show_mode_switcher);
     }
 
     #[test]
