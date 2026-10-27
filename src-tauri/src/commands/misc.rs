@@ -6334,7 +6334,11 @@ mod tests {
             .lines()
             .find_map(|l| l.trim().strip_prefix("export const CLASSIC_VERSION ="))
             .expect("classicVersion.ts 必须定义 export const CLASSIC_VERSION");
-        let ts_version = value_line.trim().trim_end_matches(';').trim().trim_matches('"');
+        let ts_version = value_line
+            .trim()
+            .trim_end_matches(';')
+            .trim()
+            .trim_matches('"');
         assert_eq!(
             ts_version, CLASSIC_VERSION,
             "classicVersion.ts（{ts_version}）与 misc.rs（{CLASSIC_VERSION}）的 \
