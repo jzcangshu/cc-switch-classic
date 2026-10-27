@@ -19,6 +19,7 @@ import { markSeen } from "@/lib/whatsNew";
 import type { Settings } from "@/types";
 
 import { RELEASES_URL } from "@/lib/repo";
+import { CLASSIC_VERSION } from "@/lib/classicVersion";
 
 /** 任一应用的数据库里已经有供应商（找到一家就停） */
 async function hasAnyProvider(): Promise<boolean> {
@@ -95,10 +96,9 @@ export function NewLayoutDialog() {
 
   const handleViewReleaseNotes = async () => {
     try {
-      const version = await getVersion();
-      await settingsApi.openExternal(
-        version ? `${RELEASES_URL}/tag/v${version}` : RELEASES_URL,
-      );
+      // Release tag 用 Classic 版本号；getVersion() 是内核版本，classic
+      // 仓库里没有对应 tag。
+      await settingsApi.openExternal(`${RELEASES_URL}/tag/v${CLASSIC_VERSION}`);
     } catch (error) {
       console.error("Failed to open release notes:", error);
     }

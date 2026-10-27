@@ -588,6 +588,31 @@ describe("ProviderPresetSelector", () => {
     expect(screen.getByLabelText("api-key")).toBeVisible();
   });
 
+  it("expands the collapsed preset section when search is opened by keyboard", async () => {
+    const user = userEvent.setup();
+    render(
+      <ProviderPresetSelector
+        appId="claude"
+        selectedPresetId="custom"
+        presetEntries={entries}
+        onPresetChange={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "AWS Bedrock" }),
+    ).not.toBeInTheDocument();
+
+    await user.keyboard("{Control>}f{/Control}");
+
+    const search = await screen.findByRole("textbox", {
+      name: "providerPreset.searchAriaLabel",
+    });
+    await waitFor(() => expect(search).toHaveFocus());
+    expect(
+      screen.getByRole("button", { name: "AWS Bedrock" }),
+    ).toBeInTheDocument();
+  });
+
   it("restores default preset priority after switching alphabetical order off", async () => {
     const user = userEvent.setup();
     render(<OnePage onPresetChange={vi.fn()} />);

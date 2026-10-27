@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Area,
@@ -19,6 +19,7 @@ import {
   getLocaleFromLanguage,
   parseFiniteNumber,
   resolveTrendChartType,
+  type TrendChartType,
 } from "./format";
 import { resolveUsageRange } from "@/lib/usageRange";
 import type { UsageRangeSelection } from "@/types/usage";
@@ -33,6 +34,12 @@ interface UsageTrendChartProps {
   providerName?: string;
   model?: string;
   refreshIntervalMs: number;
+  /** 当前图表样式；不传时读取用量设置里的值 */
+  chartType?: TrendChartType;
+  /** 图内快捷切换：返回 false 表示保存失败，图表回滚到原样式 */
+  onChartTypeChange?: (
+    type: TrendChartType,
+  ) => Promise<boolean> | boolean | void;
 }
 
 export interface UsageTrendStatLike {
@@ -228,6 +235,8 @@ export function UsageTrendChart({
   providerName,
   model,
   refreshIntervalMs,
+  chartType: chartTypeProp,
+  onChartTypeChange,
 }: UsageTrendChartProps) {
   const { t, i18n } = useTranslation();
   const { money, moneyTick, rate } = useMoneyFormat();
@@ -236,9 +245,21 @@ export function UsageTrendChart({
     TREND_METRICS,
     "tokens",
   );
-  // 柱形图 / 曲线面积图在用量「设置」里选
+  // 图表样式：用量设置里的值是唯一来源；图里的快捷切换直接改它，保证两处不打架。
   const { data: settings } = useSettingsQuery();
-  const chartType = resolveTrendChartType(settings?.usageDisplay);
+  const savedChartType =
+    chartTypeProp ?? resolveTrendChartType(settings?.usageDisplay);
+  const [chartType, setChartType] = useState<TrendChartType>(savedChartType);
+  useEffect(() => setChartType(savedChartType), [savedChartType]);
+
+  const changeChartType = (next: TrendChartType) => {
+    if (next === chartType) return;
+    const previous = chartType;
+    setChartType(next);
+    Promise.resolve(onChartTypeChange?.(next)).then((saved) => {
+      if (saved === false) setChartType(previous);
+    });
+  };
   const { startDate, endDate } = resolveUsageRange(range);
   const { data: trends, isLoading } = useUsageTrends(
     range,
@@ -344,6 +365,16 @@ export function UsageTrendChart({
             { value: "tokens", label: t("usage.trend.tokens") },
             { value: "requests", label: t("usage.trend.requests") },
             { value: "cost", label: t("usage.trend.cost") },
+          ]}
+        />
+        <SegmentedControl<TrendChartType>
+          size="sm"
+          aria-label={t("usage.trend.styleLabel")}
+          value={chartType}
+          onValueChange={changeChartType}
+          items={[
+            { value: "bar", label: t("usage.trend.styleNew") },
+            { value: "area", label: t("usage.trend.styleOld") },
           ]}
         />
       </div>

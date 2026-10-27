@@ -66,7 +66,7 @@ const DIRECTORY_APPS: DirectoryAppId[] = [
 interface AppConfigSectionProps {
   settings: SettingsFormState;
   resolvedDirs: ResolvedDirectories;
-  /** CC Switch 数据目录草稿；与下面八个目录一起点底部「保存」才写入 */
+  /** CC Switch 数据目录草稿；与下面九个目录一起点底部「保存」才写入 */
   appConfigDir?: string;
   onAutoSave: (updates: Partial<SettingsFormState>) => Promise<boolean>;
   onAppConfigChange: (value?: string) => void;
@@ -79,7 +79,7 @@ interface AppConfigSectionProps {
 
 /**
  * 设置 → 应用配置（第三版紧凑单列）：「CC Switch 配置目录」一张卡 +
- * 「配置目录覆盖（高级）」一列 8 行紧凑输入；目录改动点底部「保存」才写入。
+ * 「配置目录覆盖（高级）」一列 9 行紧凑输入；目录改动点底部「保存」才写入。
  * Claude 目录行保留第四版的两个插件开关（附加开关行）。
  */
 export function AppConfigSection({

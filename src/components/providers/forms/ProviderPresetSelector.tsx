@@ -464,19 +464,20 @@ function PresetPicker({
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!searchOpen) return;
+    if (!searchOpen || !open) return;
     const frame = requestAnimationFrame(() => searchRef.current?.focus());
     return () => cancelAnimationFrame(frame);
-  }, [searchOpen]);
+  }, [searchOpen, open]);
 
-  // ⌘F / Ctrl+F 回到搜索框（捕获阶段，别让后面供应商列表的同名快捷键接到）
+  // ⌘F / Ctrl+F 回到搜索框（捕获阶段，别让后面供应商列表的同名快捷键接到）。
+  // 预设区默认折叠，快捷键要先把搜索框所在区域展开，否则输入框根本没渲染。
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
         event.preventDefault();
         event.stopPropagation();
+        setOpen(true);
         setSearchOpen(true);
-        requestAnimationFrame(() => searchRef.current?.focus());
       }
     };
     globalThis.addEventListener("keydown", onKeyDown, true);

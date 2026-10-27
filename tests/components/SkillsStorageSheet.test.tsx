@@ -123,6 +123,23 @@ describe("SkillsStorageSheet", () => {
     expect(m.openDir).toHaveBeenCalledTimes(1);
   });
 
+  it("only shows the unified-directory warning after that location is picked", async () => {
+    renderDialog();
+    expect(
+      screen.queryByText("skills.storageSheet.unifiedWarning"),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(radio(/skills\.storageSheet\.locationUnified/));
+    expect(
+      screen.getByText("skills.storageSheet.unifiedWarning"),
+    ).toBeInTheDocument();
+
+    await userEvent.click(radio("skills.storageSheet.locationCcSwitch"));
+    expect(
+      screen.queryByText("skills.storageSheet.unifiedWarning"),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps move-and-switch unavailable until another location is picked", async () => {
     m.installed = [{ id: "a" }, { id: "b" }];
     renderDialog();

@@ -3,10 +3,13 @@ import {
   Download,
   ExternalLink,
   Github,
+  Globe,
   Info,
   Loader2,
   RefreshCw,
   Sparkles,
+  Star,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -32,9 +35,20 @@ interface AboutSectionProps {
 // 应用自身版本（getVersion，本地毫秒级、无网络）也缓存一份，纯为重挂时免去 loading 闪烁。
 let appVersionCache: string | null = null;
 
+// 邀 Star 条关掉后记在本机（纯界面偏好，不进库、不随云同步）
+const STAR_PROMPT_DISMISSED_KEY = "ccswitch:about:starPromptDismissed";
+
+function readStarPromptDismissed(): boolean {
+  try {
+    return localStorage.getItem(STAR_PROMPT_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /**
- * 设置 → 关于：第三版版式（标题 + 渐变版本卡 + Star 邀请 + 按钮行）。
- * 保留第四版的近期更新弹窗、便携版更新指引与本地环境检查入口。
+ * 设置 → 关于：沿用第四版的单卡片版式（版本、便携模式、检查更新 / 安装并重启、项目链接），
+ * 品牌与版本数据保留 Classic 身份。
  */
 export function AboutSection({ isPortable }: AboutSectionProps) {
   const { t } = useTranslation();
@@ -46,6 +60,9 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
   );
   const [isDownloading, setIsDownloading] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  const [starPromptDismissed, setStarPromptDismissed] = useState(
+    readStarPromptDismissed,
+  );
   const recentEntries = useMemo(
     () => entriesUpTo(WHATS_NEW_ENTRIES, CLASSIC_VERSION),
     [] as const,
@@ -83,7 +100,10 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
 
   const handleOpenReleaseNotes = useCallback(async () => {
     try {
-      const targetVersion = updateInfo?.availableVersion ?? version ?? "";
+      // Release tag 用 Classic 版本号：可用更新给它的版本，否则给当前
+      // Classic 版本。getVersion() 是内核版本（tauri.conf），classic 仓库
+      // 里没有对应 tag，拼上去会 404。
+      const targetVersion = updateInfo?.availableVersion ?? CLASSIC_VERSION;
       const displayVersion = targetVersion.startsWith("v")
         ? targetVersion
         : targetVersion
@@ -97,10 +117,19 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
       console.error("[AboutSection] Failed to open release notes", error);
       toast.error(t("settings.openReleaseNotesFailed"));
     }
-  }, [t, updateInfo?.availableVersion, version]);
+  }, [t, updateInfo?.availableVersion]);
 
   const handleOpenGithub = useCallback(() => {
     void settingsApi.openExternal(REPO_URL);
+  }, []);
+
+  const handleDismissStarPrompt = useCallback(() => {
+    setStarPromptDismissed(true);
+    try {
+      localStorage.setItem(STAR_PROMPT_DISMISSED_KEY, "1");
+    } catch {
+      // 存不下就只在本次会话里隐藏
+    }
   }, []);
 
   const handleCheckUpdate = useCallback(async () => {
@@ -175,117 +204,40 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
         </p>
       </header>
 
-      <div className="space-y-5 rounded-panel border border-border bg-gradient-to-br from-surface to-transparent p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2">
-                <img
-                  src={ccswitchLogo}
-                  alt="CC Switch"
-                  className="h-5 w-5"
-                  draggable={false}
-                />
-                <h4 className="text-lg font-semibold text-fg-1">
-                  CC Switch Classic
-                </h4>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="gap-1.5 bg-surface/80">
-                  <span className="text-fg-2">{t("common.version")}</span>
-                  <span className="font-medium tabular-nums">
-                    v{CLASSIC_VERSION}
-                  </span>
-                </Badge>
-                <Badge variant="outline" className="gap-1.5 bg-surface/80">
-                  <span className="text-fg-2">{t("settings.coreVersion")}</span>
-                  {isLoadingVersion ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <span className="font-medium tabular-nums">{`v${displayVersion}`}</span>
-                  )}
-                </Badge>
-                {isPortable && (
-                  <Badge variant="secondary" className="gap-1.5">
-                    <Info className="h-3 w-3" />
-                    {t("settings.portableMode")}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <p className="min-w-0 flex-1 text-xs leading-relaxed sm:text-right">
-            <button
-              type="button"
-              onClick={handleOpenGithub}
-              className="font-medium text-primary hover:underline"
-            >
-              {t("settings.starPrompt")}
-            </button>
-            <span aria-hidden="true" className="ml-1.5">
-              👉
-            </span>
-          </p>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="neutral"
-              size="compact"
-              onClick={handleOpenGithub}
-            >
-              <Github className="h-3.5 w-3.5" />
-              {t("settings.github")}
-              <span
-                aria-hidden="true"
-                className="inline-block animate-[spin_4s_linear_infinite] motion-reduce:animate-none"
-              >
-                ⭐
+      <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
+        <div className="flex flex-wrap items-center gap-4 px-5 py-4">
+          <img
+            src={ccswitchLogo}
+            alt=""
+            draggable={false}
+            className="h-10 w-10 shrink-0 p-1"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="text-title text-fg-1">CC Switch Classic</div>
+            <div className="flex flex-wrap items-center gap-2 text-caption text-fg-2">
+              <span className="tabular-nums">
+                {t("common.version")} v{CLASSIC_VERSION}
               </span>
-            </Button>
-            <Button
-              type="button"
-              variant="neutral"
-              size="compact"
-              onClick={handleOpenReleaseNotes}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {t("settings.releaseNotes")}
-            </Button>
-            {recentEntries.length > 0 && (
-              <Button
-                type="button"
-                variant="neutral"
-                size="compact"
-                onClick={() => setWhatsNewOpen(true)}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                {t("whatsNew.recentTitle")}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0 space-y-1 text-body">
-            {hasUpdate && updateInfo && (
-              <>
-                <p className="font-medium text-fg-1">
-                  {t("settings.updateAvailable", {
-                    version: updateInfo.availableVersion,
-                  })}
-                </p>
-                {updateInfo.notes && (
-                  <p className="line-clamp-3 text-fg-2">{updateInfo.notes}</p>
-                )}
-                {isPortable && (
-                  <p className="text-fg-2">
-                    {t("settings.portableUpdateHint")}
-                  </p>
-                )}
-              </>
-            )}
+              {isLoadingVersion ? (
+                <span className="flex items-center gap-1">
+                  {t("settings.coreVersion")}
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                </span>
+              ) : (
+                <span className="tabular-nums">
+                  {t("settings.coreVersion")} v{displayVersion}
+                </span>
+              )}
+              {isPortable && (
+                <Badge
+                  variant="secondary"
+                  className="gap-1 px-1.5 py-0 text-badge"
+                >
+                  <Info className="h-3 w-3" />
+                  {t("settings.portableMode")}
+                </Badge>
+              )}
+            </div>
           </div>
           <Button
             type="button"
@@ -319,6 +271,101 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
             )}
           </Button>
         </div>
+
+        {hasUpdate && updateInfo && (
+          <div className="space-y-1 px-5 py-4 text-body">
+            <p className="font-medium text-fg-1">
+              {t("settings.updateAvailable", {
+                version: updateInfo.availableVersion,
+              })}
+            </p>
+            {updateInfo.notes && (
+              <p className="line-clamp-3 text-fg-2">{updateInfo.notes}</p>
+            )}
+            {isPortable && (
+              <p className="text-fg-2">{t("settings.portableUpdateHint")}</p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 px-5 py-4">
+          {starPromptDismissed && (
+            <Button
+              type="button"
+              variant="neutral"
+              size="compact"
+              onClick={handleOpenGithub}
+            >
+              <Github className="h-3.5 w-3.5" />
+              {t("settings.github")}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="neutral"
+            size="compact"
+            onClick={() => settingsApi.openExternal("https://ccswitch.io")}
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {t("settings.officialWebsite")}
+          </Button>
+          <Button
+            type="button"
+            variant="neutral"
+            size="compact"
+            onClick={handleOpenReleaseNotes}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t("settings.releaseNotes")}
+          </Button>
+          {recentEntries.length > 0 && (
+            <Button
+              type="button"
+              variant="neutral"
+              size="compact"
+              onClick={() => setWhatsNewOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {t("whatsNew.recentTitle")}
+            </Button>
+          )}
+        </div>
+
+        {/* 邀 Star 单独占一行，按钮即 GitHub 入口；关掉后链接行补回 GitHub 按钮 */}
+        {!starPromptDismissed && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-action-soft py-3.5 ps-5 pe-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <Star
+                aria-hidden="true"
+                className="h-5 w-5 shrink-0 animate-[spin_6s_linear_infinite] fill-amber-500 text-amber-500 motion-reduce:animate-none"
+              />
+              <p className="min-w-0 text-body text-fg-1">
+                {t("settings.starPrompt")}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="neutral"
+                size="compact"
+                onClick={handleOpenGithub}
+              >
+                <Github className="h-3.5 w-3.5" />
+                {t("settings.starOnGithub")}
+              </Button>
+              <Button
+                type="button"
+                variant="quiet"
+                size="icon-compact"
+                onClick={handleDismissStarPrompt}
+                aria-label={t("common.close")}
+                title={t("common.close")}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 本地环境检查（第三版形态）：应用安装与升级管理直接内嵌在本页 */}

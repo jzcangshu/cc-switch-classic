@@ -28,6 +28,10 @@ import {
 } from "./lib/modelsDevAutoSync";
 import { initializeWindowActivity } from "@/lib/windowActivity";
 import { initializeInputModality } from "@/lib/inputModality";
+import { disableContextMenu } from "@/lib/disableContextMenu";
+
+// 尽早屏蔽 WebView 默认右键菜单，避免 React 渲染前右键也弹菜单
+disableContextMenu();
 
 installGlobalErrorHandlers();
 

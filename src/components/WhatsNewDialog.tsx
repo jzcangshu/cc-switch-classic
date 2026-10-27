@@ -18,6 +18,7 @@ import { useSettingsQuery } from "@/lib/query";
 import {
   WHATS_NEW_ENTRIES,
   changelogUrl,
+  classicSeen,
   entriesSince,
   isNewerThanSeen,
   markSeen,
@@ -186,7 +187,7 @@ export function WhatsNewNotice() {
     since?: string;
   } | null>(null);
   if (shown === null && entries.length > 0) {
-    setShown({ entries, since: seen });
+    setShown({ entries, since: classicSeen(seen) });
   }
 
   const acknowledge = useCallback(async () => {

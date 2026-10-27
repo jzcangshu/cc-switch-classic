@@ -82,6 +82,8 @@ Windows 原生标题栏；页头模式徽章移除；橙色圆形添加钮；品
 - Windows 安装器**只能用 NSIS**（MSI 同 ProductVersion 无法覆盖安装）。
 - macOS 未签名：App 内自动更新不可用；`latest.json` 的 platforms 只含 windows×2 + linux×2。
 - 发布前在 `src/whats-new/{classic}.json` 写**已跟进的内核变更**，不引用未跟进的上游版本。
+- **发布清单（每次 release 逐项过）**：① bump `src/lib/classicVersion.ts` 的 `CLASSIC_VERSION`；② 写 `src/whats-new/{classic}.json`；③ bump README 头部 `Classic`、`内核` 两个 shields 徽标（v1.1.0 发布时漏了，滞留 v1.0.1/v4.0.18 到 2026-10-27 才补）；④ 涉及面大时补 `docs/release-notes/`；⑤ 推 tag。
+- **版本口径判例（2026-10-27）**：应用内指向 classic 仓库 release tag 的链接（关于页「更新日志」、新版布局弹窗「查看更新说明」）必须用 `CLASSIC_VERSION` 拼 tag——`getVersion()` 读到的是**内核版本**，classic 仓库没有对应 tag，拼上去 404。以后新增任何「带版本号的站外链接」先问一句：这是 Classic 版还是内核版？可用更新的目标版本用 `updateInfo.availableVersion`（它本来就是 Classic 口径）。
 
 ## 7. 更新机制（红线）
 

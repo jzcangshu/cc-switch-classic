@@ -72,6 +72,16 @@ describe("seen version", () => {
     expect(markSeen("1.0.1", undefined)).toBe("1.0.1");
   });
 
+  it("replaces a kernel-era record instead of treating it as newer forever", () => {
+    // 4.0.21 是上游内核版本，比 Classic 的 1.1.0 大；旧逻辑会一直保留它，
+    // 导致更新摘要每次启动都弹。
+    expect(markSeen("4.0.21", "1.1.0")).toBe("1.1.0");
+    expect(isNewerThanSeen("1.1.0", "4.0.21")).toBe(true);
+    expect(versions(entriesSince(ENTRIES, "4.0.21", "1.0.2"))).toEqual([
+      "1.0.2",
+    ]);
+  });
+
   it("is due only when the current version is newer", () => {
     expect(isNewerThanSeen("1.0.2", undefined)).toBe(true);
     expect(isNewerThanSeen("1.0.2", "1.0.1")).toBe(true);

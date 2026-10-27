@@ -65,7 +65,12 @@ import {
   useRememberedChoice,
   writeRememberedChoice,
 } from "./rememberedChoice";
-import { fmtInt, formatRelativeTime, getLocaleFromLanguage } from "./format";
+import {
+  fmtInt,
+  formatRelativeTime,
+  getLocaleFromLanguage,
+  resolveTrendChartType,
+} from "./format";
 import { getUsageProviderLabel, usageProviderTitle } from "./providerLabel";
 
 // 用量页打开时扫描会话日志的间隔；旧版存过的「关」(0) 等无效值回落到默认
@@ -952,6 +957,13 @@ export function UsageDashboard({
             providerName={providerName}
             model={model}
             refreshIntervalMs={0}
+            chartType={resolveTrendChartType(usageDisplay)}
+            onChartTypeChange={(trendChartType) =>
+              onUsageDisplayChange?.({
+                ...usageDisplay,
+                trendChartType,
+              })
+            }
           />
         )}
 
