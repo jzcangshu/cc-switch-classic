@@ -5068,6 +5068,16 @@
       "renameProvider": "Oh My Pi プロバイダキーは変更できません。",
       "providerMissing": "この Oh My Pi プロバイダは保存済みリストにありません。",
       "legacyModelsJson": "Oh My Pi にはまだ旧形式の models.json があり、omp は次回起動時にこれを models.yml へ移行します。omp を一度起動してから、もう一度プロバイダを追加してください。"
+    },
+    "providerGroups": {
+      "newGroup": "新規グループ",
+      "ungrouped": "未分類",
+      "moveTo": "グループへ移動",
+      "saveFailed": "グループの保存に失敗しました",
+      "renameAriaLabel": "グループ名",
+      "dragGroupHandle": "ドラッグでグループの順序を変更",
+      "toggleAriaLabel": "グループを折りたたむ・展開する",
+      "dropToUngrouped": "ドロップでグループから移動"
     }
   }
 }

@@ -13,6 +13,7 @@ import type {
 } from "@dnd-kit/core";
 import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
+import type { ProviderGroupMenu } from "@/lib/providerGroups";
 import { authApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ProviderIcon } from "@/components/ProviderIcon";
@@ -65,6 +66,8 @@ interface ProviderCardProps {
   onOpenTerminal?: (provider: Provider) => void;
   isTesting?: boolean;
   dragHandleProps?: DragHandleProps;
+  /** 分组功能兜底菜单（仅有分组时由列表传入；内核菜单项保持不变） */
+  groupMenu?: ProviderGroupMenu;
 }
 
 /** 直连和共存式默认项沿用蓝色高亮，路由与聚合沿用绿色高亮。 */
@@ -226,6 +229,7 @@ export function ProviderCard({
   onOpenTerminal,
   isTesting,
   dragHandleProps,
+  groupMenu,
 }: ProviderCardProps) {
   const { t } = useTranslation();
   const codexOfficialIdentity = resolveCodexOfficialIdentity(appId, provider);
@@ -650,6 +654,7 @@ export function ProviderCard({
             onOpenTerminal={
               onOpenTerminal ? () => onOpenTerminal(provider) : undefined
             }
+            groupMenu={groupMenu}
           />
         </div>
       </div>

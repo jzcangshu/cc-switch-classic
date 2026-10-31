@@ -54,6 +54,24 @@ fn merge_settings_for_save(
     incoming
 }
 
+/// 保存主页供应商卡片分组（单字段读改写：分组操作高频，走全量设置保存会把
+/// 前端缓存里的其他字段旧值一并回放，这里只动 provider_groups 一个字段）
+#[tauri::command]
+pub async fn save_provider_groups(
+    groups: std::collections::BTreeMap<String, Vec<crate::settings::ProviderGroupDefinition>>,
+) -> Result<bool, String> {
+    let next = if groups.is_empty() {
+        None
+    } else {
+        Some(groups)
+    };
+    crate::settings::mutate_settings(|settings| {
+        settings.provider_groups = next;
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
 /// 获取设置
 #[tauri::command]
 pub async fn get_settings() -> Result<crate::settings::AppSettings, String> {

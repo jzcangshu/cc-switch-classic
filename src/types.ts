@@ -36,6 +36,17 @@ export interface AppConfig {
   current: string;
 }
 
+// 主页供应商卡片分组（Classic UI 层的展示归组，设备级，存 settings.json）
+export interface ProviderGroupDefinition {
+  id: string;
+  name: string;
+  // 组内供应商 ID，顺序即组内展示顺序；指向已删除供应商的条目渲染时忽略
+  providerIds: string[];
+}
+
+// 按应用 ID 分桶的供应商分组；值数组顺序即分组展示顺序
+export type ProviderGroupsMap = Record<string, ProviderGroupDefinition[]>;
+
 // 自定义端点配置
 export interface CustomEndpoint {
   url: string;
@@ -465,6 +476,8 @@ export interface Settings {
   visibleApps?: VisibleApps;
   // 应用页和侧栏的应用顺序（应用 ID，拖动排序后写入；缺的应用按默认顺序插回）
   appOrder?: string[];
+  // 主页供应商卡片分组，按应用 ID 分桶（不设或空数组 = 未使用分组）
+  providerGroups?: ProviderGroupsMap | null;
 
   // ===== 设备级目录覆盖 =====
   // 覆盖 Claude Code 配置目录（可选）

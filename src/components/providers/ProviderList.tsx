@@ -58,6 +58,9 @@ import {
   type ProviderSection,
   type SwitchModeInput,
 } from "@/components/providers/presentation";
+import { isGroupingActive, type ProviderGroupMenu } from "@/lib/providerGroups";
+import { useProviderGroups } from "@/hooks/useProviderGroups";
+import { GroupedProviderSections } from "@/components/providers/grouping/GroupedProviderSections";
 
 /** 切换式应用（Claude Code / Codex / Gemini CLI / Grok Build）的模式状态和动作，由供应商页传入。 */
 export type SwitchModeProps = Omit<SwitchModeInput, "app" | "t" | "providers">;
@@ -165,6 +168,9 @@ export function ProviderList({
     providers,
     appId,
   );
+
+  // 主页供应商卡片分组（Classic 层功能）：无分组时主页与原来完全一致
+  const providerGroups = useProviderGroups(appId);
 
   // 范围沿用第四版口径：名称、备注、官网和请求地址
   const searchIndex = useMemo(
@@ -463,7 +469,11 @@ export function ProviderList({
     return provider.id === currentProviderId;
   };
 
-  const renderCard = (provider: Provider, presentation: CardPresentation) => (
+  const renderCard = (
+    provider: Provider,
+    presentation: CardPresentation,
+    groupMenu?: ProviderGroupMenu,
+  ) => (
     <SortableProviderCard
       key={provider.id}
       provider={provider}
@@ -482,8 +492,17 @@ export function ProviderList({
       onOpenTerminal={appId === "agy" ? undefined : onOpenTerminal}
       onTest={handleTest}
       isTesting={isChecking(provider.id)}
+      groupMenu={groupMenu}
     />
   );
+
+  // 分组视图只在存在主分区（切换式 all / 共存式 added）且未在搜索时生效；
+  // 路由视图故障转移开启（只有 queue/rest）等形态自动回落平铺
+  const groupedPrimaryKey = switchMode || appId === "agy" ? "all" : "added";
+  const groupingApplicable =
+    isGroupingActive(providerGroups.groups) &&
+    !searchNeedle &&
+    sections.some((section) => section.key === groupedPrimaryKey);
 
   const renderSectionTitle = (section: ProviderSection) => (
     <div className="flex items-center gap-1 text-caption font-semibold text-fg-2">
@@ -567,7 +586,7 @@ export function ProviderList({
         </div>
       ) : (
         <>
-          {liftLeadTitle && (
+          {liftLeadTitle && !groupingApplicable && (
             <div className="flex min-h-8 items-center gap-3 -mb-2">
               <div className="min-w-0 flex-1">
                 {renderSectionTitle(leadSection)}
@@ -575,36 +594,48 @@ export function ProviderList({
             </div>
           )}
 
-          <DndContext
-            sensors={sensors}
-            modifiers={verticalDragModifiers}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            {sections.map((section, index) => (
-              <section key={section.key} className="space-y-3">
-                {section.title && !(index === 0 && liftLeadTitle) && (
-                  <div className="pt-1">{renderSectionTitle(section)}</div>
-                )}
-                {section.items.length === 0 && section.emptyText ? (
-                  <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
-                    {section.emptyText}
-                  </div>
-                ) : (
-                  <SortableContext
-                    items={section.items.map((item) => item.provider.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {section.items.map((item) =>
-                        renderCard(item.provider, item.presentation),
-                      )}
+          {groupingApplicable ? (
+            <GroupedProviderSections
+              appId={appId}
+              sections={sections}
+              primaryKey={groupedPrimaryKey}
+              sortedProviders={sortedProviders}
+              renderCard={renderCard}
+              providerGroups={providerGroups}
+              onFlatDragEnd={handleDragEnd}
+            />
+          ) : (
+            <DndContext
+              sensors={sensors}
+              modifiers={verticalDragModifiers}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              {sections.map((section, index) => (
+                <section key={section.key} className="space-y-3">
+                  {section.title && !(index === 0 && liftLeadTitle) && (
+                    <div className="pt-1">{renderSectionTitle(section)}</div>
+                  )}
+                  {section.items.length === 0 && section.emptyText ? (
+                    <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                      {section.emptyText}
                     </div>
-                  </SortableContext>
-                )}
-              </section>
-            ))}
-          </DndContext>
+                  ) : (
+                    <SortableContext
+                      items={section.items.map((item) => item.provider.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {section.items.map((item) =>
+                          renderCard(item.provider, item.presentation),
+                        )}
+                      </div>
+                    </SortableContext>
+                  )}
+                </section>
+              ))}
+            </DndContext>
+          )}
         </>
       )}
     </div>
@@ -625,6 +656,7 @@ interface SortableProviderCardProps {
   onOpenTerminal?: (provider: Provider) => void;
   onTest?: (provider: Provider) => void;
   isTesting: boolean;
+  groupMenu?: ProviderGroupMenu;
 }
 
 function SortableProviderCard(props: SortableProviderCardProps) {
@@ -635,7 +667,11 @@ function SortableProviderCard(props: SortableProviderCardProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props.provider.id });
+  } = useSortable({
+    id: props.provider.id,
+    // 分组视图的自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
+    data: { type: "card" },
+  });
 
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),

@@ -5068,6 +5068,16 @@
       "renameProvider": "Oh My Pi 供应商标识不能重命名。",
       "providerMissing": "此 Oh My Pi 供应商已不在保存的列表中。",
       "legacyModelsJson": "Oh My Pi 目录里还是旧的 models.json，omp 会在下次启动时把它迁移成 models.yml。请先运行一次 omp，再回来添加供应商。"
+    },
+    "providerGroups": {
+      "newGroup": "新建分组",
+      "ungrouped": "未分组",
+      "moveTo": "移动到分组",
+      "saveFailed": "分组保存失败",
+      "renameAriaLabel": "分组名称",
+      "dragGroupHandle": "拖动调整分组顺序",
+      "toggleAriaLabel": "折叠或展开分组",
+      "dropToUngrouped": "松手移出分组"
     }
   }
 }

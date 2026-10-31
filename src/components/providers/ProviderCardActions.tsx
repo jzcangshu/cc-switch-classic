@@ -26,9 +26,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { ProviderGroupMenu } from "@/lib/providerGroups";
 import type { CardButton, CardPresentation } from "./presentation";
 
 /** 操作含义由第四版的卡片呈现模型决定，这里只负责按钮的文字与图标。 */
@@ -57,6 +62,7 @@ interface ProviderCardActionsProps {
   isTesting?: boolean;
   onConfigureUsage?: () => void;
   onOpenTerminal?: () => void;
+  groupMenu?: ProviderGroupMenu;
 }
 
 /**
@@ -72,6 +78,7 @@ export function ProviderCardActions({
   isTesting,
   onConfigureUsage,
   onOpenTerminal,
+  groupMenu,
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
   const { status, buttons, menuItems = [] } = presentation;
@@ -193,7 +200,7 @@ export function ProviderCardActions({
           </Button>
         </IconAction>
 
-        {menuItems.length > 0 && (
+        {(menuItems.length > 0 || groupMenu) && (
           <DropdownMenu>
             <HoverTip content={t("common.more")}>
               <DropdownMenuTrigger asChild>
@@ -225,6 +232,34 @@ export function ProviderCardActions({
                   )}
                 </DropdownMenuItem>
               ))}
+              {menuItems.length > 0 && groupMenu && <DropdownMenuSeparator />}
+              {groupMenu && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {t("providerGroups.moveTo", {
+                      defaultValue: "移动到分组",
+                    })}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="max-h-72 min-w-44 overflow-y-auto">
+                    {groupMenu.options.map((option) => (
+                      <DropdownMenuItem
+                        key={option.key}
+                        onSelect={() => option.onSelect()}
+                        className="flex items-center gap-2"
+                      >
+                        <Check
+                          className={cn(
+                            "h-3.5 w-3.5 shrink-0",
+                            option.checked ? "opacity-100" : "opacity-0",
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate">{option.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

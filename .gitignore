@@ -30,3 +30,6 @@ copilot-api
 CODEBUDDY.md
 mainWindow.js
 .agents/
+
+# 本地 UI 实测用 Tauri mock（不入库）
+/src/__tauri-mock.js

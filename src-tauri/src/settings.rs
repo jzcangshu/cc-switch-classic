@@ -401,6 +401,18 @@ pub struct UsageDisplaySettings {
     pub trend_chart_type: Option<String>,
 }
 
+/// 主页供应商卡片分组（Classic UI 层的展示归组，设备级）。
+/// 只影响主页卡片的归组、折叠与排序展示，不参与内核的切换 / 队列逻辑。
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderGroupDefinition {
+    pub id: String,
+    pub name: String,
+    /// 组内供应商 ID，顺序即组内展示顺序；指向已删除供应商的条目由前端渲染时忽略
+    #[serde(default)]
+    pub provider_ids: Vec<String>,
+}
+
 /// 应用设置结构
 ///
 /// 存储设备级别设置，保存在本地 `~/.cc-switch/settings.json`，不随数据库同步。
@@ -530,6 +542,10 @@ pub struct AppSettings {
     /// 应用页和侧栏的应用顺序（应用 ID）。缺的应用由前端按默认顺序插回，不认识的忽略
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub app_order: Option<Vec<String>>,
+    /// 主页供应商卡片分组，按应用 ID 分桶。BTreeMap 保证 settings.json 键序稳定，
+    /// Vec 顺序即分组展示顺序；不设或为空表示未使用分组
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_groups: Option<std::collections::BTreeMap<String, Vec<ProviderGroupDefinition>>>,
 
     // ===== 设备级目录覆盖 =====
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -678,6 +694,7 @@ impl Default for AppSettings {
             quota_display: None,
             visible_apps: None,
             app_order: None,
+            provider_groups: None,
             claude_config_dir: None,
             codex_config_dir: None,
             gemini_config_dir: None,
@@ -1062,7 +1079,7 @@ pub fn update_settings(mut new_settings: AppSettings) -> Result<(), AppError> {
     Ok(())
 }
 
-fn mutate_settings<F>(mutator: F) -> Result<(), AppError>
+pub fn mutate_settings<F>(mutator: F) -> Result<(), AppError>
 where
     F: FnOnce(&mut AppSettings),
 {
@@ -1642,6 +1659,51 @@ mod tests {
         );
         let default = serde_json::to_value(AppSettings::default()).expect("serialize default");
         assert!(default.get("appOrder").is_none());
+    }
+
+    #[test]
+    fn provider_groups_round_trips_and_stays_out_of_old_files() {
+        // 老配置没有该字段：读到 None，序列化时不写出（settings.json 保持干净）
+        let old: AppSettings = serde_json::from_value(serde_json::json!({})).expect("old settings");
+        assert!(old.provider_groups.is_none());
+        assert!(serde_json::to_value(&old)
+            .expect("serialize")
+            .get("providerGroups")
+            .is_none());
+
+        let settings: AppSettings = serde_json::from_value(serde_json::json!({
+            "providerGroups": {
+                "claude": [
+                    { "id": "g1", "name": "常用", "providerIds": ["a", "ghost"] },
+                    { "id": "g2", "name": "备用", "providerIds": [] }
+                ]
+            }
+        }))
+        .expect("parse settings");
+        let groups = settings.provider_groups.as_ref().expect("groups");
+        let claude = groups.get("claude").expect("claude bucket");
+        assert_eq!(claude[0].name, "常用");
+        // 成员缺失是合法态：容错过滤由前端渲染时做，后端原样保留
+        assert_eq!(
+            claude[0].provider_ids,
+            ["a".to_string(), "ghost".to_string()]
+        );
+        assert!(claude[1].provider_ids.is_empty());
+
+        let value = serde_json::to_value(&settings).expect("serialize settings");
+        assert_eq!(
+            value["providerGroups"]["claude"][0],
+            serde_json::json!({ "id": "g1", "name": "常用", "providerIds": ["a", "ghost"] })
+        );
+
+        // 空桶也不特殊化：存什么读什么，前端在删空后整键移除
+        let empty: AppSettings =
+            serde_json::from_value(serde_json::json!({ "providerGroups": {} })).expect("empty map");
+        assert!(empty
+            .provider_groups
+            .as_ref()
+            .expect("empty map")
+            .is_empty());
     }
 
     #[test]
