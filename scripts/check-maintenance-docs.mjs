@@ -17,12 +17,15 @@ const required = [
     "project-contract",
     "development",
     "upstream-sync",
+    "upstream-triage",
     "review",
     "release",
     "documentation",
   ].map((name) => "docs/maintenance/" + name + ".md"),
   "docs/maintenance/templates/private-maintenance.md",
   "docs/maintenance/templates/upstream-review.md",
+  "docs/maintenance/templates/upstream-triage.md",
+  "docs/development/README.md",
   "docs/decisions/implemented/process/2026-11-04-maintenance-docs.md",
   "docs/development/kimi-code-integration.md",
   "src/whats-new/README.md",
@@ -39,7 +42,15 @@ export function forbiddenPath(file) {
   );
 }
 
-export function privateMarkers(text) {
+export function privateMarkers(text, file = "") {
+  // 只允许作者在维护入口公开这一条定位信息；文件内容及其他位置仍受检查。
+  const scanned =
+    file === "MAINTENANCE.md"
+      ? text.replaceAll(
+          "`D:/cc-switch-build/private-maintenance/MAINTENANCE.private.md`",
+          "[作者授权的私人文档位置]",
+        )
+      : text;
   const rules = [
     ["个人绝对目录", /(?:\b[a-z]:[\\/]|\/(?:Users|home)\/)[^\s<>\x60]+/i],
     ["私钥正文", /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----/],
@@ -49,7 +60,7 @@ export function privateMarkers(text) {
     ],
     ["带认证信息的网址", /https?:\/\/[^\s/:]+:[^\s/@]+@/i],
   ];
-  return rules.filter(([, rule]) => rule.test(text)).map(([name]) => name);
+  return rules.filter(([, rule]) => rule.test(scanned)).map(([name]) => name);
 }
 
 export function localLinks(text, file) {
@@ -127,7 +138,7 @@ export function checkRepository(root) {
       errors.push(file + "：文件已缺失，检查迁移及暂存状态");
       continue;
     }
-    for (const marker of privateMarkers(text))
+    for (const marker of privateMarkers(text, file))
       errors.push(file + "：包含" + marker + "，请人工核查");
     let links;
     try {

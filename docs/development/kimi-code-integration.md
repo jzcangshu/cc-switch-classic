@@ -14,19 +14,19 @@ Kimi Code 是独立应用，应用 ID 为 `kimi`。接入面向当前的 [Moonsh
 
 ## 配置与能力
 
-| 能力 | 原生位置／行为 |
-| --- | --- |
-| 供应商和模型 | `~/.kimi-code/config.toml` 的 `providers`、`models` 表 |
-| 官方 OAuth | 授权中心支持多个账号，设备码授权；每个账号独立保存凭据和供应商，按账号显示昵称和额度 |
-| 协议 | `kimi`、`openai`、`openai_responses`、`anthropic`、`google-genai`、`vertexai` |
-| 模型能力 | 提供图片输入、思考、始终思考、工具调用、按需加载工具的配置；音视频等其他能力由 Kimi 原生管理，已有字段原样保留 |
-| 供应商目录 | 复用已维护的 Pi 供应商信息并转换为 Kimi 原生协议和模型字段；AWS Bedrock 的专有签名协议不兼容，不提供该预设 |
-| MCP | `~/.kimi-code/mcp.json`，支持 stdio、HTTP、SSE；SSE 使用原生的 `transport = "sse"` 字段 |
-| Skills | `~/.kimi-code/skills/`，通过统一 Skills 页面管理 |
-| 全局提示词 | `~/.kimi-code/AGENTS.md`，通过统一提示词页面管理 |
-| 会话 | `~/.kimi-code/sessions/<workDirKey>/<sessionId>/state.json` 和 `agents/main/wire.jsonl` |
-| 恢复会话 | `kimi --session <id>`，保留原工作目录和数据目录 |
-| 用量 | 从已提交的 assistant 消息导入输入／输出和缓存 token，按 `step.end.messageId` 关联 `llm.request` 中的实际模型；使用项目价格表估算费用 |
+| 能力         | 原生位置／行为                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 供应商和模型 | `~/.kimi-code/config.toml` 的 `providers`、`models` 表                                                                               |
+| 官方 OAuth   | 授权中心支持多个账号，设备码授权；每个账号独立保存凭据和供应商，按账号显示昵称和额度                                                 |
+| 协议         | `kimi`、`openai`、`openai_responses`、`anthropic`、`google-genai`、`vertexai`                                                        |
+| 模型能力     | 提供图片输入、思考、始终思考、工具调用、按需加载工具的配置；音视频等其他能力由 Kimi 原生管理，已有字段原样保留                       |
+| 供应商目录   | 复用已维护的 Pi 供应商信息并转换为 Kimi 原生协议和模型字段；AWS Bedrock 的专有签名协议不兼容，不提供该预设                           |
+| MCP          | `~/.kimi-code/mcp.json`，支持 stdio、HTTP、SSE；SSE 使用原生的 `transport = "sse"` 字段                                              |
+| Skills       | `~/.kimi-code/skills/`，通过统一 Skills 页面管理                                                                                     |
+| 全局提示词   | `~/.kimi-code/AGENTS.md`，通过统一提示词页面管理                                                                                     |
+| 会话         | `~/.kimi-code/sessions/<workDirKey>/<sessionId>/state.json` 和 `agents/main/wire.jsonl`                                              |
+| 恢复会话     | `kimi --session <id>`，保留原工作目录和数据目录                                                                                      |
+| 用量         | 从已提交的 assistant 消息导入输入／输出和缓存 token，按 `step.end.messageId` 关联 `llm.request` 中的实际模型；使用项目价格表估算费用 |
 
 设置环境变量 `KIMI_CODE_HOME` 后，上述位置全部跟随该目录。CC Switch 进程需要继承这个环境变量。
 
@@ -42,14 +42,14 @@ Ollama、LM Studio 和 vLLM 预设使用各自的本地 OpenAI 兼容地址，�
 
 登录区域固定对应以下官方地址，设备码申请、令牌交换和模型发现使用同一组地址，不自动跨区回退：
 
-| 登录区域 | 授权主机 | 模型 API |
-| --- | --- | --- |
-| 国内版 | `https://auth.kimi.com` | `https://api.kimi.com/coding/v1` |
-| 海外版 | `https://auth.kimi.ai` | `https://api.kimi.ai/coding/v1` |
+| 登录区域 | 授权主机                | 模型 API                         |
+| -------- | ----------------------- | -------------------------------- |
+| 国内版   | `https://auth.kimi.com` | `https://api.kimi.com/coding/v1` |
+| 海外版   | `https://auth.kimi.ai`  | `https://api.kimi.ai/coding/v1`  |
 
 授权成功后，CC Switch 从官方 `/models` 获取该账号的模型和能力。原生默认供应商不存在或其凭据文件缺失时，新登录沿用 `managed:kimi-code` 和官方默认 OAuth 引用，模型别名为 `kimi-code/<模型 ID>`；默认登录已存在时，新增账号使用独立供应商和 `<供应商 ID>/<模型 ID>` 模型别名。缺失的联网搜索和抓取服务也会添加。已有默认模型、用户别名、模型 overrides、自定义服务及其他账号配置会保留；没有默认模型时首次登录会选中该账号的模型。配置或凭据保存失败时恢复原配置，可点击「重试」继续完成当前授权。
 
-凭据按官方格式保存在 `~/.kimi-code/credentials/`，仅后端读写，不进入供应商档案或前端响应。原生国内默认登录使用 `kimi-code.json`，海外版按官方规则选择独立的默认槽位；其余账号各自使用 `kimi-code-ccs-<8 位标识>.json`（标识由区域和账号 ID 算出，同一账号在不同设备上相同；早期版本创建的 UUID 槽位照常识别），模型别名也以这个槽位名为前缀（如 `kimi-code-ccs-<标识>/k3`），`default_model` 始终是 ASCII 键；认同一个账号时既看本机身份缓存，也看凭据槽位名，通过供应商的 `oauth.key` 与 `oauth.oauth_host` 引用。`KIMI_CODE_HOME` 仍用于选择数据目录；CC Switch 登录不使用 `KIMI_CODE_OAUTH_HOST`、`KIMI_OAUTH_HOST` 或 `KIMI_CODE_BASE_URL` 覆盖所选区域的地址。重新登录已有账号时保持该账号的区域与凭据槽位，使用该区域的固定官方地址。CC Switch 只在查询额度、令牌快过期时刷新，刷新前拿 Kimi 同款的凭据锁（`oauth/<槽位>.lock` 目录，5 秒未更新视为失效），锁内重读凭据，与 Kimi Code 不会同时轮换 refresh token；刷新被拒时按 Kimi 的规则先重读，别的进程已换新就沿用，否则写入作废标记、该账号需重新登录。Windows 上 Kimi Code 不加锁，CC Switch 也不刷新，令牌过期时额度提示先在 Kimi Code 里用一次该账号。登录、删除写凭据时同样持锁。
+凭据按官方格式保存在 `~/.kimi-code/credentials/`，仅后端读写，不进入供应商档案或前端响应。原生国内默认登录使用 `kimi-code.json`，海外版按官方规则选择独立的默认槽位；其余账号各自使用 `kimi-code-ccs-<8 位标识>.json`（标识由区域和账号 ID 算出，同一账号在不同设备上相同；UUID（通用唯一标识）格式的凭据槽位也可识别），模型别名也以这个槽位名为前缀（如 `kimi-code-ccs-<标识>/k3`），`default_model` 始终是 ASCII 键；认同一个账号时既看本机身份缓存，也看凭据槽位名，通过供应商的 `oauth.key` 与 `oauth.oauth_host` 引用。`KIMI_CODE_HOME` 仍用于选择数据目录；CC Switch 登录不使用 `KIMI_CODE_OAUTH_HOST`、`KIMI_OAUTH_HOST` 或 `KIMI_CODE_BASE_URL` 覆盖所选区域的地址。重新登录已有账号时保持该账号的区域与凭据槽位，使用该区域的固定官方地址。CC Switch 只在查询额度、令牌快过期时刷新，刷新前拿 Kimi 同款的凭据锁（`oauth/<槽位>.lock` 目录，5 秒未更新视为失效），锁内重读凭据，与 Kimi Code 不会同时轮换 refresh token；刷新被拒时按 Kimi 的规则先重读，别的进程已换新就沿用，否则写入作废标记、该账号需重新登录。Windows 上 Kimi Code 不加锁，CC Switch 也不刷新，令牌过期时额度提示先在 Kimi Code 里用一次该账号。登录、删除写凭据时同样持锁。
 
 网络请求沿用 CC Switch 的全局出站代理设置。连接失败时显示授权主机及底层 DNS、TCP、TLS 或超时原因，便于核对系统代理和网络连接。
 

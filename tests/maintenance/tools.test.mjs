@@ -89,6 +89,29 @@ test("privacy markers distinguish actual private locations from public URLs", ()
   assert.ok(privateMarkers("-----BEGIN PRIVATE KEY-----").length);
 });
 
+test("private locator exemption is limited to the exact public entry and path", () => {
+  const locator =
+    "D:/cc-switch-build/private-maintenance/MAINTENANCE.private.md";
+  const quoted = "`" + locator + "`";
+  assert.deepEqual(privateMarkers(quoted, "MAINTENANCE.md"), []);
+  for (const file of [
+    "",
+    "AGENTS.md",
+    "docs/maintenance/documentation.md",
+    "nested/MAINTENANCE.md",
+  ])
+    assert.ok(privateMarkers(quoted, file).length, file);
+  for (const text of [
+    locator,
+    "`" + locator + "/secret`",
+    "`" + locator.replace("MAINTENANCE.private.md", "other.md") + "`",
+    "`D:/cc-switch-build/private-maintenance/`",
+    quoted + " C:/Users/another-private-location",
+    quoted + " -----BEGIN PRIVATE KEY-----",
+  ])
+    assert.ok(privateMarkers(text, "MAINTENANCE.md").length, text);
+});
+
 test("local links ignore code examples and retain traversal for rejection", () => {
   assert.deepEqual(
     localLinks(
@@ -119,6 +142,20 @@ test("report records immutable commits and all three inventories without approvi
     readFileSync(path.join(input.output, "review.md"), "utf8"),
     /状态：未审查/,
   );
+});
+
+test("pre-implementation reports cover every changed path without implying completion", () => {
+  const input = options({ "classic-base": candidate });
+  const result = prepareReview(input, repo);
+  assert.deepEqual(result.inventories.implementation, []);
+  const triage = readFileSync(path.join(input.output, "triage.md"), "utf8");
+  assert.match(triage, /状态：未筛查/);
+  for (const file of result.inventories.upstream)
+    assert.ok(triage.includes(JSON.stringify(file)));
+  assert.ok(triage.includes(base));
+  assert.ok(triage.includes(target));
+  assert.ok(triage.includes(candidate));
+  assert.ok(!triage.includes("<!-- upstream-paths -->"));
 });
 
 test("bad refs and reversed baselines fail before creating output", () => {

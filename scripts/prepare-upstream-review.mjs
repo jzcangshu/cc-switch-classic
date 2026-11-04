@@ -92,6 +92,13 @@ export function prepareReview(options, cwd = process.cwd()) {
     ),
     "utf8",
   );
+  const triageTemplate = readFileSync(
+    new URL(
+      "../docs/maintenance/templates/upstream-triage.md",
+      import.meta.url,
+    ),
+    "utf8",
+  );
   const metadata = {
     schemaVersion: 1,
     commits,
@@ -125,6 +132,22 @@ export function prepareReview(options, cwd = process.cwd()) {
   writeFileSync(
     path.join(output, "review.md"),
     template.replace("## 审查输入", fixed + "## 审查输入"),
+  );
+  const paths = inventories.upstream.length
+    ? inventories.upstream
+        .map(
+          (file) =>
+            "- [ ] " +
+            JSON.stringify(file) +
+            "：条目编号、读取与裁决状态待填写",
+        )
+        .join("\n")
+    : "官方变化清单为空；仍须核对所选基线。";
+  writeFileSync(
+    path.join(output, "triage.md"),
+    triageTemplate
+      .replace("## 裁决输入", fixed + "## 裁决输入")
+      .replace("<!-- upstream-paths -->", paths),
   );
   return metadata;
 }
