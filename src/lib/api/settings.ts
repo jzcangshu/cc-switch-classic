@@ -4,6 +4,7 @@ import type {
   WebDavSyncSettings,
   S3SyncSettings,
   RemoteSnapshotInfo,
+  ProviderGroupDefinition,
 } from "@/types";
 import type { AppId } from "./types";
 
@@ -37,6 +38,14 @@ export const settingsApi = {
 
   async save(settings: Settings): Promise<boolean> {
     return await invoke("save_settings", { settings });
+  },
+
+  /** 保存主页供应商卡片分组（后端单字段读改写，不影响其他设置） */
+  async saveProviderGroups(
+    appId: string,
+    groups: ProviderGroupDefinition[],
+  ): Promise<boolean> {
+    return await invoke("save_provider_groups", { appId, groups });
   },
 
   /** 是否存在统一 Codex 会话历史的迁移备份（关闭弹窗据此显示"恢复备份"勾选） */

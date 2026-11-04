@@ -51,7 +51,33 @@ fn merge_settings_for_save(
     // 客户端地址只经 set_proxy_client_host 保存（它还要重写客户端）；全量保存带的是前端
     // 缓存里的旧值，透传会把刚保存的地址冲掉。
     incoming.proxy_client_host = existing.proxy_client_host.clone();
+    // 分组成员只经专用命令保存，避免设置页的旧快照撤销刚完成的分组操作。
+    incoming.provider_groups = existing.provider_groups.clone();
     incoming
+}
+
+/// 保存主页供应商卡片分组（单字段读改写：分组操作高频，走全量设置保存会把
+/// 前端缓存里的其他字段旧值一并回放，这里只动 provider_groups 一个字段）
+#[tauri::command]
+pub async fn save_provider_groups(
+    app_id: String,
+    groups: Vec<crate::settings::ProviderGroupDefinition>,
+) -> Result<bool, String> {
+    crate::settings::mutate_settings(|settings| {
+        let map = settings
+            .provider_groups
+            .get_or_insert_with(Default::default);
+        if groups.is_empty() {
+            map.remove(&app_id);
+        } else {
+            map.insert(app_id, groups);
+        }
+        if map.is_empty() {
+            settings.provider_groups = None;
+        }
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 /// 获取设置
@@ -81,7 +107,12 @@ pub async fn save_settings(
             != existing.codex_stack_subagent_reasoning_effort
         || merged.codex_stack_auto_review_model != existing.codex_stack_auto_review_model;
     let tray_style_changed = merged.native_tray_menu != existing.native_tray_menu;
-    crate::settings::update_settings(merged).map_err(|e| e.to_string())?;
+    crate::settings::mutate_settings(|current| {
+        let current_groups = current.provider_groups.clone();
+        *current = merged;
+        current.provider_groups = current_groups;
+    })
+    .map_err(|e| e.to_string())?;
 
     // 原生托盘菜单 / 托盘面板当场切换，不用重启。
     if tray_style_changed {
@@ -416,6 +447,24 @@ mod tests {
         CodexThirdPartyHistoryProviderBucketMigration, LocalMigrations, S3SyncSettings,
         WebDavSyncSettings,
     };
+
+    #[test]
+    fn save_settings_should_preserve_groups_from_the_dedicated_command() {
+        let existing: AppSettings = serde_json::from_value(serde_json::json!({
+            "providerGroups": { "claude": [{ "id": "g", "name": "Current", "providerIds": ["a"] }] }
+        }))
+        .unwrap();
+        let incoming: AppSettings = serde_json::from_value(serde_json::json!({
+            "providerGroupingMode": "off", "providerGroups": {}
+        }))
+        .unwrap();
+        let merged = merge_settings_for_save(incoming, &existing);
+        assert_eq!(merged.provider_groups, existing.provider_groups);
+        assert_eq!(
+            merged.provider_grouping_mode,
+            Some(crate::settings::ProviderGroupingMode::Off)
+        );
+    }
 
     #[test]
     fn save_settings_should_keep_the_existing_proxy_client_host() {
