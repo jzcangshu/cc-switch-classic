@@ -1,0 +1,25 @@
+name: Maintenance documentation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: Documentation and maintenance tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Check public documentation and repository hygiene
+        run: node scripts/check-maintenance-docs.mjs
+      - name: Test maintenance tools
+        run: node --test tests/maintenance/*.test.mjs

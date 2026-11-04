@@ -1,25 +1,20 @@
-## Summary / 概述
+## 解决的问题与最终变化
 
-<!-- Briefly describe what this PR does and why. / 简要描述这个 PR 做了什么以及为什么。 -->
+说明触发条件、修改后的行为与涉及的项目契约；界面改动附脱敏前后对照及验证尺寸。
 
-## Related Issue / 关联 Issue
+## 范围与依据
 
-<!-- Link the related issue. Use "Fixes #123" to auto-close it when merged. -->
-<!-- 关联相关 Issue。使用 "Fixes #123" 可在合并时自动关闭。 -->
+- 关联问题、决策或模块说明：
+- 内核同步时的官方前后版本、经典版前后提交、审查报告位置：
+- 不跟进或适配的内容及理由：
 
-Fixes #
+## 实际验证
 
-## Screenshots / 截图
+列出实际执行的命令、提交编号、平台、结果和未覆盖范围；未执行写明原因，不勾选通过。
 
-<!-- If applicable, add before/after screenshots. / 如有需要，请添加修改前后的截图。 -->
-
-| Before / 修改前 | After / 修改后 |
-|-----------------|---------------|
-|                 |               |
-
-## Checklist / 检查清单
-
-- [ ] `pnpm typecheck` passes / 通过 TypeScript 类型检查
-- [ ] `pnpm format:check` passes / 通过代码格式检查
-- [ ] `cargo clippy` passes (if Rust code changed) / 通过 Clippy 检查（如修改了 Rust 代码）
-- [ ] Updated i18n files if user-facing text changed / 如修改了用户可见文本，已更新国际化文件
+- [ ] 已按 [统一入口](https://github.com/jzcangshu/cc-switch-classic/blob/main/AGENTS.md) 阅读本阶段的贡献规范与维护文档。
+- [ ] 已按 [质量审查](https://github.com/jzcangshu/cc-switch-classic/blob/main/docs/maintenance/review.md) 完成适用检查；内核同步逐项闭环。
+- [ ] 文档与维护工具检查通过，适用的前后端、构建和平台检查已执行。
+- [ ] 四语言、用户数据隔离、产品版本和更新口径已按影响面核对。
+- [ ] 已检查暂存范围及内容，没有私人环境、凭据、原始会话或构建缓存。
+- [ ] 非平凡决定已更新现有记录或补充理由；未解决问题、延期认可及跟踪方式已列明。

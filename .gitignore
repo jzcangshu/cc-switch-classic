@@ -7,9 +7,6 @@ release/
 .env.local
 *.tsbuildinfo
 .npmrc
-CLAUDE.md
-AGENTS.md
-GEMINI.md
 /.claude
 /.codex
 /.gemini
@@ -27,6 +24,20 @@ flatpak-repo/
 .spec-workflow/
 copilot-api
 .history
-CODEBUDDY.md
 mainWindow.js
 .agents/
+
+# 私人资料、助手缓存与一次性交接（公开入口另行跟踪）
+.env.*
+/.private/
+/MAINTENANCE.private.md
+/.workbuddy-ai/
+/.zcode/
+*.zcode-session
+/PROJECT-GUIDE-*.md
+/review-artifacts/
+/archives/
+/src/__tauri-mock.js
+
+/.tmp-*
+/.zcodeignore

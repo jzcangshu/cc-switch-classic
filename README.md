@@ -96,11 +96,13 @@
 
 ## 与上游的关系
 
-- **内核**：定期合并 [farion1231/cc-switch](https://github.com/farion1231/cc-switch) 的更新（当前内核 v4.0.18），供应商协议、会话管理等能力与上游同步
+- **内核**：定期合并 [farion1231/cc-switch](https://github.com/farion1231/cc-switch) 的更新（已集成版本以仓库中的版本清单为准），供应商协议、会话管理等能力与上游同步
 - **界面**：坚持 V3 经典样式，不随上游改版
 - **反馈**：界面与 Classic 相关问题提到[本仓库 issues](https://github.com/jzcangshu/cc-switch-classic/issues)；内核功能问题建议先到[上游 issues](https://github.com/farion1231/cc-switch/issues) 搜索
 
 ## 开发
+
+参与贡献先读 [贡献规范](CONTRIBUTING.md)；开发助手从 [AGENTS.md（统一入口）](AGENTS.md) 按任务阶段阅读。维护、内核同步、审查与发布流程统一收录于 [维护入口](MAINTENANCE.md)，功能资料见 [文档目录](docs/README.md)。
 
 ```bash
 pnpm install
