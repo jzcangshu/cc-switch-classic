@@ -605,6 +605,10 @@ input[type="password"]::-ms-clear {
 
 .auth-quota-col {
   width: 332px;
+  /* 容器不够宽时压到固定单元的底宽（label 112 + value 64 + countdown 52 + 3×8 gap），
+     缺口由进度条吸收，而不是把行尾按钮挤出卡片 */
+  min-width: 252px;
+  flex-shrink: 1;
 }
 
 @container (min-width: 800px) {

@@ -256,6 +256,9 @@ export function DshAccountLogin({ helpSide }: DshAccountLoginProps) {
       iconName="deepseek"
       help={t("dsh.account.help")}
       helpSide={helpSide}
+      description={t("settings.authCenter.dshDescription", {
+        defaultValue: "管理 DeepSeek 账号",
+      })}
       accounts={rows}
       status={status.isError ? "error" : status.isSuccess ? "ready" : "loading"}
       statusErrorText={t("dsh.account.statusFailed")}
@@ -307,19 +310,19 @@ export function DshAccountCard({ status }: { status: DshAccountStatus }) {
   }
   const balance = status.wallets.map(formatWallet).join(" · ");
   return (
-    <div className="group relative rounded-panel border border-border bg-surface transition-[border-color,box-shadow,background-color] duration-150 hover:border-border-strong hover:shadow-v7-sm">
-      <div className="flex min-h-[58px] items-center gap-3 py-2.5 pe-3 ps-2">
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-4 text-card-foreground transition-all duration-300 hover:border-border-active hover:shadow-sm">
+      <div className="flex items-center gap-3">
         <span className="w-4 shrink-0" />
         <ProviderIconBox
           icon={resolveProviderIcon("dsh", "deepseek")}
           name={name}
-          className="bg-white text-neutral-900"
-          fallbackClassName="bg-transparent text-neutral-600"
+          className="bg-muted text-fg-1"
+          fallbackClassName="bg-transparent text-fg-2"
         />
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <h3
-              className="m-0 min-w-0 truncate text-strong text-fg-1"
+              className="m-0 min-w-0 truncate text-base font-semibold leading-none text-fg-1"
               title={name}
             >
               {name}
@@ -328,13 +331,13 @@ export function DshAccountCard({ status }: { status: DshAccountStatus }) {
               <CardChipBadge key={chip.key} chip={chip} />
             ))}
           </div>
-          <div className="mt-0.5 truncate text-caption text-fg-2">
+          <div className="mt-1 truncate text-sm text-muted-foreground">
             {t("dsh.account.cardSubtitle")}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {balance && !status.error && !status.expired && (
-            <span className="max-w-[208px] truncate text-caption tabular-nums text-fg-2">
+            <span className="max-w-[208px] truncate text-xs tabular-nums text-muted-foreground">
               {t("dsh.account.balance", { amount: balance })}
             </span>
           )}

@@ -467,7 +467,10 @@
       "beta": "Beta",
       "copilotDescription": "管理 GitHub Copilot 账号",
       "codexOauthDescription": "管理 ChatGPT 账号",
-      "xaiOauthDescription": "管理 xAI / Grok 账号"
+      "xaiOauthDescription": "管理 xAI / Grok 账号",
+      "claudeOfficialDescription": "管理 Claude 订阅账号",
+      "dshDescription": "管理 DeepSeek 账号",
+      "kimiDescription": "管理 Kimi 账号"
     },
     "advanced": {
       "configDir": {

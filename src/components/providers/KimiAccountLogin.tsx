@@ -130,6 +130,9 @@ export function KimiAccountLogin({ helpSide }: KimiAccountLoginProps) {
       }
       statusErrorText={t("kimi.oauth.statusFailed")}
       onRetryStatus={() => void auth.status.refetch()}
+      description={t("settings.authCenter.kimiDescription", {
+        defaultValue: "管理 Kimi 账号",
+      })}
       emptyText={
         auth.status.data?.primaryHidden
           ? t("kimi.oauth.primaryHidden")

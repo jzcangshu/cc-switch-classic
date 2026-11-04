@@ -28,7 +28,7 @@ describe("ProviderCard layout", () => {
     expect(source).not.toContain("max-w-[280px]");
     expect(source).toContain('<div className="min-w-0 flex-1">');
     expect(source).toContain(
-      "inline-flex max-w-full items-center overflow-hidden text-start",
+      "inline-flex max-w-full items-center gap-2 overflow-hidden text-start",
     );
   });
 

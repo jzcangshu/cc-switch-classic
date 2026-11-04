@@ -88,7 +88,7 @@ export function AccountQuotaColumn({
 
   return (
     <>
-      <div className="auth-quota-col flex shrink-0 flex-col gap-0.5">
+      <div className="auth-quota-col flex flex-col gap-0.5">
         {state.kind === "rows" &&
           state.rows.map(({ label, line }) =>
             line.breakdown ? (

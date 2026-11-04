@@ -682,8 +682,9 @@ export function ProviderList({
       </AnimatePresence>
       {piStateErrorNotice}
       {liveConfigErrorNotice}
-      {/* 搜索无结果：整个分组列表让位给提示，避免出现空的「可添加 · 0」分区 */}
-      {searchNeedle && filteredProviders.length === 0 ? (
+      {/* 搜索无结果：整个分组列表让位给提示，避免出现空的「可添加 · 0」分区；
+          账号卡有自己的匹配逻辑，命中它时不算无结果 */}
+      {searchNeedle && filteredProviders.length === 0 && !showDshAccountCard ? (
         <div className="rounded-panel border border-dashed border-border px-6 py-8 text-center text-body text-fg-3">
           {t("provider.noSearchResults")}
         </div>
@@ -778,19 +779,14 @@ interface SortableProviderCardProps {
 
 function SortableProviderCard(props: SortableProviderCardProps) {
   const { isMergeTarget, useOverlayDrag = false, ...cardProps } = props;
-  const {
-    setNodeRef,
-    attributes,
-    listeners,
-    transform,
-    isDragging,
-  } = useSortable({
-    id: props.provider.id,
-    // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
-    data: { type: "card" },
-    // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
-    transition: useOverlayDrag ? null : undefined,
-  });
+  const { setNodeRef, attributes, listeners, transform, isDragging } =
+    useSortable({
+      id: props.provider.id,
+      // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
+      data: { type: "card" },
+      // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
+      transition: useOverlayDrag ? null : undefined,
+    });
 
   const style: CSSProperties = {
     position: "relative",

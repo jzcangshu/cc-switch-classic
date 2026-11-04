@@ -61,7 +61,7 @@ export function CodexQuotaProtectionSettings({
   return (
     <div className="space-y-1">
       <ToggleRow
-        icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}
+        icon={<ShieldAlert className="h-4 w-4 text-orange-500" />}
         title={t("settings.codexQuotaProtection.title")}
         description={t("settings.codexQuotaProtection.help")}
         checked={config.enabled}

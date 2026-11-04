@@ -467,7 +467,10 @@
       "beta": "Beta",
       "copilotDescription": "Manage GitHub Copilot accounts",
       "codexOauthDescription": "Manage ChatGPT accounts",
-      "xaiOauthDescription": "Manage xAI / Grok accounts"
+      "xaiOauthDescription": "Manage xAI / Grok accounts",
+      "claudeOfficialDescription": "Manage Claude subscription accounts",
+      "dshDescription": "Manage DeepSeek accounts",
+      "kimiDescription": "Manage Kimi accounts"
     },
     "advanced": {
       "configDir": {

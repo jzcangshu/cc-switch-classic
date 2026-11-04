@@ -467,7 +467,10 @@
       "beta": "Beta",
       "copilotDescription": "GitHub Copilot アカウントを管理します",
       "codexOauthDescription": "ChatGPT アカウントを管理します",
-      "xaiOauthDescription": "xAI / Grok アカウントを管理します"
+      "xaiOauthDescription": "xAI / Grok アカウントを管理します",
+      "claudeOfficialDescription": "Claude サブスクリプションアカウントの管理",
+      "dshDescription": "DeepSeek アカウントの管理",
+      "kimiDescription": "Kimi アカウントの管理"
     },
     "advanced": {
       "configDir": {

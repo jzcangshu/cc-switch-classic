@@ -268,6 +268,9 @@ export const ClaudeOfficialSection: React.FC<ClaudeOfficialSectionProps> = ({
               })
       }
       helpSide={helpSide}
+      description={t("settings.authCenter.claudeOfficialDescription", {
+        defaultValue: "管理 Claude 订阅账号",
+      })}
       accounts={rows}
       status={isStatusError ? "error" : isStatusSuccess ? "ready" : "loading"}
       statusErrorText={t("authCenter.claude.statusLoadFailed", {
@@ -537,7 +540,7 @@ export function ClaudeBoundAccountLine({
   if (!isSuccess) return null;
   if (!account) {
     return (
-      <div className="mt-0.5 flex min-w-0 items-center gap-1 text-caption text-warning-text">
+      <div className="mt-0.5 flex min-w-0 items-center gap-1 text-sm text-warning-text">
         <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate">
           {t("provider.form.claudeAccount.missing", {
@@ -562,7 +565,7 @@ export function ClaudeBoundAccountLine({
         })
       : account.login);
   return (
-    <div className="mt-0.5 flex min-w-0 items-center gap-2 text-caption text-fg-2">
+    <div className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
       <span className="min-w-0 truncate" title={note ?? account.login}>
         {label}
       </span>

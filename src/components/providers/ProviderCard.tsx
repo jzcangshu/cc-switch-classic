@@ -542,7 +542,7 @@ export function ProviderCard({
                 type="button"
                 onClick={handleOpenWebsite}
                 className={cn(
-                  "mt-0.5 inline-flex max-w-full items-center overflow-hidden text-start text-sm",
+                  "mt-0.5 inline-flex max-w-full items-center gap-2 overflow-hidden text-start text-sm",
                   isClickableUrl
                     ? "cursor-pointer text-blue-500 transition-colors underline-offset-[3px] hover:underline dark:text-blue-400"
                     : "cursor-default text-muted-foreground",

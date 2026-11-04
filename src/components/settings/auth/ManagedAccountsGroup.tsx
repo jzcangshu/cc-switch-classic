@@ -92,8 +92,6 @@ interface ManagedAccountsGroupProps {
   loginLabel?: string;
   /** Copilot 选部署类型的那块；有它时不显示空状态那行 */
   chooser?: React.ReactNode;
-  /** 登录方式选择（Copilot 部署类型）等附加块，跟在空状态后 */
-  loginOptions?: React.ReactNode;
   /** 放在「添加账号」左边的控件（ChatGPT 的登录方式） */
   loginControl?: React.ReactNode;
   /** 「默认」徽标和 ⋯ 里「设为默认」的文案（Antigravity 是「agy 在用」「切换 agy 到这个账号」） */
@@ -142,7 +140,6 @@ export function ManagedAccountsGroup({
   loginLabel,
   onAdd,
   chooser,
-  loginOptions,
   loginControl,
   defaultLabel,
   setDefaultLabel,
@@ -420,7 +417,6 @@ export function ManagedAccountsGroup({
       )}
 
       {chooser}
-      {loginOptions}
 
       <div role="status">
         {busy && (
@@ -654,8 +650,6 @@ interface AccountRowProps {
   removing: boolean;
   onReauth: (accountId: string) => void;
   onSetDefault?: (accountId: string) => void;
-  /** ⋯ 菜单里的「删除全部账号」（不传就没有菜单；xAI/agy 多账号组在用） */
-  onRemoveAll?: () => void;
   onRemove: (accountId: string, login: string) => void;
 }
 
