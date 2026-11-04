@@ -5069,5 +5069,28 @@
       "providerMissing": "この Oh My Pi プロバイダは保存済みリストにありません。",
       "legacyModelsJson": "Oh My Pi にはまだ旧形式の models.json があり、omp は次回起動時にこれを models.yml へ移行します。omp を一度起動してから、もう一度プロバイダを追加してください。"
     }
+  },
+  "providerGroups": {
+    "newGroup": "新規グループ",
+    "ungrouped": "未分類",
+    "moveTo": "グループへ移動",
+    "saveFailed": "グループの保存に失敗しました",
+    "renameAriaLabel": "グループ名",
+    "dragGroupHandle": "ドラッグでグループの順序を変更",
+    "toggleAriaLabel": "グループを折りたたむ・展開する",
+    "dropToUngrouped": "ドロップでグループから移動",
+    "settingTitle": "プロバイダーのグループ化",
+    "modeOff": "オフ",
+    "modeDrag": "ドラッグ",
+    "modeMenu": "メニュー",
+    "modeHelp": "ドラッグ：カードに重ねてグループを作成・移動。メニュー：カードのグループボタンで操作。オフにしてもグループは保持されます。",
+    "create": "グループを作成",
+    "createHelp": "このカードを新しいグループに入れます。他のカードはグループボタンから追加できます。",
+    "moveUp": "上へ移動",
+    "moveDown": "下へ移動",
+    "dissolve": "グループを解除",
+    "manageGroup": "グループを管理：{{name}}",
+    "manageProvider": "{{name}} のグループを管理",
+    "sortSaveFailed": "グループは保存されましたが、並び順の保存に失敗しました。再読み込み後、並べ替えを再試行してください。"
   }
 }

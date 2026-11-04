@@ -5069,5 +5069,28 @@
       "providerMissing": "此 Oh My Pi 供应商已不在保存的列表中。",
       "legacyModelsJson": "Oh My Pi 目录里还是旧的 models.json，omp 会在下次启动时把它迁移成 models.yml。请先运行一次 omp，再回来添加供应商。"
     }
+  },
+  "providerGroups": {
+    "newGroup": "新建分组",
+    "ungrouped": "未分组",
+    "moveTo": "移动到分组",
+    "saveFailed": "分组保存失败",
+    "renameAriaLabel": "分组名称",
+    "dragGroupHandle": "拖动调整分组顺序",
+    "toggleAriaLabel": "折叠或展开分组",
+    "dropToUngrouped": "松手移出分组",
+    "settingTitle": "供应商分组",
+    "modeOff": "关闭",
+    "modeDrag": "拖拽",
+    "modeMenu": "菜单",
+    "modeHelp": "拖拽：悬停卡片建组或移入分组。菜单：点击卡片的分组按钮来管理。关闭后保留分组数据。",
+    "create": "新建分组",
+    "createHelp": "将这张卡片放入新分组，其他卡片可通过分组按钮加入。",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "dissolve": "解散分组",
+    "manageGroup": "管理分组：{{name}}",
+    "manageProvider": "管理 {{name}} 的分组",
+    "sortSaveFailed": "分组已保存，但排序保存失败。已重新载入，请重试排序。"
   }
 }

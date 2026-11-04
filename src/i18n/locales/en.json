@@ -5069,5 +5069,28 @@
       "providerMissing": "This Oh My Pi provider is no longer saved.",
       "legacyModelsJson": "Oh My Pi still has a legacy models.json, which omp migrates to models.yml on its next start. Run omp once, then add the provider again."
     }
+  },
+  "providerGroups": {
+    "newGroup": "New group",
+    "ungrouped": "Ungrouped",
+    "moveTo": "Move to group",
+    "saveFailed": "Failed to save groups",
+    "renameAriaLabel": "Group name",
+    "dragGroupHandle": "Drag to reorder groups",
+    "toggleAriaLabel": "Collapse or expand group",
+    "dropToUngrouped": "Drop to remove from group",
+    "settingTitle": "Provider grouping",
+    "modeOff": "Off",
+    "modeDrag": "Drag",
+    "modeMenu": "Menu",
+    "modeHelp": "Drag: hover over cards to create or join groups. Menu: use each card’s grouping button. Turning grouping off keeps your groups.",
+    "create": "New group",
+    "createHelp": "Put this card in a new group. Add other cards using their grouping buttons.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "dissolve": "Ungroup all",
+    "manageGroup": "Manage group: {{name}}",
+    "manageProvider": "Manage grouping for {{name}}",
+    "sortSaveFailed": "Groups were saved, but ordering failed. The list was reloaded; please retry ordering."
   }
 }

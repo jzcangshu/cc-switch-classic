@@ -1,5 +1,10 @@
 import { CSS } from "@dnd-kit/utilities";
-import { DndContext, closestCenter, type Modifier } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  type DraggableAttributes,
+  type Modifier,
+} from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
@@ -13,7 +18,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -45,7 +50,7 @@ import {
   useCurrentOmoProviderId,
   useCurrentOmoSlimProviderId,
 } from "@/lib/query/omo";
-import { HelpTip } from "@/components/ui/help-tip";
+import { ProviderSectionTitle } from "./ProviderSectionTitle";
 import { Notice } from "@/components/ui/notice";
 import { usePiCurrentState } from "@/lib/query/pi";
 import { isPiFamilyApp } from "@/config/appConfig";
@@ -58,6 +63,11 @@ import {
   type ProviderSection,
   type SwitchModeInput,
 } from "@/components/providers/presentation";
+import { type ProviderGroupMenu } from "@/lib/providerGroups";
+import { CARD_SPRING } from "@/components/providers/grouping/groupMotion";
+import { useProviderGroups } from "@/hooks/useProviderGroups";
+import { MenuGroupedProviderSections } from "@/components/providers/grouping/MenuGroupedProviderSections";
+import { GroupedProviderSections } from "@/components/providers/grouping/GroupedProviderSections";
 
 /** 切换式应用（Claude Code / Codex / Gemini CLI / Grok Build）的模式状态和动作，由供应商页传入。 */
 export type SwitchModeProps = Omit<SwitchModeInput, "app" | "t" | "providers">;
@@ -165,6 +175,9 @@ export function ProviderList({
     providers,
     appId,
   );
+
+  // 主页供应商卡片分组（Classic 层功能）：无分组时主页与原来完全一致
+  const providerGroups = useProviderGroups(appId);
 
   // 范围沿用第四版口径：名称、备注、官网和请求地址
   const searchIndex = useMemo(
@@ -463,7 +476,29 @@ export function ProviderList({
     return provider.id === currentProviderId;
   };
 
-  const renderCard = (provider: Provider, presentation: CardPresentation) => (
+  // 分组视图只在存在主分区（切换式 all / 共存式 added）且未在搜索时生效；
+  // 路由视图故障转移开启（只有 queue/rest）等形态自动回落平铺
+  const groupedPrimaryKey = switchMode || appId === "agy" ? "all" : "added";
+  const groupingApplicable =
+    providerGroups.mode !== "off" &&
+    !searchNeedle &&
+    sections.some((section) => section.key === groupedPrimaryKey);
+
+  const GroupedSections =
+    providerGroups.mode === "menu"
+      ? MenuGroupedProviderSections
+      : GroupedProviderSections;
+
+  const renderCard = (
+    provider: Provider,
+    presentation: CardPresentation,
+    groupMenu?: ProviderGroupMenu,
+    flags?: {
+      isMergeTarget?: boolean;
+      isSettling?: boolean;
+      dragDisabled?: boolean;
+    },
+  ) => (
     <SortableProviderCard
       key={provider.id}
       provider={provider}
@@ -482,15 +517,48 @@ export function ProviderList({
       onOpenTerminal={appId === "agy" ? undefined : onOpenTerminal}
       onTest={handleTest}
       isTesting={isChecking(provider.id)}
+      groupMenu={groupMenu}
+      isMergeTarget={flags?.isMergeTarget}
+      isSettling={flags?.isSettling}
+      useOverlayDrag={groupingApplicable && providerGroups.mode === "drag"}
+      dragDisabled={
+        flags?.dragDisabled ||
+        (groupingApplicable &&
+          providerGroups.mode === "menu" &&
+          Boolean(groupMenu))
+      }
     />
   );
 
-  const renderSectionTitle = (section: ProviderSection) => (
-    <div className="flex items-center gap-1 text-caption font-semibold text-fg-2">
-      <h2 className="m-0 text-caption font-semibold">{section.title}</h2>
-      {section.help && (
-        <HelpTip title={section.help.title}>{section.help.body}</HelpTip>
-      )}
+  /** 拖影用非 sortable 卡片：与真卡 1:1 尺寸（dropAnimation 只补间位移，
+   *  内层 scale 不会被补间——任何缩放都会在落位瞬间产生尺寸跳变） */
+  const renderPlainCard = (
+    provider: Provider,
+    presentation: CardPresentation,
+  ) => (
+    <div>
+      <ProviderCard
+        provider={provider}
+        appId={appId}
+        presentation={presentation}
+        isCurrent={isCurrentFor(provider)}
+        isInConfig={isInConfig(provider)}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+        onConfigureUsage={
+          onConfigureUsage ? (item) => onConfigureUsage(item) : () => undefined
+        }
+        onOpenWebsite={onOpenWebsite}
+        onOpenTerminal={appId === "agy" ? undefined : onOpenTerminal}
+        onTest={handleTest}
+        isTesting={isChecking(provider.id)}
+        dragHandleProps={{
+          attributes: {} as DraggableAttributes,
+          listeners: undefined,
+          isDragging: false,
+        }}
+      />
     </div>
   );
 
@@ -567,44 +635,62 @@ export function ProviderList({
         </div>
       ) : (
         <>
-          {liftLeadTitle && (
+          {liftLeadTitle && !groupingApplicable && (
             <div className="flex min-h-8 items-center gap-3 -mb-2">
               <div className="min-w-0 flex-1">
-                {renderSectionTitle(leadSection)}
+                <ProviderSectionTitle section={leadSection} />
               </div>
             </div>
           )}
 
-          <DndContext
-            sensors={sensors}
-            modifiers={verticalDragModifiers}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            {sections.map((section, index) => (
-              <section key={section.key} className="space-y-3">
-                {section.title && !(index === 0 && liftLeadTitle) && (
-                  <div className="pt-1">{renderSectionTitle(section)}</div>
-                )}
-                {section.items.length === 0 && section.emptyText ? (
-                  <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
-                    {section.emptyText}
-                  </div>
-                ) : (
-                  <SortableContext
-                    items={section.items.map((item) => item.provider.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {section.items.map((item) =>
-                        renderCard(item.provider, item.presentation),
-                      )}
+          {groupingApplicable ? (
+            <GroupedSections
+              key={`${appId}-${providerGroups.mode}`}
+              appId={appId}
+              sections={sections}
+              primaryKey={groupedPrimaryKey}
+              sortedProviders={sortedProviders}
+              renderCard={renderCard}
+              renderPlainCard={renderPlainCard}
+              providerGroups={providerGroups}
+              onFlatDragEnd={handleDragEnd}
+              flatSensors={sensors}
+              flatModifiers={verticalDragModifiers}
+            />
+          ) : (
+            <DndContext
+              sensors={sensors}
+              modifiers={verticalDragModifiers}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              {sections.map((section, index) => (
+                <section key={section.key} className="space-y-3">
+                  {section.title && !(index === 0 && liftLeadTitle) && (
+                    <div className="pt-1">
+                      <ProviderSectionTitle section={section} />
                     </div>
-                  </SortableContext>
-                )}
-              </section>
-            ))}
-          </DndContext>
+                  )}
+                  {section.items.length === 0 && section.emptyText ? (
+                    <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                      {section.emptyText}
+                    </div>
+                  ) : (
+                    <SortableContext
+                      items={section.items.map((item) => item.provider.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {section.items.map((item) =>
+                          renderCard(item.provider, item.presentation),
+                        )}
+                      </div>
+                    </SortableContext>
+                  )}
+                </section>
+              ))}
+            </DndContext>
+          )}
         </>
       )}
     </div>
@@ -625,31 +711,87 @@ interface SortableProviderCardProps {
   onOpenTerminal?: (provider: Provider) => void;
   onTest?: (provider: Provider) => void;
   isTesting: boolean;
+  groupMenu?: ProviderGroupMenu;
+  /** 分组视图的合并意图锚点：卡片微缩露出认领板浅色边（iOS 叠放微表情） */
+  isMergeTarget?: boolean;
+  /**
+   * 落位安定中（dropAnimation 飞行期间）：真卡冻结在最终布局位——
+   * 不做 framer FLIP（否则 dropAnimation 的目标快照会取到补间中间态）、
+   * 保持隐藏（overlay 末帧与真卡首帧完全重合，零跳变）。
+   */
+  isSettling?: boolean;
+  /** 处于带 DragOverlay 的分组视图 DndContext：位移走 framer spring，拖拽中本体隐藏 */
+  useOverlayDrag?: boolean;
+  dragDisabled?: boolean;
 }
 
 function SortableProviderCard(props: SortableProviderCardProps) {
+  const reducedMotion = useReducedMotion();
   const {
-    setNodeRef,
-    attributes,
-    listeners,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.provider.id });
+    isMergeTarget,
+    isSettling = false,
+    useOverlayDrag = false,
+    dragDisabled = false,
+    ...cardProps
+  } = props;
+  const { setNodeRef, attributes, listeners, transform, isDragging } =
+    useSortable({
+      id: props.provider.id,
+      disabled: dragDisabled,
+      // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
+      data: { type: "card" },
+      // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
+      transition: useOverlayDrag ? null : undefined,
+    });
 
   const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
     position: "relative",
     zIndex: isDragging ? 10 : undefined,
+    // 分组视图：可见体是 DragOverlay 拖影，本体保留占位（display:none 破坏测量）；
+    // 落位安定中同样隐藏（dropAnimation 结束才现身，与拖影末帧重合）
+    opacity: useOverlayDrag && (isDragging || isSettling) ? 0 : undefined,
   };
 
+  const card = (
+    <ProviderCard
+      {...cardProps}
+      dragHandleProps={
+        dragDisabled ? undefined : { attributes, listeners, isDragging }
+      }
+    />
+  );
+
+  if (!useOverlayDrag) {
+    // 平铺视图：保持既有行为（本体跟手 + dnd-kit 默认 CSS 过渡）
+    return (
+      <div
+        ref={setNodeRef}
+        style={{ ...style, transform: CSS.Translate.toString(transform) }}
+      >
+        {card}
+      </div>
+    );
+  }
+
   return (
-    <div ref={setNodeRef} style={style}>
-      <ProviderCard
-        {...props}
-        dragHandleProps={{ attributes, listeners, isDragging }}
-      />
-    </div>
+    <motion.div
+      ref={setNodeRef}
+      layoutId={`card-${props.provider.id}`}
+      animate={{
+        // 拖拽/安定中的本体是隐藏占位，transform 置零：它稳在最终布局位置上，
+        // dropAnimation 的落点就是准确的目标槽位
+        x: isDragging || isSettling ? 0 : (transform?.x ?? 0),
+        y: isDragging || isSettling ? 0 : (transform?.y ?? 0),
+        scale: isMergeTarget ? 0.98 : 1,
+      }}
+      transition={
+        isDragging || isSettling || reducedMotion
+          ? { duration: 0 }
+          : CARD_SPRING
+      }
+      style={style}
+    >
+      {card}
+    </motion.div>
   );
 }

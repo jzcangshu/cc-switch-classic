@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { type ReactElement } from "react";
 import { http, HttpResponse } from "msw";
-import type { Provider } from "@/types";
+import type { Provider, Settings } from "@/types";
 import {
   ProviderList,
   type SwitchModeProps,
@@ -117,11 +117,15 @@ function createProvider(overrides: Partial<Provider> = {}): Provider {
   };
 }
 
-function renderWithQueryClient(ui: ReactElement) {
+function renderWithQueryClient(ui: ReactElement, settings?: Partial<Settings>) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
+  if (settings) {
+    queryClient.setQueryDefaults(["settings"], { staleTime: Infinity });
+    queryClient.setQueryData(["settings"], settings);
+  }
   return render(
     <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   );
@@ -185,6 +189,81 @@ describe("ProviderList Component", () => {
       ...overrides,
     };
   }
+
+  it.each(["off", "drag", "menu"] as const)(
+    "renders the selected grouping mode: %s",
+    (mode) => {
+      const a = createProvider({ id: "a", name: "Alpha" });
+      const b = createProvider({ id: "b", name: "Beta" });
+      useDragSortMock.mockReturnValue({
+        sortedProviders: [a, b],
+        sensors: [],
+        handleDragEnd: vi.fn(),
+      });
+      const { container } = renderWithQueryClient(
+        <ProviderList
+          {...baseProps}
+          appId="claude"
+          providers={{ a, b }}
+          switchMode={switchMode()}
+        />,
+        {
+          providerGroupingMode: mode,
+          providerGroups: {
+            claude: [
+              { id: "mode-test", name: "Work", providerIds: ["a", "b"] },
+            ],
+          },
+        },
+      );
+      expect(
+        Boolean(container.querySelector('[data-provider-group="mode-test"]')),
+      ).toBe(mode !== "off");
+      expect(lastProps("a").dragHandleProps !== undefined).toBe(
+        mode !== "menu",
+      );
+      expect(Boolean(lastProps("a").groupMenu)).toBe(mode !== "off");
+    },
+  );
+
+  it("searches grouped members in the flat results and restores groups after clearing", async () => {
+    const a = createProvider({ id: "a", name: "Alpha" });
+    const b = createProvider({ id: "b", name: "Beta" });
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [a, b],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+    const { container } = renderWithQueryClient(
+      <ProviderList
+        {...baseProps}
+        appId="claude"
+        providers={{ a, b }}
+        switchMode={switchMode()}
+      />,
+      {
+        providerGroupingMode: "menu",
+        providerGroups: {
+          claude: [
+            { id: "search-test", name: "Work", providerIds: ["a", "b"] },
+          ],
+        },
+      },
+    );
+    fireEvent.keyDown(window, { key: "f", ctrlKey: true });
+    const input = await screen.findByLabelText("provider.searchAriaLabel");
+    fireEvent.change(input, { target: { value: "Alpha" } });
+    expect(
+      container.querySelector('[data-provider-group="search-test"]'),
+    ).toBeNull();
+    expect(screen.getByTestId("provider-card-a")).toBeInTheDocument();
+    expect(screen.queryByTestId("provider-card-b")).not.toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "" } });
+    expect(
+      container.querySelector('[data-provider-group="search-test"]'),
+    ).not.toBeNull();
+    expect(screen.getByTestId("provider-card-b")).toBeInTheDocument();
+  });
 
   it("should render skeleton placeholders when loading", () => {
     const { container } = renderWithQueryClient(

@@ -102,3 +102,38 @@ describe("GeneralSection tray style", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("GeneralSection provider grouping", () => {
+  it("shows a single three-way setting and saves only the selected mode", () => {
+    const save = renderSection();
+    const control = screen.getByRole("group", {
+      name: "providerGroups.settingTitle",
+    });
+    expect(within(control).getAllByRole("button")).toHaveLength(3);
+    expect(
+      within(control).getByRole("button", { name: "providerGroups.modeOff" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    for (const [mode, label] of [
+      ["drag", "modeDrag"],
+      ["menu", "modeMenu"],
+      ["off", "modeOff"],
+    ]) {
+      fireEvent.click(
+        within(control).getByRole("button", {
+          name: "providerGroups." + label,
+        }),
+      );
+      expect(save).toHaveBeenLastCalledWith({ providerGroupingMode: mode });
+    }
+  });
+  it("keeps legacy groups in drag mode until a mode is explicitly chosen", () => {
+    renderSection({
+      providerGroups: {
+        claude: [{ id: "g", name: "Work", providerIds: ["a"] }],
+      },
+    });
+    expect(
+      screen.getByRole("button", { name: "providerGroups.modeDrag" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+});

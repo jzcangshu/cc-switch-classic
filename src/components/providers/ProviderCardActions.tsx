@@ -10,6 +10,7 @@ import {
   Loader2,
   Minus,
   MoreHorizontal,
+  FolderInput,
   Play,
   Plug,
   Plus,
@@ -26,9 +27,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { ProviderGroupMenu } from "@/lib/providerGroups";
 import type { CardButton, CardPresentation } from "./presentation";
 
 /** 操作含义由第四版的卡片呈现模型决定，这里只负责按钮的文字与图标。 */
@@ -57,6 +60,7 @@ interface ProviderCardActionsProps {
   isTesting?: boolean;
   onConfigureUsage?: () => void;
   onOpenTerminal?: () => void;
+  groupMenu?: ProviderGroupMenu;
 }
 
 /**
@@ -72,13 +76,23 @@ export function ProviderCardActions({
   isTesting,
   onConfigureUsage,
   onOpenTerminal,
+  groupMenu,
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
   const { status, buttons, menuItems = [] } = presentation;
   const iconButtonClass = "h-8 w-8 p-1";
+  const groupMenuLabel = t("providerGroups.manageProvider", {
+    name: providerName,
+  });
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 transition-opacity duration-200 sm:opacity-0 sm:pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto">
+    <div
+      className={cn(
+        "flex shrink-0 flex-wrap items-center justify-end gap-1.5 transition-opacity duration-200",
+        !groupMenu &&
+          "sm:opacity-0 sm:pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
+      )}
+    >
       {status && (
         <Button
           variant="secondary"
@@ -193,6 +207,58 @@ export function ProviderCardActions({
           </Button>
         </IconAction>
 
+        {groupMenu && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <HoverTip content={groupMenuLabel}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={iconButtonClass}
+                  aria-label={groupMenuLabel}
+                >
+                  <FolderInput className="h-4 w-4" />
+                </Button>
+              </HoverTip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {groupMenu.actions?.map((action) => (
+                <DropdownMenuItem
+                  key={action.key}
+                  disabled={action.disabled}
+                  onSelect={action.onSelect}
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+              {groupMenu.options.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>
+                    {t("providerGroups.moveTo")}
+                  </DropdownMenuLabel>
+                  {groupMenu.options.map((option) => (
+                    <DropdownMenuItem
+                      key={option.key}
+                      disabled={option.disabled}
+                      onSelect={option.onSelect}
+                      className="gap-2"
+                    >
+                      <Check
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0",
+                          !option.checked && "opacity-0",
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="max-w-64 truncate">{option.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {menuItems.length > 0 && (
           <DropdownMenu>
             <HoverTip content={t("common.more")}>

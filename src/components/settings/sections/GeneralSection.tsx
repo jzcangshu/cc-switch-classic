@@ -1,3 +1,4 @@
+import { resolveProviderGroupingMode } from "@/lib/providerGroups";
 import { useTranslation } from "react-i18next";
 import {
   AppWindow,
@@ -158,6 +159,30 @@ export function GeneralSection({
             ]}
           />
         </div>
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-medium">
+            {t("providerGroups.settingTitle")}
+          </h3>
+          <SegmentedControl
+            size="sm"
+            aria-label={t("providerGroups.settingTitle")}
+            value={resolveProviderGroupingMode(settings)}
+            onValueChange={(value) =>
+              void onAutoSave({ providerGroupingMode: value })
+            }
+            items={[
+              { value: "off", label: t("providerGroups.modeOff") },
+              { value: "drag", label: t("providerGroups.modeDrag") },
+              { value: "menu", label: t("providerGroups.modeMenu") },
+            ]}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t("providerGroups.modeHelp")}
+        </p>
       </section>
 
       {/* 页头与应用管理 */}
