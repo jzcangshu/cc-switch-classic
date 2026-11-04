@@ -2185,6 +2185,16 @@
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
   },
+  "providerGroups": {
+    "ungrouped": "グループ解除",
+    "dropToUngrouped": "離すとグループから外れます",
+    "toggleAriaLabel": "グループを折りたたむ／展開",
+    "renameAriaLabel": "グループ名",
+    "dragGroupHandle": "ドラッグでグループ順を変更",
+    "newGroup": "新しいグループ",
+    "moveTo": "グループに移動",
+    "saveFailed": "グループの保存に失敗しました"
+  },
   "providerPreset": {
     "label": "プロバイダータイプ",
     "custom": "カスタム設定",

@@ -410,6 +410,7 @@ export function UsageTrendChart({
         ) : (
           <Chart
             width={chartWidth}
+            height={132}
             data={chartData}
             margin={{ top: 6, right: 0, left: 0, bottom: 0 }}
           >

@@ -2185,6 +2185,16 @@
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
   },
+  "providerGroups": {
+    "ungrouped": "未分組",
+    "dropToUngrouped": "松手移出分組",
+    "toggleAriaLabel": "摺疊或展開分組",
+    "renameAriaLabel": "分組名稱",
+    "dragGroupHandle": "拖曳調整分組順序",
+    "newGroup": "新增分組",
+    "moveTo": "移動到分組",
+    "saveFailed": "分組儲存失敗"
+  },
   "providerPreset": {
     "label": "預設供應商",
     "custom": "自訂設定",

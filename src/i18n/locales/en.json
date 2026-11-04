@@ -2185,6 +2185,16 @@
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
   },
+  "providerGroups": {
+    "ungrouped": "Ungrouped",
+    "dropToUngrouped": "Release to remove from group",
+    "toggleAriaLabel": "Collapse or expand group",
+    "renameAriaLabel": "Group name",
+    "dragGroupHandle": "Drag to reorder groups",
+    "newGroup": "New group",
+    "moveTo": "Move to group",
+    "saveFailed": "Failed to save groups"
+  },
   "providerPreset": {
     "label": "Provider Preset",
     "custom": "Custom Configuration",
