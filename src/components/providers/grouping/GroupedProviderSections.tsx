@@ -1,17 +1,22 @@
 import { useCallback, useMemo, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
+  DragOverlay,
   MeasuringStrategy,
   useDroppable,
   type DragEndEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { Provider, ProviderGroupDefinition } from "@/types";
+import type { ProvidersQueryData } from "@/lib/query/queries";
 import type { AppId } from "@/lib/api";
 import { providersApi } from "@/lib/api/providers";
 import { isProxyAppId } from "@/config/appConfig";
@@ -20,6 +25,7 @@ import { cn } from "@/lib/utils";
 import {
   buildSortIndexUpdates,
   moveProviderInPending,
+  pendingLayoutToContainers,
   pendingToGroups,
   renameGroup,
   resolveGroupedLayout,
@@ -30,12 +36,19 @@ import {
 } from "@/lib/providerGroups";
 import type { ProviderGroupsApi } from "@/hooks/useProviderGroups";
 import { HelpTip } from "@/components/ui/help-tip";
-import type { ProviderSection } from "@/components/providers/presentation";
+import type {
+  CardPresentation,
+  ProviderSection,
+} from "@/components/providers/presentation";
 import {
   ProviderGroupContainer,
   type GroupMiniIcon,
 } from "./ProviderGroupContainer";
-import { useGroupDnd } from "./useGroupDnd";
+import { GroupDragGhost } from "./GroupDragGhost";
+import { DROP_ANIMATION, GROUP_ENTER_SPRING, useGroupDnd } from "./useGroupDnd";
+
+/** 拖影只做纵向跟随（与卡片拖拽的纵向语义一致） */
+const overlayModifiers: Modifier[] = [({ transform }) => ({ ...transform, x: 0 })];
 
 interface GroupedProviderSectionsProps {
   appId: AppId;
@@ -48,8 +61,14 @@ interface GroupedProviderSectionsProps {
   /** 卡片渲染由 ProviderList 提供（含 isCurrent / isInConfig / 测试等上下文） */
   renderCard: (
     provider: Provider,
-    presentation: ProviderSection["items"][number]["presentation"],
+    presentation: CardPresentation,
     groupMenu?: ProviderGroupMenu,
+    flags?: { isMergeTarget?: boolean },
+  ) => ReactNode;
+  /** 拖影用非 sortable 卡片渲染（ProviderCard 本体 + 抬起视觉） */
+  renderPlainCard: (
+    provider: Provider,
+    presentation: CardPresentation,
   ) => ReactNode;
   /** 分组视图状态（hook 在 ProviderList 提升为单实例） */
   providerGroups: ProviderGroupsApi;
@@ -71,8 +90,28 @@ function SectionTitle({ section }: { section: ProviderSection }) {
 }
 
 /**
+ * 认领板：合并意图武装时从锚点卡四周扩展生出的浅色边缘（iOS 建文件夹预告）。
+ * 渲染在卡片之下，卡片本体同时微缩，边缘从四周均匀露出。
+ */
+function MergePlate() {
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute -inset-2 z-0 rounded-xl border border-primary/50 bg-primary/[0.07]"
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 320, damping: 24 }}
+    />
+  );
+}
+
+/**
  * 分组视图：把主分区的卡片切成「分组容器 + 未分组」两个层级，其余分区原样跟在后面。
- * 拖拽/悬停/菜单的所有结构变更都经 commitLayout 统一提交（分组定义 + sortIndex 重写）。
+ * 拖拽模型 = dnd-kit 官方多容器模式：拖拽中 per-container items 即时更新（悬停
+ * 门槛后），DragOverlay 拖影跟随，松手一次性提交（分组定义 + sortIndex 重写）。
+ * 组容器的挂载（建组）/ 卸载（消散）统一走 AnimatePresence：入场 spring、
+ * 离场高度收拢幽灵，杜绝任何瞬时出现 / 消失。
  */
 export function GroupedProviderSections({
   appId,
@@ -80,6 +119,7 @@ export function GroupedProviderSections({
   primaryKey,
   sortedProviders,
   renderCard,
+  renderPlainCard,
   providerGroups,
   onFlatDragEnd,
 }: GroupedProviderSectionsProps) {
@@ -100,10 +140,25 @@ export function GroupedProviderSections({
   );
 
   const presentationById = useMemo(() => {
-    const map = new Map<string, ProviderSection["items"][number]>();
-    for (const item of primaryItems) map.set(item.provider.id, item);
+    const map = new Map<string, CardPresentation>();
+    for (const item of primaryItems) {
+      map.set(item.provider.id, item.presentation);
+    }
     return map;
   }, [primaryItems]);
+  /** 全部分区（含可添加 / 队列等）的条目：拖影渲染需要非主分区卡的数据 */
+  const allItemsById = useMemo(() => {
+    const map = new Map<
+      string,
+      { provider: Provider; presentation: CardPresentation }
+    >();
+    for (const section of sections) {
+      for (const item of section.items) {
+        map.set(item.provider.id, item);
+      }
+    }
+    return map;
+  }, [sections]);
   const providerById = useMemo(() => {
     const map = new Map<string, Provider>();
     for (const provider of sortedProviders) map.set(provider.id, provider);
@@ -146,12 +201,28 @@ export function GroupedProviderSections({
       const validIds = new Set(primaryProviders.map((p) => p.id));
       const nextGroups = pendingToGroups(draftGroups, pending, validIds);
       saveAppGroups(nextGroups);
-      const layout = resolveGroupedLayout(nextGroups, primaryProviders);
-      void commitSortIndexes(
-        buildSortIndexUpdates(layout.containers, validIds, sortedProviders),
+      // 布局以拖拽内存态为准：未分组的新顺序只存在于 pending，
+      // resolveGroupedLayout 会用 props 的旧顺序把它冲掉（松手还原的根因）
+      const layout = pendingLayoutToContainers(nextGroups, pending, primaryProviders);
+      const updates = buildSortIndexUpdates(layout, validIds, sortedProviders);
+      // 乐观写入 providers 缓存的 sortIndex：落盘 + refetch 完成前不回闪旧顺序
+      queryClient.setQueryData<ProvidersQueryData>(
+        ["providers", appId],
+        (old) => {
+          if (!old) return old;
+          const indexById = new Map(updates.map((u) => [u.id, u.sortIndex]));
+          const providers = Object.fromEntries(
+            Object.entries(old.providers).map(([id, p]) => [
+              id,
+              indexById.has(id) ? { ...p, sortIndex: indexById.get(id) } : p,
+            ]),
+          );
+          return { ...old, providers };
+        },
       );
+      void commitSortIndexes(updates);
     },
-    [primaryProviders, saveAppGroups, sortedProviders, commitSortIndexes],
+    [primaryProviders, saveAppGroups, sortedProviders, commitSortIndexes, queryClient, appId],
   );
 
   const {
@@ -161,6 +232,9 @@ export function GroupedProviderSections({
     containers,
     containerOf,
     activeDrag,
+    mergeTargetId,
+    hoverContainerId,
+    newbornGroupIds,
   } = useGroupDnd({
     primaryProviders,
     groups,
@@ -215,14 +289,22 @@ export function GroupedProviderSections({
     [groups, containers, containerOf, moveToContainer, t],
   );
 
-  const renderGroupedCard = useCallback(
-    (providerId: string) => {
-      const item = presentationById.get(providerId);
-      const provider = providerById.get(providerId);
-      if (!item || !provider) return null;
-      return renderCard(provider, item.presentation, buildGroupMenu(provider));
-    },
-    [presentationById, providerById, renderCard, buildGroupMenu],
+  const buildMiniIcons = useCallback(
+    (providerIds: string[]): GroupMiniIcon[] =>
+      providerIds
+        .slice(0, 4)
+        .map((id) => providerById.get(id))
+        .filter((provider): provider is Provider => Boolean(provider))
+        .map(
+          (provider) =>
+            ({
+              id: provider.id,
+              name: provider.name,
+              icon: provider.icon,
+              iconColor: provider.iconColor,
+            }) satisfies GroupMiniIcon,
+        ),
+    [providerById],
   );
 
   const renderFlatSection = (section: ProviderSection) => (
@@ -251,12 +333,60 @@ export function GroupedProviderSections({
     </section>
   );
 
+  const groupContainers = useMemo(
+    () => containers.filter((container) => container.group !== null),
+    [containers],
+  );
+  const ungroupedIds = useMemo(
+    () => containers.find((c) => c.id === UNGROUPED_ID)?.providerIds ?? [],
+    [containers],
+  );
+  const isCardDragging = activeDrag?.activeType === "card";
+
   if (!primarySection) {
     // 主分区不存在（如路由视图故障转移开启时的 queue/rest）：整页按平铺渲染
     return <>{sections.map((section) => renderFlatSection(section))}</>;
   }
 
-  const isCardDragging = activeDrag?.activeType === "card";
+  const renderGroupedCard = (providerId: string) => {
+    const presentation = presentationById.get(providerId);
+    const provider = providerById.get(providerId);
+    if (!presentation || !provider) return null;
+    const isMergeTarget = mergeTargetId === providerId && isCardDragging;
+    return (
+      <div className="relative">
+        <AnimatePresence>
+          {isMergeTarget && <MergePlate key="merge-plate" />}
+        </AnimatePresence>
+        {renderCard(provider, presentation, buildGroupMenu(provider), {
+          isMergeTarget,
+        })}
+      </div>
+    );
+  };
+
+  // ─── 拖影内容（官方 DragOverlay 同构：主动本体不可见，可见体只有这里）───
+  const overlayContent = (() => {
+    if (!activeDrag) return null;
+    const widthStyle =
+      activeDrag.overlayWidth != null
+        ? { width: activeDrag.overlayWidth }
+        : undefined;
+    if (activeDrag.activeType === "card") {
+      const item = allItemsById.get(activeDrag.activeId);
+      if (!item) return null;
+      return <div style={widthStyle}>{renderPlainCard(item.provider, item.presentation)}</div>;
+    }
+    const container = containers.find((c) => c.id === activeDrag.activeId);
+    if (!container?.group) return null;
+    return (
+      <GroupDragGhost
+        appId={appId}
+        group={container.group}
+        miniIcons={buildMiniIcons(container.providerIds)}
+      />
+    );
+  })();
 
   return (
     <DndContext
@@ -267,77 +397,89 @@ export function GroupedProviderSections({
       onDragEnd={handlers.onDragEnd}
       onDragCancel={handlers.onDragCancel}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+      // 关闭拖拽自动滚动：页面高度有限，滚动会移动指针下的内容、
+      // 破坏 iOS 式「静止悬停才互动」的判定（移动端化行为与桌面场景不符）
+      autoScroll={false}
     >
-      {containers.map((container) =>
-        container.group ? (
-          <ProviderGroupContainer
-            key={container.id}
-            appId={appId}
-            group={container.group}
-            isDragOver={Boolean(
-              isCardDragging &&
-                activeDrag &&
-                containerOf[activeDrag.activeId] === container.id,
-            )}
-            isCollapsed={isGroupCollapsed(container.id)}
-            onToggleCollapse={() =>
-              setGroupCollapsed(container.id, !isGroupCollapsed(container.id))
-            }
-            onRename={(name) =>
-              saveAppGroups(renameGroup(groups, container.id, name))
-            }
-            miniIcons={container.providerIds
-              .slice(0, 4)
-              .map((id) => providerById.get(id))
-              .filter((provider): provider is Provider => Boolean(provider))
-              .map(
-                (provider) =>
-                  ({
-                    id: provider.id,
-                    name: provider.name,
-                    icon: provider.icon,
-                    iconColor: provider.iconColor,
-                  }) satisfies GroupMiniIcon,
-              )}
-          >
-            <SortableContext
-              items={container.providerIds}
-              strategy={verticalListSortingStrategy}
+      {/* 外层：分组间排序（官方容器排序同构）。未分组容器不参与，固定最后 */}
+      <SortableContext
+        items={groupContainers.map((container) => container.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <AnimatePresence initial={false}>
+          {groupContainers.map((container) => (
+            <motion.div
+              key={container.id}
+              layout
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={GROUP_ENTER_SPRING}
             >
-              <div className="space-y-3">
-                {container.providerIds.map((id) => (
-                  <div key={id}>{renderGroupedCard(id)}</div>
-                ))}
-              </div>
-            </SortableContext>
-          </ProviderGroupContainer>
-        ) : container.providerIds.length > 0 || isCardDragging ? (
-          <UngroupedContainer
-            key={container.id}
-            showHeader={groups.length > 0}
-            isEmptyDuringDrag={
-              isCardDragging && container.providerIds.length === 0
-            }
-            isDragOver={Boolean(
-              isCardDragging &&
-                activeDrag &&
-                containerOf[activeDrag.activeId] === container.id,
-            )}
-          >
-            <SortableContext
-              items={container.providerIds}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3">
-                {container.providerIds.map((id) => (
-                  <div key={id}>{renderGroupedCard(id)}</div>
-                ))}
-              </div>
-            </SortableContext>
-          </UngroupedContainer>
-        ) : null,
-      )}
+              <ProviderGroupContainer
+                appId={appId}
+                group={container.group!}
+                isDragOver={Boolean(
+                  isCardDragging && hoverContainerId === container.id,
+                )}
+                isCollapsed={isGroupCollapsed(container.id)}
+                isNewborn={newbornGroupIds.includes(container.id)}
+                onToggleCollapse={() =>
+                  setGroupCollapsed(
+                    container.id,
+                    !isGroupCollapsed(container.id),
+                  )
+                }
+                onRename={(name) =>
+                  saveAppGroups(renameGroup(groups, container.id, name))
+                }
+                miniIcons={buildMiniIcons(container.providerIds)}
+              >
+                <SortableContext
+                  items={container.providerIds}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {container.providerIds.map((id) => (
+                      <div key={id}>{renderGroupedCard(id)}</div>
+                    ))}
+                  </div>
+                </SortableContext>
+              </ProviderGroupContainer>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </SortableContext>
+
+      <UngroupedContainer
+        showHeader={groups.length > 0}
+        isEmptyDuringDrag={Boolean(
+          isCardDragging && ungroupedIds.length === 0,
+        )}
+        isDragOver={Boolean(
+          isCardDragging && hoverContainerId === UNGROUPED_ID,
+        )}
+      >
+        <SortableContext items={ungroupedIds} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {ungroupedIds.map((id) => (
+              <div key={id}>{renderGroupedCard(id)}</div>
+            ))}
+          </div>
+        </SortableContext>
+      </UngroupedContainer>
+
       {otherSections.map((section) => renderFlatSection(section))}
+
+      {createPortal(
+        <DragOverlay
+          dropAnimation={DROP_ANIMATION}
+          modifiers={overlayModifiers}
+        >
+          {overlayContent}
+        </DragOverlay>,
+        document.body,
+      )}
     </DndContext>
   );
 }
