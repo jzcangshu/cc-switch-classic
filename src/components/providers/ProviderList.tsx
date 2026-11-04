@@ -1,5 +1,10 @@
 import { CSS } from "@dnd-kit/utilities";
-import { DndContext, closestCenter, type Modifier } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  type DraggableAttributes,
+  type Modifier,
+} from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
@@ -64,6 +69,7 @@ import {
   type SwitchModeInput,
 } from "@/components/providers/presentation";
 import { isGroupingActive, type ProviderGroupMenu } from "@/lib/providerGroups";
+import { CARD_SPRING } from "@/components/providers/grouping/useGroupDnd";
 import { useProviderGroups } from "@/hooks/useProviderGroups";
 import { GroupedProviderSections } from "@/components/providers/grouping/GroupedProviderSections";
 
@@ -530,10 +536,19 @@ export function ProviderList({
     return provider.id === currentProviderId;
   };
 
+  // 分组视图只在存在主分区（切换式 all / 共存式 added）且未在搜索时生效；
+  // 路由视图故障转移开启（只有 queue/rest）等形态自动回落平铺
+  const groupedPrimaryKey = switchMode || appId === "agy" ? "all" : "added";
+  const groupingApplicable =
+    isGroupingActive(providerGroups.groups) &&
+    !searchNeedle &&
+    sections.some((section) => section.key === groupedPrimaryKey);
+
   const renderCard = (
     provider: Provider,
     presentation: CardPresentation,
     groupMenu?: ProviderGroupMenu,
+    flags?: { isMergeTarget?: boolean },
   ) => (
     <SortableProviderCard
       key={provider.id}
@@ -553,16 +568,40 @@ export function ProviderList({
       onTest={handleTest}
       isTesting={isChecking(provider.id)}
       groupMenu={groupMenu}
+      isMergeTarget={flags?.isMergeTarget}
+      useOverlayDrag={groupingApplicable}
     />
   );
 
-  // 分组视图只在存在主分区（切换式 all / 共存式 added）且未在搜索时生效；
-  // 路由视图故障转移开启（只有 queue/rest）等形态自动回落平铺
-  const groupedPrimaryKey = switchMode || appId === "agy" ? "all" : "added";
-  const groupingApplicable =
-    isGroupingActive(providerGroups.groups) &&
-    !searchNeedle &&
-    sections.some((section) => section.key === groupedPrimaryKey);
+  /** 拖影用非 sortable 卡片：分组视图的 DragOverlay 内容（iOS 抬起视觉） */
+  const renderPlainCard = (
+    provider: Provider,
+    presentation: CardPresentation,
+  ) => (
+    <div className="scale-[1.02]">
+      <ProviderCard
+        provider={provider}
+        appId={appId}
+        presentation={presentation}
+        isCurrent={isCurrentFor(provider)}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+        onConfigureUsage={
+          onConfigureUsage ? (item) => onConfigureUsage(item) : () => undefined
+        }
+        onOpenWebsite={onOpenWebsite}
+        onOpenTerminal={appId === "agy" ? undefined : onOpenTerminal}
+        onTest={handleTest}
+        isTesting={isChecking(provider.id)}
+        dragHandleProps={{
+          attributes: {} as DraggableAttributes,
+          listeners: undefined,
+          isDragging: true,
+        }}
+      />
+    </div>
+  );
 
   const renderSectionTitle = (section: ProviderSection) => (
     <div className="flex items-center gap-1 text-caption font-semibold text-fg-2">
@@ -668,6 +707,7 @@ export function ProviderList({
               primaryKey={groupedPrimaryKey}
               sortedProviders={sortedProviders}
               renderCard={renderCard}
+              renderPlainCard={renderPlainCard}
               providerGroups={providerGroups}
               onFlatDragEnd={handleDragEnd}
             />
@@ -730,35 +770,67 @@ interface SortableProviderCardProps {
   onTest?: (provider: Provider) => void;
   isTesting: boolean;
   groupMenu?: ProviderGroupMenu;
+  /** 分组视图的合并意图锚点：卡片微缩露出认领板浅色边（iOS 叠放微表情） */
+  isMergeTarget?: boolean;
+  /** 处于带 DragOverlay 的分组视图 DndContext：位移走 framer spring，拖拽中本体隐藏 */
+  useOverlayDrag?: boolean;
 }
 
 function SortableProviderCard(props: SortableProviderCardProps) {
+  const { isMergeTarget, useOverlayDrag = false, ...cardProps } = props;
   const {
     setNodeRef,
     attributes,
     listeners,
     transform,
-    transition,
     isDragging,
   } = useSortable({
     id: props.provider.id,
-    // 分组视图的自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
+    // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
     data: { type: "card" },
+    // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
+    transition: useOverlayDrag ? null : undefined,
   });
 
   const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
     position: "relative",
     zIndex: isDragging ? 10 : undefined,
+    // 分组视图：可见体是 DragOverlay 拖影，本体保留占位（display:none 破坏测量）
+    opacity: useOverlayDrag && isDragging ? 0 : undefined,
   };
 
+  const card = (
+    <ProviderCard
+      {...cardProps}
+      dragHandleProps={{ attributes, listeners, isDragging }}
+    />
+  );
+
+  if (!useOverlayDrag) {
+    // 平铺视图：保持既有行为（本体跟手 + dnd-kit 默认 CSS 过渡）
+    return (
+      <div
+        ref={setNodeRef}
+        style={{ ...style, transform: CSS.Translate.toString(transform) }}
+      >
+        {card}
+      </div>
+    );
+  }
+
   return (
-    <div ref={setNodeRef} style={style}>
-      <ProviderCard
-        {...props}
-        dragHandleProps={{ attributes, listeners, isDragging }}
-      />
-    </div>
+    <motion.div
+      ref={setNodeRef}
+      layoutId={`card-${props.provider.id}`}
+      animate={{
+        x: transform?.x ?? 0,
+        y: transform?.y ?? 0,
+        scale: isMergeTarget ? 0.98 : 1,
+      }}
+      transition={isDragging ? { duration: 0 } : CARD_SPRING}
+      style={style}
+    >
+      {card}
+    </motion.div>
   );
 }

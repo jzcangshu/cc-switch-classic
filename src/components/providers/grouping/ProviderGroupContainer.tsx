@@ -24,6 +24,8 @@ interface ProviderGroupContainerProps {
   /** 拖拽中的卡片已进入本容器（由父级从拖拽内存态推导，悬停组内卡片时也算） */
   isDragOver: boolean;
   isCollapsed: boolean;
+  /** 本次拖拽中新建的分组：挂载即播新生光晕，随后常驻为透明层 */
+  isNewborn?: boolean;
   onToggleCollapse: () => void;
   onRename: (name: string) => void;
   miniIcons: GroupMiniIcon[];
@@ -40,6 +42,7 @@ export function ProviderGroupContainer({
   group,
   isDragOver,
   isCollapsed,
+  isNewborn = false,
   onToggleCollapse,
   onRename,
   miniIcons,
@@ -54,7 +57,12 @@ export function ProviderGroupContainer({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.id, data: { type: "group" } });
+  } = useSortable({
+    id: group.id,
+    data: { type: "group" },
+    // 组容器位移保留 dnd-kit CSS 过渡（官方多容器同款），与卡片 spring 观感对齐
+    transition: { duration: 300, easing: "cubic-bezier(0.2, 0.85, 0.25, 1)" },
+  });
 
   // 折叠/展开走高度动画，与搜索面板同一套缓动语言
   const bodyId = `provider-group-body-${group.id}`;
@@ -90,15 +98,24 @@ export function ProviderGroupContainer({
           : undefined,
         transition,
         position: "relative",
-        zIndex: isDragging ? 10 : undefined,
+        // 拖拽中本体降透明度（官方容器拖拽同款），可见体是 DragOverlay 拖影
+        opacity: isDragging ? 0.4 : undefined,
       }}
       className={cn(
         "rounded-2xl border border-border/70 bg-black/[0.03] p-2.5 transition-all duration-150 dark:bg-white/[0.04]",
         isDragOver &&
           "border-primary/60 bg-primary/[0.06] ring-1 ring-primary/40",
-        isDragging && "border-primary/50 shadow-lg",
+        isDragging && "border-primary/50",
       )}
     >
+      {/* 新生光晕：仅新建分组首次挂载时从 1 渐隐到 0，此后常驻透明层（无 pop） */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-primary/50"
+        initial={{ opacity: isNewborn ? 1 : 0 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+      />
       <div
         className="flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1 py-1"
         onClick={onToggleCollapse}

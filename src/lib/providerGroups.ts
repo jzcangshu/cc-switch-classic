@@ -236,3 +236,164 @@ export function buildSortIndexUpdates(
     sortIndex: index,
   }));
 }
+
+// ─── iOS 手势扩展（v2 拖拽模型）：悬停波段 / 插入计划 / 合组 / 消散 ────────
+
+/** 指针落在锚点卡片上的纵向波段：上下边缘=插入挪位，中间=建组（iOS 语义移植） */
+export type HoverBand = "before" | "after" | "middle";
+
+/**
+ * 由指针 Y 与锚点卡片矩形算波段：上/下各占卡片高度 edgeRatio 的边缘带返回
+ * before / after，中间带返回 middle。指针缺失（键盘拖拽）或矩形缺失返回 null，
+ * 调用方降级为纯插入、不触发建组。
+ */
+export function resolveHoverBand(
+  pointerY: number | null,
+  anchorRect: { top: number; height: number } | null,
+  edgeRatio = 0.25,
+): HoverBand | null {
+  if (pointerY == null || !anchorRect || anchorRect.height <= 0) return null;
+  const progress = (pointerY - anchorRect.top) / anchorRect.height;
+  if (progress < edgeRatio) return "before";
+  if (progress > 1 - edgeRatio) return "after";
+  return "middle";
+}
+
+/** 卡片当前所在容器的快速定位 */
+export function findCardContainer(
+  pending: PendingLayout,
+  providerId: string,
+): string | null {
+  for (const [containerId, ids] of Object.entries(pending)) {
+    if (ids.includes(providerId)) return containerId;
+  }
+  return null;
+}
+
+/**
+ * 悬停到点后的插入计划：把 activeId 移入 containerId 的 anchorId 前/后
+ * （anchorId 为 null 时追加末尾）。目标位置与当前位置完全一致时返回
+ * changed=false 与原引用，避免无谓渲染。
+ */
+export function planInsert(
+  pending: PendingLayout,
+  activeId: string,
+  containerId: string,
+  anchorId: string | null,
+  position: "before" | "after",
+): { next: PendingLayout; changed: boolean } {
+  const target = pending[containerId];
+  if (!target) return { next: pending, changed: false };
+  const originContainer = findCardContainer(pending, activeId);
+  if (!originContainer) return { next: pending, changed: false };
+
+  // 目标容器内（摘除 active 后）的插入下标
+  const without = target.filter((id) => id !== activeId);
+  const anchorIndex = anchorId ? without.indexOf(anchorId) : -1;
+  const index =
+    !anchorId || anchorIndex === -1
+      ? without.length
+      : position === "before"
+        ? anchorIndex
+        : anchorIndex + 1;
+
+  const next: PendingLayout = {};
+  for (const [key, ids] of Object.entries(pending)) {
+    next[key] = ids.filter((id) => id !== activeId);
+  }
+  const arr = [...next[containerId]];
+  arr.splice(index, 0, activeId);
+  next[containerId] = arr;
+
+  const changed =
+    originContainer !== containerId ||
+    arr.join("\u0000") !== pending[containerId].join("\u0000");
+  return changed ? { next, changed } : { next: pending, changed: false };
+}
+
+/**
+ * 悬停建组：A 压到未分组卡片 B 上停顿到点后，新建一个分组（追加到分组列表
+ * 末尾，A 在前），两卡同时从各容器摘除。前置条件不满足（任一卡不在未分组、
+ * 是同一张卡）返回 null，调用方静默放弃。
+ */
+export function mergeIntoNewGroup(
+  groups: ProviderGroupDefinition[],
+  pending: PendingLayout,
+  activeId: string,
+  anchorId: string,
+  name: string,
+): {
+  groups: ProviderGroupDefinition[];
+  pending: PendingLayout;
+  newGroupId: string;
+} | null {
+  const ungrouped = pending[UNGROUPED_ID];
+  if (!ungrouped) return null;
+  if (activeId === anchorId) return null;
+  if (!ungrouped.includes(activeId) || !ungrouped.includes(anchorId)) {
+    return null;
+  }
+  const newGroupId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `grp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const nextPending: PendingLayout = {};
+  for (const [key, ids] of Object.entries(pending)) {
+    nextPending[key] = ids.filter((id) => id !== activeId && id !== anchorId);
+  }
+  if (!nextPending[UNGROUPED_ID]) nextPending[UNGROUPED_ID] = [];
+  nextPending[newGroupId] = [activeId, anchorId];
+  return {
+    groups: [...groups, { id: newGroupId, name, providerIds: [activeId, anchorId] }],
+    pending: nextPending,
+    newGroupId,
+  };
+}
+
+/**
+ * 消散本次拖拽中新建、但拖动方最终不在其中的分组：组成员按原相对顺序退回
+ * 未分组头部（分组区在未分组上方，退回头部对应用户看到的位置）。
+ * 对应 iOS「拖离 → 预览框消散」。组不在 pending 中时静默跳过。
+ */
+export function dissolveDragCreatedGroups(
+  groups: ProviderGroupDefinition[],
+  pending: PendingLayout,
+  createdGroupIds: string[],
+): { groups: ProviderGroupDefinition[]; pending: PendingLayout } {
+  let nextGroups = groups;
+  let nextPending = pending;
+  for (const groupId of createdGroupIds) {
+    const members = nextPending[groupId];
+    if (!members) continue;
+    const rest: PendingLayout = { ...nextPending };
+    delete rest[groupId];
+    rest[UNGROUPED_ID] = [...members, ...(nextPending[UNGROUPED_ID] ?? [])];
+    nextPending = rest;
+    nextGroups = nextGroups.filter((group) => group.id !== groupId);
+  }
+  return { groups: nextGroups, pending: nextPending };
+}
+
+/**
+ * 渲染派生：拖拽内存态（分组定义快照 + pending 布局）→ 容器展示结构。
+ * 与 resolveGroupedLayout 同构，但成员顺序完全以 pending 为准（拖拽中数组
+ * 即真相），不存在的供应商照常过滤。
+ */
+export function pendingLayoutToContainers(
+  groups: ProviderGroupDefinition[],
+  pending: PendingLayout,
+  items: Provider[],
+): GroupContainerLayout[] {
+  const known = new Set(items.map((p) => p.id));
+  const containers: GroupContainerLayout[] = groups.map((group) => ({
+    id: group.id,
+    group,
+    providerIds: (pending[group.id] ?? []).filter((id) => known.has(id)),
+  }));
+  containers.push({
+    id: UNGROUPED_ID,
+    group: null,
+    providerIds: (pending[UNGROUPED_ID] ?? []).filter((id) => known.has(id)),
+  });
+  return containers;
+}
