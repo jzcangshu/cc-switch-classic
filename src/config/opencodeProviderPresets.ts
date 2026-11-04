@@ -380,6 +380,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       },
     },
   },
+  // API 开放平台海外/Global 变体：platform.kimi.ai + api.moonshot.ai 端点
   {
     name: "Kimi Global",
     family: "kimi",
@@ -467,6 +468,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       },
     },
   },
+  // 海外/Global 变体：kimi.ai/code + api.kimi.ai 端点，其余与国内版一致
   {
     name: "Kimi For Coding Global",
     family: "kimi",
@@ -643,6 +645,35 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       },
     },
   },
+  {
+    // OpenAI 平台 API Key 直连 Responses（按量计费）
+    name: "OpenAI API",
+    websiteUrl: "https://platform.openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      npm: "@ai-sdk/openai",
+      name: "OpenAI API",
+      options: {
+        baseURL: "https://api.openai.com/v1",
+        apiKey: "",
+        setCacheKey: true,
+      },
+      models: {
+        "gpt-6.1-sol": { name: "GPT-6.1 Sol", reasoning: true },
+        "gpt-6-luna": { name: "GPT-6 Luna", reasoning: true },
+      },
+    },
+    category: "cn_official",
+    icon: "openai",
+    iconColor: "#00A67E",
+    templateValues: {
+      apiKey: {
+        label: "API Key",
+        placeholder: "sk-...",
+        editorValue: "",
+      },
+    },
+  },
   // ===== 非赞助商预设：应用内展示按显示名排序，此处文件顺序不影响展示 =====
   {
     name: "Tu-zi",
@@ -778,12 +809,6 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
         setCacheKey: true,
       },
       models: {
-        "deepseek-v4-pro": {
-          name: "DeepSeek V4 Pro",
-          reasoning: true,
-          limit: { context: 1000000, output: 384000 },
-          modalities: { input: ["text"], output: ["text"] },
-        },
         "deepseek-flash": {
           name: "DeepSeek V4.1 Flash",
           reasoning: true,
@@ -911,7 +936,6 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
           name: "DeepSeek V4 Flash",
           reasoning: true,
         },
-        "deepseek-v4-pro-202606": { name: "DeepSeek V4 Pro", reasoning: true },
         "minimax-m2.7": { name: "MiniMax M2.7", reasoning: true },
         "glm-5": { name: "GLM-5", reasoning: true },
         "glm-5.1": { name: "GLM-5.1", reasoning: true },
@@ -959,7 +983,6 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
         auto: { name: "Auto" },
         "glm-5.2": { name: "GLM-5.2", reasoning: true },
         "kimi-k2.6": { name: "Kimi K2.6", reasoning: true },
-        "deepseek-v4-pro-202606": { name: "DeepSeek V4 Pro", reasoning: true },
         "deepseek-v4-flash-202605": {
           name: "DeepSeek V4 Flash",
           reasoning: true,
@@ -1016,21 +1039,12 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
         "kimi-k2.6": { name: "Kimi K2.6", reasoning: true },
         "minimax-m3": { name: "MiniMax M3", reasoning: true },
         "deepseek-v4-flash": { name: "DeepSeek V4 Flash", reasoning: true },
-        "deepseek-v4-pro": { name: "DeepSeek V4 Pro", reasoning: true },
         "deepseek-v4-flash-0731": {
           name: "DeepSeek V4 Flash 0731 GA",
           reasoning: true,
         },
-        "deepseek-v4-pro-0813": {
-          name: "DeepSeek V4 Pro 0813 GA",
-          reasoning: true,
-        },
         "deepseek-v4-flash-202605": {
           name: "DeepSeek V4 Flash Official",
-          reasoning: true,
-        },
-        "deepseek-v4-pro-202606": {
-          name: "DeepSeek V4 Pro Official",
           reasoning: true,
         },
       },
@@ -1079,21 +1093,12 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
           reasoning: true,
         },
         "deepseek-v4-flash": { name: "DeepSeek V4 Flash", reasoning: true },
-        "deepseek-v4-pro": { name: "DeepSeek V4 Pro", reasoning: true },
         "deepseek-v4-flash-0731": {
           name: "DeepSeek V4 Flash 0731 GA",
           reasoning: true,
         },
-        "deepseek-v4-pro-0813": {
-          name: "DeepSeek V4 Pro 0813 GA",
-          reasoning: true,
-        },
         "deepseek-v4-flash-202605": {
           name: "DeepSeek V4 Flash Official",
-          reasoning: true,
-        },
-        "deepseek-v4-pro-202606": {
-          name: "DeepSeek V4 Pro Official",
           reasoning: true,
         },
       },
@@ -1203,7 +1208,6 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
         apiKey: "",
       },
       models: {
-        "deepseek-v4-pro": { name: "DeepSeek V4 Pro", reasoning: true },
         "deepseek-v4-flash": { name: "DeepSeek V4 Flash", reasoning: true },
         "deepseek-v4-flash-0731": {
           name: "DeepSeek V4 Flash 0731",
@@ -1242,7 +1246,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       npm: "@ai-sdk/openai-compatible",
       name: "千问AI平台",
       options: {
-        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        baseURL: "https://maas.qianwenaiapi.com/compatible-mode/v1",
         apiKey: "",
         setCacheKey: true,
       },
@@ -1267,8 +1271,8 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
     templateValues: {
       baseURL: {
         label: "Base URL",
-        placeholder: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        defaultValue: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        placeholder: "https://maas.qianwenaiapi.com/compatible-mode/v1",
+        defaultValue: "https://maas.qianwenaiapi.com/compatible-mode/v1",
         editorValue: "",
       },
       apiKey: {
@@ -1290,8 +1294,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       npm: "@ai-sdk/anthropic",
       name: "千问AI平台 Token Plan",
       options: {
-        baseURL:
-          "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1",
+        baseURL: "https://token-plan.maas.qianwenaiapi.com/apps/anthropic/v1",
         apiKey: "",
         setCacheKey: true,
       },
@@ -1317,9 +1320,9 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       baseURL: {
         label: "Base URL",
         placeholder:
-          "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1",
+          "https://token-plan.maas.qianwenaiapi.com/apps/anthropic/v1",
         defaultValue:
-          "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1",
+          "https://token-plan.maas.qianwenaiapi.com/apps/anthropic/v1",
         editorValue: "",
       },
       apiKey: {
@@ -1343,7 +1346,8 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       npm: "@ai-sdk/openai-compatible",
       name: "QwenCloud",
       options: {
-        baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        baseURL:
+          "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode/v1",
         apiKey: "",
         setCacheKey: true,
       },
@@ -1369,8 +1373,10 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
     templateValues: {
       baseURL: {
         label: "Base URL",
-        placeholder: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-        defaultValue: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        placeholder:
+          "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode/v1",
+        defaultValue:
+          "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode/v1",
         editorValue: "",
       },
       apiKey: {
@@ -1430,8 +1436,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       npm: "@ai-sdk/anthropic",
       name: "QwenCloud Token Plan",
       options: {
-        baseURL:
-          "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1",
+        baseURL: "https://token-plan.maas.qwencloudapi.com/apps/anthropic/v1",
         apiKey: "",
         setCacheKey: true,
       },
@@ -1458,9 +1463,9 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       baseURL: {
         label: "Base URL",
         placeholder:
-          "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1",
+          "https://token-plan.maas.qwencloudapi.com/apps/anthropic/v1",
         defaultValue:
-          "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1",
+          "https://token-plan.maas.qwencloudapi.com/apps/anthropic/v1",
         editorValue: "",
       },
       apiKey: {
@@ -2584,11 +2589,6 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
           reasoning: true,
           limit: { context: 1000000, output: 384000 },
         },
-        "DeepSeek-V4-Pro-0813": {
-          name: "DeepSeek V4 Pro",
-          reasoning: true,
-          limit: { context: 1000000, output: 384000 },
-        },
         "GLM-5.3": {
           name: "GLM-5.3",
           reasoning: true,
@@ -2869,13 +2869,13 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
   },
   {
     name: "TokenFlux",
-    websiteUrl: "https://tokenflux.dev",
-    apiKeyUrl: "https://tokenflux.dev/keys",
+    websiteUrl: "https://tokenflux.com",
+    apiKeyUrl: "https://tokenflux.com/keys",
     settingsConfig: {
       npm: "@ai-sdk/anthropic",
       name: "TokenFlux",
       options: {
-        baseURL: "https://tokenflux.dev/v1",
+        baseURL: "https://tokenflux.com/v1",
         apiKey: "",
         setCacheKey: true,
       },

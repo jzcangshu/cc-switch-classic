@@ -114,6 +114,7 @@ vi.mock("@/hooks/useSkills", () => ({
     isPending: false,
   }),
   useDiscoverableSkills: () => ({ data: m.discoverable, refetch: vi.fn() }),
+  useRefreshDiscoverableSkills: () => vi.fn(),
   useDiscoverableSkillsFailures: () => ({ data: [] }),
   useSkillRepos: () => ({
     data: m.discoverable.length
@@ -851,7 +852,8 @@ describe("UnifiedSkillsPanel", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("highlights a column header and shows the app name while hovering its cells", async () => {
+  it("highlights a column for its cells but shows the app name only when hovering the header", async () => {
+    const user = userEvent.setup();
     m.installed = [makeSkill({ apps: { claude: true } })];
     renderPanel();
     const cells = screen.getAllByRole("button", { name: /appMatrix.cell/ });
@@ -861,16 +863,28 @@ describe("UnifiedSkillsPanel", () => {
     expect(cells[0].className).toBe(cells[1].className);
 
     expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
-    await userEvent.hover(cells[1]);
+    await user.hover(cells[1]);
     expect(columns()[1]).toHaveAttribute("data-highlighted");
     expect(columns()[0]).not.toHaveAttribute("data-highlighted");
-    expect(screen.getByTestId("matrix-column-name")).toHaveTextContent("Codex");
-    await userEvent.unhover(cells[1]);
+    expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "appMatrix.cell.off",
+    );
+    await user.click(cells[1]);
+    expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
+    await user.unhover(cells[1]);
     expect(columns()[1]).not.toHaveAttribute("data-highlighted");
     expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
 
-    await userEvent.hover(columns()[2]);
-    expect(screen.getByTestId("matrix-column-name")).toHaveTextContent("Pi");
+    await user.hover(columns()[1]);
+    expect(screen.getByTestId("matrix-column-name")).toHaveTextContent("Codex");
+    await user.unhover(columns()[1]);
+    expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
+
+    await user.hover(columns()[1]);
+    await user.hover(cells[1]);
+    expect(columns()[1]).toHaveAttribute("data-highlighted");
+    expect(screen.queryByTestId("matrix-column-name")).not.toBeInTheDocument();
   });
 
   it("ignores a second check-update click while one is running", async () => {
@@ -1099,6 +1113,7 @@ describe("UnifiedSkillsPanel", () => {
           pi: false,
           mcode: false,
           kimi: false,
+          dsh: false,
           agy: false,
         },
       },

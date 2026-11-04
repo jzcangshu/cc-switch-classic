@@ -28,6 +28,7 @@ const EDIT_CONTROL_SELECTOR = [
   '[role="menuitemradio"]',
   "[aria-pressed]",
   "[data-unsaved-change]",
+  "[data-unsaved-edit]",
 ].join(",");
 
 /**

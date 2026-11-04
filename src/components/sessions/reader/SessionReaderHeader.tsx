@@ -432,8 +432,8 @@ export const SessionReaderHeader = memo(function SessionReaderHeader({
                     defaultValue: "永久删除此本地会话记录",
                   })
                 : t(
-                    session.providerId === "kimi"
-                      ? "kimi.deleteSessionHint"
+                    session.providerId === "dsh"
+                      ? "dsh.deleteSessionHint"
                       : session.providerId === "agy"
                         ? "sessionManager.agyDeleteHint"
                         : "sessionManager.mcodeDeleteHint",

@@ -7,6 +7,7 @@ import { ToggleRow } from "@/components/ui/toggle-row";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { settingsApi } from "@/lib/api";
 import { formatBytes } from "@/components/settings/BackupStorageSection";
+import { CodexQuotaProtectionSettings } from "./CodexQuotaProtectionSettings";
 
 interface CodexAuthSettingsProps {
   settings: SettingsFormState;
@@ -140,6 +141,8 @@ export function CodexAuthSettings({
         <KeyRound className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-medium">{t("settings.codexAuth")}</h3>
       </div>
+
+      <CodexQuotaProtectionSettings settings={settings} onChange={onChange} />
 
       <ToggleRow
         icon={<KeyRound className="h-4 w-4 text-emerald-500" />}

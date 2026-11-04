@@ -737,7 +737,7 @@ describe("buildAdditiveSections", () => {
     });
 
     expect(button(sections, "relay", "remove").disabledReason).toBe(
-      "providerCard.reason.currentCannotRemove",
+      "providerCard.reason.defaultCannotRemove",
     );
     expect(item(sections, "relay").tone).toBe("neutral");
     expect(item(sections, "relay").status?.icon).toBe("default");
@@ -746,9 +746,32 @@ describe("buildAdditiveSections", () => {
       editDisabledReason: "provider.managedByHermesHint",
       deleteDisabledReason: "provider.managedByHermesHint",
     });
-    expect(button(sections, "managed", "use").disabledReason).toBe(
+    expect(button(sections, "managed", "setDefault").disabledReason).toBe(
       "provider.managedByHermesHint",
     );
+  });
+
+  it("keeps Hermes set-default as a resident card button like OpenClaw / OpenCode", () => {
+    const other = provider("other");
+    const actions = additiveActions();
+    const sections = buildAdditiveSections({
+      app: "hermes",
+      t,
+      providers: [relay, other],
+      isInConfig: () => true,
+      hermesCurrentId: "relay",
+      actions,
+    });
+
+    expect(item(sections, "relay").status?.label).toBe("provider.isDefault");
+    expect(item(sections, "relay").menuItems).toBeUndefined();
+    // 判例 11：设为默认常驻卡上按钮，不进 ⋯ 菜单
+    expect(item(sections, "other").buttons.map((b) => b.key)).toEqual([
+      "setDefault",
+      "remove",
+    ]);
+    button(sections, "other", "setDefault").onClick();
+    expect(actions.setDefault).toHaveBeenCalledWith(other);
   });
 
   it("lets official Kimi accounts edit models and leave Kimi, but not be deleted while there", () => {
@@ -774,7 +797,7 @@ describe("buildAdditiveSections", () => {
     }
     // 只有正在用的那个号不能移除
     expect(button(sections, accounts[0].id, "remove").disabledReason).toBe(
-      "providerCard.reason.currentCannotRemove",
+      "providerCard.reason.defaultCannotRemove",
     );
     expect(
       button(sections, accounts[1].id, "remove").disabledReason,
@@ -843,7 +866,7 @@ describe("buildAdditiveSections", () => {
       "remove",
     ]);
     expect(button(sections, "current", "remove").disabledReason).toBe(
-      "providerCard.reason.currentCannotRemove",
+      "providerCard.reason.defaultCannotRemove",
     );
     expect(item(sections, "current").menuItems).toBeUndefined();
     expect(item(sections, "current").tone).toBe("neutral");

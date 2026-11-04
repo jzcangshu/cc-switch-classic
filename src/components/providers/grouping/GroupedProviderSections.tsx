@@ -66,6 +66,9 @@ function SectionTitle({ section }: { section: ProviderSection }) {
       {section.help && (
         <HelpTip title={section.help.title}>{section.help.body}</HelpTip>
       )}
+      {section.note && (
+        <span className="ms-1 font-normal text-fg-3">{section.note}</span>
+      )}
     </div>
   );
 }

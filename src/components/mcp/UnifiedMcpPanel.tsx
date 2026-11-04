@@ -1,7 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { useMcpConnectivity } from "@/hooks/useMcpConnectivity";
 import { useTranslation } from "react-i18next";
 import {
+  Activity,
   Download,
   ExternalLink,
   MoreHorizontal,
@@ -42,7 +44,10 @@ import { MCP_APP_IDS, isMcpAppId, type McpAppId } from "@/config/appConfig";
 import { mcpPresets } from "@/config/mcpPresets";
 import { settingsApi } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
-import { extractErrorMessage } from "@/utils/errorUtils";
+import {
+  extractErrorMessage,
+  translateMcpBackendError,
+} from "@/utils/errorUtils";
 import { cn } from "@/lib/utils";
 import McpFormModal from "./McpFormModal";
 import {
@@ -98,6 +103,10 @@ const IMPORT_SOURCE_FILES: Record<
   hermes: { file: "~/.hermes/config.yaml" },
   pi: { file: "~/.pi/agent/mcp.json" },
   agy: { file: "~/.gemini/config/mcp_config.json" },
+  dsh: {
+    file: "~/.dsh/profiles/<profile>/cordis.patch.yml",
+    noteKey: "mcpPage.import.dshNote",
+  },
   kimi: { file: "~/.kimi-code/mcp.json" },
   mcode: { file: "~/.minimax/mcp.json" },
   omp: { file: "~/.omp/agent/mcp.json" },
@@ -107,6 +116,7 @@ const IMPORT_SOURCE_FILES: Record<
 const WRITE_THEN_SAVE_APPS: ReadonlySet<McpAppId> = new Set([
   "mcode",
   "kimi",
+  "dsh",
   "pi",
   "agy",
   "omp",
@@ -161,6 +171,7 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
     error: loadError,
     refetch,
   } = useAllMcpServers();
+  const connectivity = useMcpConnectivity(isError ? undefined : serversMap);
   const toggleAppMutation = useToggleMcpApp();
   const bulkToggleAppMutation = useBulkToggleMcpApp();
   const deleteServerMutation = useDeleteMcpServer();
@@ -250,7 +261,13 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
       const next = { ...prev };
       const key = failKey(id, app);
       if (error === undefined) delete next[key];
-      else next[key] = { desired, error: extractErrorMessage(error) };
+      else {
+        const detail = extractErrorMessage(error);
+        next[key] = {
+          desired,
+          error: translateMcpBackendError(detail, t) || detail,
+        };
+      }
       return next;
     });
   };
@@ -609,6 +626,16 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
               type="button"
               variant="quiet"
               size="regular"
+              disabled={!connectivity.canCheck || connectivity.checking}
+              onClick={connectivity.checkAll}
+            >
+              <Activity className="h-4 w-4" strokeWidth={2} />
+              {t("mcpPage.checkConnectivity")}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              size="regular"
               disabled={controlsDisabled}
               onClick={() => void handleImport()}
             >
@@ -863,6 +890,9 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                         const enabled = MCP_APP_IDS.some(
                           (app) => server.apps[app],
                         );
+                        const connection = enabled
+                          ? (connectivity.states[id] ?? "unchecked")
+                          : "disabled";
                         const rowFailedApps = appIds.filter(
                           (app) => fails[failKey(id, app)],
                         );
@@ -889,6 +919,23 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                           >
                             <div className="flex min-w-0 flex-1 flex-col pe-3">
                               <div className="flex min-w-0 items-center gap-1.5">
+                                <span
+                                  role="img"
+                                  aria-label={t(
+                                    `mcpPage.connection.${connection}`,
+                                  )}
+                                  title={t(`mcpPage.connection.${connection}`)}
+                                  className={cn(
+                                    "h-2 w-2 shrink-0 rounded-full",
+                                    connection === "connected"
+                                      ? "bg-success"
+                                      : connection === "disconnected"
+                                        ? "bg-danger"
+                                        : connection === "checking"
+                                          ? "animate-pulse bg-fg-3"
+                                          : "bg-fg-3",
+                                  )}
+                                />
                                 <span
                                   title={displayName}
                                   className="min-w-0 truncate text-body font-medium"
@@ -1042,6 +1089,16 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                                   align="end"
                                   className="min-w-[200px]"
                                 >
+                                  {enabled && (
+                                    <DropdownMenuItem
+                                      disabled={connection === "checking"}
+                                      onSelect={() =>
+                                        connectivity.checkServer(id)
+                                      }
+                                    >
+                                      {t("mcpPage.testConnection")}
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem
                                     onSelect={() =>
                                       void copyJson(

@@ -183,6 +183,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     icon: "kimi",
     iconColor: "#6366F1",
   },
+  // API 开放平台海外/Global 变体：platform.kimi.ai + api.moonshot.ai 端点
   {
     name: "Kimi Global",
     family: "kimi",
@@ -217,6 +218,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     icon: "kimi",
     iconColor: "#6366F1",
   },
+  // 海外/Global 变体：kimi.ai/code + api.kimi.ai 端点，其余与国内版一致
   {
     name: "Kimi For Coding Global",
     family: "kimi",
@@ -446,19 +448,32 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     iconColor: "#000000",
   },
   {
+    // 同 Claude Code 预设：OpenAI 平台 API Key，经路由转 Responses
+    name: "OpenAI API",
+    websiteUrl: "https://platform.openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    category: "cn_official",
+    baseUrl: "https://api.openai.com",
+    mode: "proxy",
+    apiFormat: "openai_responses",
+    modelRoutes: brandedRoutes("gpt-6.1-sol", "gpt-6.1-sol", "gpt-6-luna"),
+    endpointCandidates: ["https://api.openai.com"],
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
     name: "DeepSeek",
     websiteUrl: "https://platform.deepseek.com",
     category: "cn_official",
     baseUrl: "https://api.deepseek.com/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
-    // supports1m：两个档位钉的都是 1M 窗口模型（本仓 Codex catalog 记
-    // deepseek-v4-pro / deepseek-flash 均 1048576；haiku 档的
-    // deepseek-v4-flash 被官方端点路由到 V4.1 Flash，窗口同档）。[1m] 只是
+    // 全角色 deepseek-flash（2026-10-25 起不再用 Pro：贵且效果不如 Flash）。
+    // supports1m：本仓 Codex catalog 记 deepseek-flash 为 1048576。[1m] 只是
     // Claude Desktop 本地标记，匹配前会被剥掉，不会随请求发往上游
     modelRoutes: brandedRoutes(
-      "deepseek-v4-pro",
-      "deepseek-v4-pro",
+      "deepseek-flash",
+      "deepseek-flash",
       "deepseek-flash",
       true,
     ),
@@ -649,7 +664,8 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
   {
     // Token Plan 个人版：2026-07-13 起替代 Coding Plan 发售（存量 Coding
     // Plan 可用至到期，旧预设保留）。模型=官方 Claude Code 接入页
-    // （2026-07-30 版）全角色 deepseek-v4-pro
+    // （2026-07-30 版）全角色 deepseek-v4-pro，2026-10-25 起因 Pro 贵且效果
+    // 不如 Flash 改为全角色 deepseek-v4-flash
     name: "Baidu Qianfan Token Plan",
     family: "baidu-qianfan",
     planKey: "tokenPlan",
@@ -659,13 +675,13 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     baseUrl: "https://qianfan.baidubce.com/anthropic/tokenplan/personal",
     mode: "proxy",
     apiFormat: "anthropic",
-    // supports1m：DeepSeek V4 Pro 官方窗口 1M（千帆平台模型列表口径，
+    // supports1m：DeepSeek V4 Flash 窗口 1M（千帆平台模型列表口径，
     // 本仓 Codex catalog 同记 1048576）。[1m] 只是 Claude Desktop 本地
     // 标记，匹配前会被剥掉，不会随请求发往上游
     modelRoutes: brandedRoutes(
-      "deepseek-v4-pro",
-      "deepseek-v4-pro",
-      "deepseek-v4-pro",
+      "deepseek-v4-flash",
+      "deepseek-v4-flash",
+      "deepseek-v4-flash",
       true,
     ),
     endpointCandidates: [
@@ -682,7 +698,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     apiKeyUrl:
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002972",
     category: "cn_official",
-    baseUrl: "https://dashscope.aliyuncs.com/apps/anthropic",
+    baseUrl: "https://maas.qianwenaiapi.com/apps/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
     modelRoutes: brandedRoutes(
@@ -691,6 +707,10 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "qwen3.8-flash",
       true,
     ),
+    endpointCandidates: [
+      "https://maas.qianwenaiapi.com/apps/anthropic",
+      "https://dashscope.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qianwenai",
     iconColor: "#624AFF",
   },
@@ -716,7 +736,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     apiKeyUrl:
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002978",
     category: "cn_official",
-    baseUrl: "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+    baseUrl: "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
     modelRoutes: brandedRoutes(
@@ -725,6 +745,10 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "qwen3.8-flash",
       true,
     ),
+    endpointCandidates: [
+      "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qianwenai",
     iconColor: "#624AFF",
   },
@@ -739,7 +763,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     websiteUrl: "https://home.qwencloud.com/?utm_content=g_20000002974",
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002975",
     category: "cn_official",
-    baseUrl: "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+    baseUrl: "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
     // 不挂 [1m]：qwen3.8 系官方窗口是 983616，不足 1M，
@@ -750,6 +774,10 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "qwen3.8-flash",
       true,
     ),
+    endpointCandidates: [
+      "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic",
+      "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qwencloud",
     iconColor: "#6336E7",
   },
@@ -781,8 +809,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "https://www.qwencloud.com/pricing/token-plan?utm_content=g_20000002980",
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002981",
     category: "cn_official",
-    baseUrl:
-      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic",
+    baseUrl: "https://token-plan.maas.qwencloudapi.com/apps/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
     // 不挂 [1m]：qwen3.8 系官方窗口是 983616，不足 1M，
@@ -793,6 +820,10 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "qwen3.8-flash",
       true,
     ),
+    endpointCandidates: [
+      "https://token-plan.maas.qwencloudapi.com/apps/anthropic",
+      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qwencloud",
     iconColor: "#6336E7",
   },
@@ -1194,7 +1225,9 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     // 同 Claude Code 预设：Anthropic 兼容端点（docs.deepinfra.com/integrations/
     // anthropic.md，2026-10-14 核对）；模型名非 Claude，只能走路由。窗口取
     // https://api.deepinfra.com/models/<id> 同日元数据：两款 DeepSeek 1M、
-    // Ling-3.0-flash 128K，brandedRoutes 的 supports1m 一刀切，故内联逐条写
+    // Ling-3.0-flash 128K，brandedRoutes 的 supports1m 一刀切，故内联逐条写。
+    // opus 档原为 V4 Pro 0813，2026-10-25 起不再用 Pro（贵且效果不如 Flash），
+    // 与 sonnet 同为 V4.1 Flash 1017，按 brandedRoutes 惯例同模型只留一条
     baseUrl: "https://api.deepinfra.com/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
@@ -1203,12 +1236,6 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
         routeId: CLAUDE_DESKTOP_ROLE_ROUTE_IDS.sonnet,
         upstreamModel: "deepseek-ai/DeepSeek-V4.1-Flash-1017",
         labelOverride: "deepseek-ai/DeepSeek-V4.1-Flash-1017",
-        supports1m: true,
-      },
-      {
-        routeId: CLAUDE_DESKTOP_ROLE_ROUTE_IDS.opus,
-        upstreamModel: "deepseek-ai/DeepSeek-V4-Pro-0813",
-        labelOverride: "deepseek-ai/DeepSeek-V4-Pro-0813",
         supports1m: true,
       },
       {
@@ -1649,10 +1676,10 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
   },
   {
     name: "TokenFlux",
-    websiteUrl: "https://tokenflux.dev",
-    apiKeyUrl: "https://tokenflux.dev/keys",
+    websiteUrl: "https://tokenflux.com",
+    apiKeyUrl: "https://tokenflux.com/keys",
     category: "aggregator",
-    baseUrl: "https://tokenflux.dev",
+    baseUrl: "https://tokenflux.com",
     mode: "direct",
     apiFormat: "anthropic",
     modelRoutes: mappedRoutes(
@@ -1661,6 +1688,7 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
       "claude-haiku-5-5",
       true,
     ),
+    endpointCandidates: ["https://tokenflux.com", "https://tokenflux.dev"],
     icon: "tokenflux",
   },
   {

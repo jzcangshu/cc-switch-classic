@@ -3,10 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PiProviderForm } from "@/components/providers/forms/PiProviderForm";
+import { parse as parseYaml } from "yaml";
 import { http, HttpResponse } from "msw";
 import { server } from "../msw/server";
 import { renderWithQueryClient as render } from "../utils/testQueryClient";
-import { MODELS_DEV_API_URL } from "@/lib/modelsDev";
 import { piThinkingProfiles } from "@/config/piThinkingProfiles";
 import { piProviderPresets } from "@/config/piProviderPresets";
 
@@ -24,6 +24,14 @@ async function fetchModelsAndClosePicker(user: User) {
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
   );
+}
+
+// omp 的编辑框按 models.yml 显示 `providers.<标识>` 这一个节点
+function ompNode(editor: HTMLTextAreaElement) {
+  const { providers } = parseYaml(editor.value) as {
+    providers: Record<string, Record<string, any>>;
+  };
+  return Object.values(providers)[0];
 }
 
 function completeModel(id: string, name = id.trim() || "Model") {
@@ -920,8 +928,12 @@ describe("PiProviderForm", () => {
       />,
     );
     const configEditor = screen.getByLabelText(
-      "provider.configJson",
+      "providerForm.nativeConfig.title",
     ) as HTMLTextAreaElement;
+    expect(parseYaml(configEditor.value)).toHaveProperty(
+      "providers.custom.discovery.injectV1",
+      false,
+    );
 
     // omp 只允许 openai-models-list 带 injectV1，其余子键照旧保留
     openAdvancedOptions();
@@ -931,7 +943,7 @@ describe("PiProviderForm", () => {
         name: "omp.form.discoveryTypes.ollama",
       }),
     );
-    expect(JSON.parse(configEditor.value).discovery).toEqual({
+    expect(ompNode(configEditor).discovery).toEqual({
       type: "ollama",
       timeoutMs: 500,
     });
@@ -952,9 +964,9 @@ describe("PiProviderForm", () => {
     openPresets();
     fireEvent.click(screen.getByText("Kimi", { selector: "span" }));
     const configEditor = screen.getByLabelText(
-      "provider.configJson",
+      "providerForm.nativeConfig.title",
     ) as HTMLTextAreaElement;
-    const preset = JSON.parse(configEditor.value);
+    const preset = ompNode(configEditor);
     // omp 的 models.yml 没有供应商级 name，也没有 thinkingLevelMap
     expect(preset).not.toHaveProperty("name");
     expect(preset.models.length).toBeGreaterThan(0);
@@ -970,7 +982,7 @@ describe("PiProviderForm", () => {
         name: "omp.form.discoveryTypes.openaiModelsList",
       }),
     );
-    expect(JSON.parse(configEditor.value).discovery).toEqual({
+    expect(ompNode(configEditor).discovery).toEqual({
       type: "openai-models-list",
     });
 
@@ -978,7 +990,7 @@ describe("PiProviderForm", () => {
     await user.click(
       await screen.findByRole("option", { name: "omp.form.discoveryOff" }),
     );
-    expect(JSON.parse(configEditor.value)).not.toHaveProperty("discovery");
+    expect(ompNode(configEditor)).not.toHaveProperty("discovery");
 
     fireEvent.change(screen.getByLabelText("pi.form.credential"), {
       target: { value: "literal-key" },
@@ -988,6 +1000,69 @@ describe("PiProviderForm", () => {
     expect(
       JSON.parse(onSubmit.mock.calls[0][0].settingsConfig),
     ).not.toHaveProperty("name");
+  });
+
+  it("edits omp through its providers node in models.yml", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <PiProviderForm
+        appId="omp"
+        providerId="gateway"
+        submitLabel="Save omp provider"
+        onSubmit={onSubmit}
+        onCancel={() => {}}
+        initialData={{
+          name: "gateway",
+          settingsConfig: {
+            baseUrl: "https://gateway.example.com/v1",
+            api: "openai-completions",
+            apiKey: "literal-key",
+            models: [{ id: "model-x" }],
+          },
+        }}
+      />,
+    );
+    const editor = screen.getByLabelText(
+      "providerForm.nativeConfig.title",
+    ) as HTMLTextAreaElement;
+    expect(editor.value.startsWith("providers:\n  gateway:\n")).toBe(true);
+
+    // 另一家的节点或全局设置不归这张卡：拦住保存，结构化字段也先不让动
+    fireEvent.change(editor, {
+      target: { value: "providers:\n  other:\n    baseUrl: x\n" },
+    });
+    expect(screen.getByText("providerForm.nativeConfig.scope")).toBeVisible();
+    expect(
+      screen.getByPlaceholderText("https://api.example.com/v1"),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save omp provider" }));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.change(editor, {
+      target: {
+        value: [
+          "providers:",
+          "  gateway:",
+          "    baseUrl: https://edited.example.com/v1",
+          "    api: openai-completions",
+          "    apiKey: literal-key",
+          "    models:",
+          "      - id: model-x",
+          "",
+        ].join("\n"),
+      },
+    });
+    expect(
+      screen.queryByText("providerForm.nativeConfig.scope"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("https://api.example.com/v1"),
+    ).toHaveValue("https://edited.example.com/v1");
+    fireEvent.click(screen.getByRole("button", { name: "Save omp provider" }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(onSubmit.mock.calls[0][0].settingsConfig)).toMatchObject({
+      baseUrl: "https://edited.example.com/v1",
+    });
   });
 
   it("keeps preset model order without exposing a default-model field", async () => {
@@ -1017,6 +1092,8 @@ describe("PiProviderForm", () => {
     expect(config.models.map((model: { id: string }) => model.id)).toEqual([
       "kimi-k2.7-code",
       "kimi-k3",
+      "kimi-k3.1-pro",
+      "kimi-k3.1-pro-highspeed",
       "kimi-k2.7-code-highspeed",
       "kimi-k2.6",
     ]);
@@ -1028,6 +1105,8 @@ describe("PiProviderForm", () => {
     ).toEqual([
       { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
       { id: "kimi-k3", name: "Kimi K3" },
+      { id: "kimi-k3.1-pro", name: "Kimi K3.1 Pro" },
+      { id: "kimi-k3.1-pro-highspeed", name: "Kimi K3.1 Pro HighSpeed" },
       { id: "kimi-k2.7-code-highspeed", name: "Kimi K2.7 Code HighSpeed" },
       { id: "kimi-k2.6", name: "Kimi K2.6" },
     ]);
@@ -1520,25 +1599,27 @@ describe("PiProviderForm", () => {
       http.post(`${TAURI_ENDPOINT}/fetch_models_for_config`, () =>
         HttpResponse.json([{ id: "gpt-5.6-sol", ownedBy: "proxy" }]),
       ),
-      http.get(MODELS_DEV_API_URL, () =>
-        HttpResponse.json({
-          example: {
-            api: "https://api.example.com/v1",
-            models: {
-              "gpt-5.6-sol": {
-                reasoning: true,
-                reasoning_options: [
-                  {
-                    type: "effort",
-                    values: ["low", "medium", "high", "xhigh"],
-                  },
-                ],
-                modalities: { input: ["text", "image"], output: ["text"] },
-                limit: { context: 400000, output: 128000 },
+      http.post(`${TAURI_ENDPOINT}/fetch_models_dev`, () =>
+        HttpResponse.json(
+          JSON.stringify({
+            example: {
+              api: "https://api.example.com/v1",
+              models: {
+                "gpt-5.6-sol": {
+                  reasoning: true,
+                  reasoning_options: [
+                    {
+                      type: "effort",
+                      values: ["low", "medium", "high", "xhigh"],
+                    },
+                  ],
+                  modalities: { input: ["text", "image"], output: ["text"] },
+                  limit: { context: 400000, output: 128000 },
+                },
               },
             },
-          },
-        }),
+          }),
+        ),
       ),
     );
 
@@ -1615,7 +1696,9 @@ describe("PiProviderForm", () => {
       http.post(`${TAURI_ENDPOINT}/fetch_models_for_config`, () =>
         HttpResponse.json([{ id: "kimi-k3", ownedBy: "moonshot" }]),
       ),
-      http.get(MODELS_DEV_API_URL, () => HttpResponse.error()),
+      http.post(`${TAURI_ENDPOINT}/fetch_models_dev`, () =>
+        HttpResponse.error(),
+      ),
     );
 
     render(
@@ -2645,22 +2728,24 @@ describe("PiProviderForm", () => {
         http.post(`${TAURI_ENDPOINT}/fetch_models_for_config`, () =>
           HttpResponse.json(ids.map((id) => ({ id, ownedBy: "example" }))),
         ),
-        http.get(MODELS_DEV_API_URL, () =>
-          HttpResponse.json({
-            example: {
-              api: "https://api.example.com/v1",
-              models: {
-                "model-x": {
-                  reasoning: true,
-                  reasoning_options: [
-                    { type: "effort", values: ["low", "medium", "high"] },
-                  ],
-                  modalities: { input: ["text", "image"], output: ["text"] },
-                  limit: { context: 123456, output: 32000 },
+        http.post(`${TAURI_ENDPOINT}/fetch_models_dev`, () =>
+          HttpResponse.json(
+            JSON.stringify({
+              example: {
+                api: "https://api.example.com/v1",
+                models: {
+                  "model-x": {
+                    reasoning: true,
+                    reasoning_options: [
+                      { type: "effort", values: ["low", "medium", "high"] },
+                    ],
+                    modalities: { input: ["text", "image"], output: ["text"] },
+                    limit: { context: 123456, output: 32000 },
+                  },
                 },
               },
-            },
-          }),
+            }),
+          ),
         ),
       );
     }
@@ -2688,7 +2773,9 @@ describe("PiProviderForm", () => {
         { target: { value: "https://api.example.com/v1" } },
       );
       return screen.getByLabelText(
-        "provider.configJson",
+        appId === "omp"
+          ? "providerForm.nativeConfig.title"
+          : "provider.configJson",
       ) as HTMLTextAreaElement;
     }
 
@@ -2765,13 +2852,13 @@ describe("PiProviderForm", () => {
       await pickModels(user, ["model-x"]);
 
       await waitFor(() =>
-        expect(JSON.parse(configEditor.value).models[0]).toMatchObject({
+        expect(ompNode(configEditor).models[0]).toMatchObject({
           id: "model-x",
           reasoning: true,
           contextWindow: 123456,
         }),
       );
-      expect(JSON.parse(configEditor.value).models[0]).not.toHaveProperty(
+      expect(ompNode(configEditor).models[0]).not.toHaveProperty(
         "thinkingLevelMap",
       );
     });

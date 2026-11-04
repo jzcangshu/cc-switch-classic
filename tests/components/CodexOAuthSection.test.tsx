@@ -26,6 +26,22 @@ vi.mock("@/components/CodexOauthAccountQuota", () => ({
   },
 }));
 
+vi.mock("@/components/providers/forms/ClaudeOfficialSection", () => ({
+  ClaudeOfficialSection: () => <div />,
+}));
+
+vi.mock("@/components/providers/KimiAccountLogin", () => ({
+  KimiAccountLogin: () => <div />,
+}));
+
+vi.mock("@/components/providers/DshAccount", () => ({
+  DshAccountLogin: () => <div />,
+}));
+
+vi.mock("@/components/settings/auth/RefreshAllQuotaButton", () => ({
+  RefreshAllQuotaButton: () => <div />,
+}));
+
 vi.mock("@/components/providers/forms/CopilotAuthSection", () => ({
   CopilotAuthSection: () => <div />,
 }));

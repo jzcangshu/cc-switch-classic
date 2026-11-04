@@ -113,6 +113,7 @@ export const providerPresets: ProviderPreset[] = [
     icon: "kimi",
     iconColor: "#6366F1",
   },
+  // API 开放平台海外/Global 变体：platform.kimi.ai + api.moonshot.ai 端点
   {
     name: "Kimi Global",
     family: "kimi",
@@ -381,10 +382,10 @@ export const providerPresets: ProviderPreset[] = [
       env: {
         ANTHROPIC_BASE_URL: "https://api.deepseek.com/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
-        ANTHROPIC_MODEL: "deepseek-v4-pro[1M]",
+        ANTHROPIC_MODEL: "deepseek-flash[1M]",
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-flash[1M]",
-        ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1M]",
-        ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-pro[1M]",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-flash[1M]",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-flash[1M]",
       },
     },
     category: "cn_official",
@@ -667,7 +668,8 @@ export const providerPresets: ProviderPreset[] = [
   {
     // Token Plan 个人版：2026-07-13 起替代 Coding Plan 发售（存量 Coding
     // Plan 可用至到期，旧预设保留）。模型=官方 Claude Code 接入页
-    // （2026-07-30 版）全角色 deepseek-v4-pro；Key 是订阅页专属 Key
+    // （2026-07-30 版）全角色 deepseek-v4-pro，2026-10-25 起因 Pro 贵且效果
+    // 不如 Flash 改为全角色 deepseek-v4-flash；Key 是订阅页专属 Key
     name: "Baidu Qianfan Token Plan",
     family: "baidu-qianfan",
     planKey: "tokenPlan",
@@ -678,10 +680,10 @@ export const providerPresets: ProviderPreset[] = [
         ANTHROPIC_BASE_URL:
           "https://qianfan.baidubce.com/anthropic/tokenplan/personal",
         ANTHROPIC_AUTH_TOKEN: "",
-        ANTHROPIC_MODEL: "deepseek-v4-pro[1M]",
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-pro[1M]",
-        ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1M]",
-        ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-pro[1M]",
+        ANTHROPIC_MODEL: "deepseek-v4-flash[1M]",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash[1M]",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash[1M]",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-flash[1M]",
       },
     },
     category: "cn_official",
@@ -692,6 +694,62 @@ export const providerPresets: ProviderPreset[] = [
     iconColor: "#2932E1",
   },
   {
+    // 讯飞星辰 MaaS 按量计费（活动送的 Token 也走这里），Key 与 Coding Plan
+    // 不通用：拿这边的 Key 调 maas-coding-api 会报 429 authorization failed
+    // （#9036）。地址与模型见 maas.xfyun.cn 文档「3.1.3 Anthropic」。
+    // 文档示例用 x-api-key，网关同样认 Bearer（假 Key 实测两种头都报 apikey
+    // not found，不带 Key 才报 Unauthorized）。各档只用 spark-x2.6：用户实测
+    // 过的就是它，spark-x2.6-4b 的工具调用没验证过。Anthropic 接口输入加输出
+    // 上限 256K（模型表写的 1M 不适用），非 claude-* id 的默认 200K 窗口在
+    // 上限内，不带 [1M] 也不钉窗口
+    name: "Astron MaaS",
+    family: "astron",
+    planKey: "payg",
+    websiteUrl: "https://maas.xfyun.cn",
+    settingsConfig: {
+      env: {
+        ANTHROPIC_BASE_URL: "https://maas-api.cn-huabei-1.xf-yun.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "",
+        ANTHROPIC_MODEL: "spark-x2.6",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "spark-x2.6",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "spark-x2.6",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "spark-x2.6",
+      },
+    },
+    category: "cn_official",
+    endpointCandidates: ["https://maas-api.cn-huabei-1.xf-yun.com/anthropic"],
+    icon: "astron",
+  },
+  {
+    // 讯飞官方 Claude Code 配置：www.xfyun.cn/doc/spark/CodingPlan.html。
+    // 请求一律用别名 astron-code-latest，底层模型（Spark X2 等）在控制台套餐
+    // 页切换；/anthropic 之外的 /v1、/v2 是 Responses / Chat，不能混用。
+    // 非 claude-* 模型 id 按 200K 默认窗口处理，钉成与 Codex 预设相同的官方
+    // 保守值 92160（官方建议 <96k）
+    name: "Astron Coding Plan",
+    family: "astron",
+    planKey: "codingPlan",
+    websiteUrl: "https://maas.xfyun.cn/packageSubscription",
+    apiKeyUrl: "https://maas.xfyun.cn/packageSubscription",
+    settingsConfig: {
+      env: {
+        ANTHROPIC_BASE_URL:
+          "https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "",
+        ANTHROPIC_MODEL: "astron-code-latest",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "astron-code-latest",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "astron-code-latest",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "astron-code-latest",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "92160",
+      },
+    },
+    category: "cn_official",
+    endpointCandidates: [
+      "https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic",
+    ],
+    icon: "astron",
+  },
+  {
     name: "千问AI平台",
     family: "qianwen",
     planKey: "payg",
@@ -700,7 +758,7 @@ export const providerPresets: ProviderPreset[] = [
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002972",
     settingsConfig: {
       env: {
-        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic",
+        ANTHROPIC_BASE_URL: "https://maas.qianwenaiapi.com/apps/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_MODEL: "qwen3.8-max[1M]",
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "qwen3.8-flash[1M]",
@@ -713,6 +771,10 @@ export const providerPresets: ProviderPreset[] = [
       },
     },
     category: "cn_official",
+    endpointCandidates: [
+      "https://maas.qianwenaiapi.com/apps/anthropic",
+      "https://dashscope.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qianwenai",
     iconColor: "#624AFF",
   },
@@ -743,7 +805,7 @@ export const providerPresets: ProviderPreset[] = [
     settingsConfig: {
       env: {
         ANTHROPIC_BASE_URL:
-          "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+          "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_MODEL: "qwen3.8-max[1M]",
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "qwen3.8-flash[1M]",
@@ -755,6 +817,10 @@ export const providerPresets: ProviderPreset[] = [
       },
     },
     category: "cn_official",
+    endpointCandidates: [
+      "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qianwenai",
     iconColor: "#624AFF",
   },
@@ -771,7 +837,7 @@ export const providerPresets: ProviderPreset[] = [
     settingsConfig: {
       env: {
         ANTHROPIC_BASE_URL:
-          "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+          "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_MODEL: "qwen3.8-max[1M]",
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "qwen3.8-flash[1M]",
@@ -780,6 +846,10 @@ export const providerPresets: ProviderPreset[] = [
       },
     },
     category: "cn_official",
+    endpointCandidates: [
+      "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic",
+      "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qwencloud",
     iconColor: "#6336E7",
   },
@@ -814,7 +884,7 @@ export const providerPresets: ProviderPreset[] = [
     settingsConfig: {
       env: {
         ANTHROPIC_BASE_URL:
-          "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic",
+          "https://token-plan.maas.qwencloudapi.com/apps/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_MODEL: "qwen3.8-max[1M]",
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "qwen3.8-flash[1M]",
@@ -826,6 +896,10 @@ export const providerPresets: ProviderPreset[] = [
       },
     },
     category: "cn_official",
+    endpointCandidates: [
+      "https://token-plan.maas.qwencloudapi.com/apps/anthropic",
+      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic",
+    ],
     icon: "qwencloud",
     iconColor: "#6336E7",
   },
@@ -1363,7 +1437,8 @@ export const providerPresets: ProviderPreset[] = [
     // 官方 Claude Code 接入文档（docs.deepinfra.com/integrations/anthropic.md，
     // 2026-10-14 核对）：base 为 /anthropic、不带 /v1，Bearer 与 x-api-key 都
     // 收，默认的 AUTH_TOKEN 即可。档位与 ANTHROPIC_MODEL 照抄官方表：opus
-    // V4 Pro 0813、sonnet/主循环 V4.1 Flash 1017（官方表仍写 V4 Flash 0731，已按站点现价目表上调）、haiku Ling-3.0-flash；不带日期
+    // V4 Pro 0813、sonnet/主循环 V4.1 Flash 1017（官方表仍写 V4 Flash 0731，已按站点现价目表上调）、haiku Ling-3.0-flash；
+    // opus 档 2026-10-25 起也改用 V4.1 Flash 1017（Pro 贵且效果不如 Flash）；不带日期
     // 的 V4 Pro/Flash 是已被取代的早期预览，不用。官方另写的 fable、子代理与
     // 最大输出变量照仓库惯例不加。/anthropic/v1/models 404，通用候选剥掉
     // /anthropic 后的 /v1/models 公开可读，不覆写 modelsUrl
@@ -1375,7 +1450,8 @@ export const providerPresets: ProviderPreset[] = [
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "inclusionAI/Ling-3.0-flash",
         ANTHROPIC_DEFAULT_SONNET_MODEL:
           "deepseek-ai/DeepSeek-V4.1-Flash-1017[1M]",
-        ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-ai/DeepSeek-V4-Pro-0813[1M]",
+        ANTHROPIC_DEFAULT_OPUS_MODEL:
+          "deepseek-ai/DeepSeek-V4.1-Flash-1017[1M]",
       },
     },
     category: "aggregator",
@@ -1804,6 +1880,32 @@ export const providerPresets: ProviderPreset[] = [
     iconColor: "#000000",
   },
   {
+    // OpenAI 平台 API Key（按量计费，和上面 ChatGPT 登录的「Codex」卡是两套额度），
+    // 经路由转成 Responses 发往 /v1/responses。
+    name: "OpenAI API",
+    websiteUrl: "https://platform.openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      env: {
+        ANTHROPIC_BASE_URL: "https://api.openai.com",
+        ANTHROPIC_AUTH_TOKEN: "",
+        ANTHROPIC_MODEL: "gpt-6.1-sol",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "gpt-6-luna",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "gpt-6.1-sol",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "gpt-6.1-sol",
+        // 非 Claude 模型名 Claude Code 按 200K 算；272K 以上 OpenAI 按长上下文档加价，
+        // 同「Codex」卡钉两个值（GPT_CONTEXT_WINDOW_CAP）。
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "272000",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "272000",
+      },
+    },
+    category: "cn_official",
+    apiFormat: "openai_responses",
+    endpointCandidates: ["https://api.openai.com"],
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
     name: "Nvidia",
     websiteUrl: "https://build.nvidia.com",
     apiKeyUrl: "https://build.nvidia.com/settings/api-keys",
@@ -2130,15 +2232,16 @@ export const providerPresets: ProviderPreset[] = [
   },
   {
     name: "TokenFlux",
-    websiteUrl: "https://tokenflux.dev",
-    apiKeyUrl: "https://tokenflux.dev/keys",
+    websiteUrl: "https://tokenflux.com",
+    apiKeyUrl: "https://tokenflux.com/keys",
     settingsConfig: {
       env: {
-        ANTHROPIC_BASE_URL: "https://tokenflux.dev",
+        ANTHROPIC_BASE_URL: "https://tokenflux.com",
         ANTHROPIC_AUTH_TOKEN: "",
       },
     },
     category: "aggregator",
+    endpointCandidates: ["https://tokenflux.com", "https://tokenflux.dev"],
     icon: "tokenflux",
   },
   {

@@ -80,6 +80,8 @@ export interface ProviderSection {
   key: string;
   title?: string;
   help?: { title: string; body: string };
+  /** 标题后面一句常驻的灰字说明（DSH：Web 和 Desktop 共用这份列表） */
+  note?: string;
   emptyText?: string;
   items: { provider: Provider; presentation: CardPresentation }[];
 }
@@ -646,6 +648,8 @@ export interface AdditiveInput {
   piStateUnavailable?: boolean;
   /** Kimi：原生 default_model 别名所属的供应商。 */
   kimiCurrentId?: string | null;
+  /** 「已添加」里列表外另画的卡（DSH 的 DeepSeek 账号卡），计入标题数字 */
+  extraAdded?: number;
   actions: {
     add: (provider: Provider) => void;
     remove: (provider: Provider) => void;
@@ -694,7 +698,7 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
           key: "remove",
           label: t("providerCard.action.remove"),
           disabledReason: current
-            ? t("providerCard.reason.currentCannotRemove")
+            ? t("providerCard.reason.defaultCannotRemove")
             : undefined,
           onClick: () => actions.remove(p),
         });
@@ -850,15 +854,21 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
       }
     }
 
+    // Hermes 跟 OpenClaw / OpenCode 一样是累加式：model.provider 只是默认那家，
+    // 「设为默认」恢复第三版的卡上常驻按钮，主操作位只留「移除」
     if (app === "hermes") {
       if (p.id === input.hermesCurrentId) {
         isDefault = true;
-        status = { label: t("provider.inUse"), dot: "muted", icon: "default" };
-        removeReason = t("providerCard.reason.currentCannotRemove");
+        status = {
+          label: t("provider.isDefault"),
+          dot: "muted",
+          icon: "default",
+        };
+        removeReason = t("providerCard.reason.defaultCannotRemove");
       } else {
         buttons.push({
-          key: "use",
-          label: t("provider.enable"),
+          key: "setDefault",
+          label: t("provider.setAsDefault"),
           onClick: () => actions.setDefault(p),
           disabledReason: readOnlyReason,
         });
@@ -893,13 +903,20 @@ export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
   return [
     {
       key: "added",
-      title: t("providerCard.section.added", { count: added.length }),
+      title: t("providerCard.section.added", {
+        count: added.length + (input.extraAdded ?? 0),
+      }),
       help: {
         title: t("providerCard.section.addedHelpTitle"),
-        body: t("providerCard.section.addedHelp", {
-          app: t(`apps.${app}`),
-        }),
+        // DSH 的供应商一起写进 Web 和 Desktop 两份配置，在这里说明
+        body:
+          app === "dsh"
+            ? t("dsh.sharedProviders")
+            : t("providerCard.section.addedHelp", {
+                app: t(`apps.${app}`),
+              }),
       },
+      note: app === "dsh" ? t("dsh.sharedProvidersNote") : undefined,
       emptyText: t("providerCard.section.addedEmpty"),
       items: added,
     },
