@@ -1,0 +1,33 @@
+{
+  "version": "1.1.4",
+  "items": [
+    {
+      "type": "new",
+      "zh": "供应商分组支持关闭、拖拽和菜单三种模式",
+      "zh-TW": "供應商分組支援關閉、拖曳及選單三種模式",
+      "en": "Provider grouping now supports Off, Drag and Menu modes",
+      "ja": "プロバイダーのグループ化にオフ・ドラッグ・メニューを追加"
+    },
+    {
+      "type": "new",
+      "zh": "通过菜单新建、移动、排序或解散分组，关闭后保留分组",
+      "zh-TW": "透過選單新增、移動、排序或解散群組，關閉後保留群組",
+      "en": "Create, move, reorder and ungroup through menus; turning grouping off keeps your groups",
+      "ja": "メニューでグループ作成・移動・並べ替え・解除が可能。オフでも保持"
+    },
+    {
+      "type": "fix",
+      "zh": "修复折叠分组的缩略图重叠和分组保存覆盖问题",
+      "zh-TW": "修正摺疊群組的縮圖重疊及群組儲存覆寫問題",
+      "en": "Fixed overlapping collapsed previews and stale settings overwriting group changes",
+      "ja": "折りたたみ時のアイコン重なりと古い設定によるグループ上書きを修正"
+    },
+    {
+      "type": "improve",
+      "zh": "打磨拖拽落位、慢移判定及取消恢复，支持减少动态效果",
+      "zh-TW": "改善拖曳落位、慢移判定及取消還原，支援減少動態效果",
+      "en": "Refined drop transitions, slow pointer movement and cancellation; added reduced motion support",
+      "ja": "ドロップ・低速移動・キャンセル時の動作を改善し、動きを減らす設定に対応"
+    }
+  ]
+}

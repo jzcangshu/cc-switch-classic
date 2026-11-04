@@ -5,6 +5,18 @@ All notable changes to CC Switch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Classic（经典版）1.1.4 — 测试候选版，2026-11-04
+
+本节记录经典版自有变化，内核保持 4.0.20；以下历史版本仍采用上游内核编号。本候选版仅推送源码并提供本地测试包，尚未发布 Release（正式发布页）或更新清单。
+
+- 新增供应商卡片分组，常规设置提供“关闭 / 拖拽 / 菜单”三档切换。
+- 保留悬停建组、拖入拖出和组内排序；新增桌面菜单操作，可建组、移动成员、上下排序、改名、折叠与解散。
+- 两种模式共用分组和折叠偏好；关闭仅平铺显示，重新启用后恢复分组。搜索及特殊业务分区保持原有语义。
+- 折叠预览改为独立图标格，限制文字回退及自定义图标范围，修复缩略图互相覆盖和挤压名称。
+- 分组按应用独立保存，保护其他设置和应用分组；保存失败恢复真实状态并给出提示。
+- 打磨动画：降低拖起放大幅度，落位完成后再升组；修复慢移锁定、取消展开及动画中断后的收尾，遵循减少动态效果偏好。
+- 补齐简体中文、繁体中文、英文、日文的分组文案及正确资源层级。
+
 ## [4.0.20] - 2026-10-24
 
 This release adds Oh My Pi as the thirteenth managed app: providers coexist in `models.yml` with enable/remove actions, MCP, Skills, prompts and sessions are supported, and the Apps page installs, updates and uninstalls `omp`. The Apps page is split into installed and not-installed sections, installed apps can be reordered by dragging and the sidebar follows that order. Official Kimi cards can be edited and removed from Kimi Code, and managed ChatGPT accounts can sign in through the browser. Other fixes cover an empty or negative DeepSeek balance shown as an expired plan, missing Kimi Code subagent usage, HTTP 429 on Skills updates, 401 on Pi usage queries with `$NAME` API keys, `<local-command-stdout>` as Claude Code session titles, and window dragging on Linux with app-level window controls.

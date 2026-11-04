@@ -23,6 +23,7 @@ vi.mock("@tauri-apps/api/app", () => ({
 }));
 
 import { NewLayoutDialog } from "@/components/shell/NewLayoutDialog";
+import { CLASSIC_VERSION } from "@/lib/classicVersion";
 import { APP_IDS } from "@/config/appConfig";
 
 function renderDialog() {
@@ -81,7 +82,7 @@ describe("NewLayoutDialog", () => {
     await waitFor(() =>
       expect(mocks.openExternal).toHaveBeenCalledWith(
         // Release tag 用 Classic 版本号（classicVersion.ts），内核版本只用于显示
-        "https://github.com/jzcangshu/cc-switch-classic/releases/tag/v1.1.3",
+        `https://github.com/jzcangshu/cc-switch-classic/releases/tag/v${CLASSIC_VERSION}`,
       ),
     );
     await waitFor(() =>
