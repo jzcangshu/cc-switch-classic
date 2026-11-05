@@ -786,12 +786,10 @@ function SortableProviderCard(props: SortableProviderCardProps) {
   return (
     <div ref={setNodeRef} style={style}>
       <motion.div
-        layoutId={
-          isDragging || isSettling
-            ? undefined
-            : `provider-card-${props.appId}-${props.provider.id}`
-        }
-        layout={isDragging || isSettling || reducedMotion ? false : "position"}
+        // 跨容器会在拖动中重新挂载。布局能力及共享身份必须从挂载起稳定，
+        // 否则隐藏时挂载的节点不会注册布局监听，松手后继续排序只能瞬移。
+        layoutId={`provider-card-${props.appId}-${props.provider.id}`}
+        layout="position"
         animate={{
           x: isDragging || isSettling ? 0 : (transform?.x ?? 0),
           y: isDragging || isSettling ? 0 : (transform?.y ?? 0),

@@ -1,3 +1,4 @@
+import { visualElementStore } from "framer-motion";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -189,6 +190,52 @@ describe("ProviderList Component", () => {
       ...overrides,
     };
   }
+
+  it("keeps layout animation registered when a card mounts while being dragged between containers", async () => {
+    const a = createProvider({ id: "a", name: "Alpha" });
+    let dragging = true;
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [a],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+    useSortableMock.mockImplementation(({ id }: { id: string }) => ({
+      setNodeRef: vi.fn(),
+      attributes: { "data-dnd-id": id },
+      listeners: {},
+      transform: null,
+      transition: null,
+      isDragging: dragging && id === "a",
+    }));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData(["settings"], {
+      providerGroupingMode: "drag",
+      providerGroups: { claude: [] },
+    });
+    const tree = () => (
+      <QueryClientProvider client={client}>
+        <ProviderList
+          {...baseProps}
+          appId="claude"
+          providers={{ a }}
+          switchMode={switchMode()}
+        />
+      </QueryClientProvider>
+    );
+    const view = render(tree());
+    const motionNode = screen.getByTestId("provider-card-a").parentElement!;
+    const projection = visualElementStore.get(motionNode)?.projection;
+    expect(projection?.hasListeners("didUpdate")).toBe(true);
+    const layoutIdentity = projection?.options.layoutId;
+    expect(layoutIdentity).toBeTruthy();
+    dragging = false;
+    view.rerender(tree());
+    expect(visualElementStore.get(motionNode)?.projection).toBe(projection);
+    expect(projection?.hasListeners("didUpdate")).toBe(true);
+    expect(projection?.options.layoutId).toBe(layoutIdentity);
+  });
 
   it.each(["off", "drag", "menu"] as const)(
     "renders the selected grouping mode: %s",

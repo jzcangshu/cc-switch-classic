@@ -210,7 +210,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
   /**
    * 松手后的落位布局保持：drop 当帧分组/排序的乐观更新可能还没同步到 props，
    * 若立即清空 pending，卡片会按旧布局先弹回原位、下一帧再闪到目标位置。
-   * 保持最终布局直到 props 追上（或超时兜底）再释放。
+   * 保持最终布局直到拖影落位且 props 追上再释放。
    */
   const [postDropLayout, setPostDropLayout] = useState<{
     pending: PendingLayout;
@@ -291,9 +291,9 @@ export function useGroupDnd(input: UseGroupDndInput) {
     return baseLayout.containers;
   }, [pending, draftGroups, postDropLayout, baseLayout, primaryProviders]);
 
-  // props 追上提交布局才交还呈现；保存失败由提交结果明确回退。
+  // 拖影与真实数据都完成才交还布局，防止空组提前收拢改变飞行中的目标。
   useEffect(() => {
-    if (!postDropLayout || dragState) return;
+    if (!postDropLayout || dragState || settlingId) return;
     if (
       layoutMatchesPending(
         baseLayout.containers,
@@ -303,7 +303,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
     ) {
       setPostDropLayout(null);
     }
-  }, [postDropLayout, dragState, baseLayout]);
+  }, [postDropLayout, dragState, settlingId, baseLayout]);
 
   const containerOf = useMemo(() => {
     const map: Record<string, string> = {};

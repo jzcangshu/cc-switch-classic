@@ -1,6 +1,7 @@
 import { UNGROUPED_ID } from "@/lib/providerGroups";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ProviderGroupDefinition } from "@/types";
 import type {
   DragStartEvent,
   DragEndEvent,
@@ -289,6 +290,58 @@ it("holds a confirmed order beyond a fixed timeout until data catches up", async
     result.current.containers.find((c) => c.id === UNGROUPED_ID)?.providerIds,
   ).toEqual(["b", "a"]);
 });
+it.each([true, false])(
+  "keeps the last member's landing geometry until both animation and data finish (data first: %s)",
+  async (dataFirst) => {
+    vi.useFakeTimers();
+    const commitLayout = vi.fn().mockResolvedValue(true);
+    const { result, rerender } = renderHook(
+      ({ groups }: { groups: ProviderGroupDefinition[] }) =>
+        useGroupDnd({
+          primaryProviders: providers,
+          groups,
+          isGroupCollapsed: () => false,
+          setGroupCollapsed: vi.fn(),
+          commitLayout,
+          onFlatDragEnd: vi.fn(),
+        }),
+      {
+        initialProps: {
+          groups: [{ id: "g", name: "Work", providerIds: ["b"] }],
+        },
+      },
+    );
+    act(() =>
+      result.current.handlers.onDragStart({
+        ...start,
+        active: { ...start.active, id: "b" },
+      }),
+    );
+    act(() => {
+      result.current.collisionDetection(collision(0, "ungrouped"));
+      result.current.handlers.onDragMove();
+    });
+    await act(async () =>
+      result.current.handlers.onDragEnd({
+        ...end,
+        active: { id: "b" },
+        over: { id: UNGROUPED_ID, data: { current: { type: "ungrouped" } } },
+      } as unknown as DragEndEvent),
+    );
+    const hasEmptyGroup = () =>
+      result.current.containers.some(
+        (c) => c.id === "g" && c.providerIds.length === 0,
+      );
+    expect(hasEmptyGroup()).toBe(true);
+    if (dataFirst) rerender({ groups: [] });
+    else act(() => result.current.finishDropAnimation());
+    expect(hasEmptyGroup()).toBe(true);
+    if (dataFirst) act(() => result.current.finishDropAnimation());
+    else rerender({ groups: [] });
+    expect(result.current.containers.map((c) => c.id)).toEqual([UNGROUPED_ID]);
+    expect(result.current.containers[0].providerIds).toEqual(["a", "b"]);
+  },
+);
 it("releases a failed layout explicitly instead of waiting for a visual timeout", async () => {
   const { result, commitLayout } = setup();
   act(() => result.current.handlers.onDragCancel());

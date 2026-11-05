@@ -24,10 +24,10 @@
     },
     {
       "type": "fix",
-      "zh": "恢复普通排序与悬停操作，支持底部落点并修复分组动画闪动",
-      "zh-TW": "還原一般排序與懸停操作，支援底部落點並修正群組動畫閃動",
-      "en": "Restored sorting and hover actions; added bottom drop targets and smooth group motion",
-      "ja": "通常の並べ替えとホバー操作を復元。下部へのドロップと滑らかなグループ移動に対応"
+      "zh": "恢复普通排序与悬停操作，支持底部落点，修复建组移出后的瞬移",
+      "zh-TW": "還原一般排序與懸停操作，支援底部落點，修正建組移出後的瞬移",
+      "en": "Restored sorting and hover actions; fixed bottom drops and motion after ungrouping",
+      "ja": "通常の並べ替えとホバー操作を復元。下部ドロップとグループ解除後の瞬間移動を修正"
     }
   ]
 }
