@@ -132,8 +132,8 @@ export function CodexAuthSettings({
     }
   };
 
-  // 设置 → 通用 →「Codex 应用增强」小节（第三版小节标题 + 内联灰色说明；经典子 agent
-  // 开关在 Codex 聚合页签的「聚合设置」里；压缩会话是第四版新增，说明同样内联）
+  // 设置 → 通用 →「Codex 应用增强」小节（只保留条目标题，不加灰色说明；统一会话
+  // 历史的风险提示放在开启确认弹窗里；经典子 agent 开关在 Codex 聚合页签的「聚合设置」里）
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2 pb-2 border-b border-border/40">
@@ -144,7 +144,6 @@ export function CodexAuthSettings({
       <ToggleRow
         icon={<KeyRound className="h-4 w-4 text-emerald-500" />}
         title={t("settings.preserveCodexOfficialAuthOnSwitch")}
-        description={t("settings.preserveCodexOfficialAuthOnSwitchDescription")}
         checked={settings.preserveCodexOfficialAuthOnSwitch ?? false}
         onCheckedChange={(value) =>
           onChange({ preserveCodexOfficialAuthOnSwitch: value })
@@ -154,7 +153,6 @@ export function CodexAuthSettings({
       <ToggleRow
         icon={<History className="h-4 w-4 text-sky-500" />}
         title={t("settings.unifyCodexSessionHistory")}
-        description={t("settings.unifyCodexSessionHistoryDescription")}
         checked={settings.unifyCodexSessionHistory ?? false}
         onCheckedChange={handleUnifyHistoryChange}
       />
@@ -163,7 +161,6 @@ export function CodexAuthSettings({
         <ToggleRow
           icon={<Archive className="h-4 w-4 text-amber-500" />}
           title={t("settings.codexSessionCompression")}
-          description={t("settings.codexSessionCompressionDescription")}
           checked={sessionCompression}
           disabled={sessionCompressionSaving}
           onCheckedChange={(value) =>

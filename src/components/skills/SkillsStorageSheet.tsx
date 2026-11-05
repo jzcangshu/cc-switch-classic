@@ -406,13 +406,6 @@ export function SkillsStorageSettings({
                 </Button>
               ))}
             </div>
-            {SYNC_METHODS.filter(
-              (option) => option.id === syncMethod && option.descKey,
-            ).map((option) => (
-              <p key={option.id} className="text-xs text-muted-foreground">
-                {t(option.descKey!)}
-              </p>
-            ))}
           </>
         ) : (
           SYNC_METHODS.map((option) => (
@@ -438,9 +431,12 @@ export function SkillsStorageSettings({
           ))
         )}
         <div className="flex items-center gap-3 pt-0.5">
-          <p className="m-0 min-w-0 flex-1 text-caption text-fg-2">
-            {t("skills.storageSheet.resyncHint")}
-          </p>
+          {/* 设置页（inline）不放灰色说明；独立弹窗里保留，解释按钮作用 */}
+          {!inline && (
+            <p className="m-0 min-w-0 flex-1 text-caption text-fg-2">
+              {t("skills.storageSheet.resyncHint")}
+            </p>
+          )}
           <Button
             type="button"
             variant="neutral"

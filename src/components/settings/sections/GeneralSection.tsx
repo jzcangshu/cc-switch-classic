@@ -46,8 +46,9 @@ interface GeneralSectionProps {
 }
 
 /**
- * 通用设置（第三版小节形态）：小节标题 + 灰色说明 + 控件。
- * 语言、主题恢复横排按钮组；额度显示并入外观小节；托盘样式保留第四版新增。
+ * 通用设置（第三版小节形态）：小节标题 + 控件。灰色说明保持 v3.20.4 的克制风格：
+ * 只保留 v3 原有条目，以及确无别处解释、必须短句说明的自创条目（供应商分组、
+ * 模式选择器）；v4 同步带来的长说明一律不加。
  */
 export function GeneralSection({
   settings,
@@ -134,14 +135,9 @@ export function GeneralSection({
           ))}
         </div>
         <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">
-              {t("settings.general.quotaDisplay")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("settings.general.quotaDisplayHelp")}
-            </p>
-          </div>
+          <p className="text-sm font-medium">
+            {t("settings.general.quotaDisplay")}
+          </p>
           <SegmentedControl
             size="sm"
             aria-label={t("settings.general.quotaDisplay")}
@@ -191,9 +187,6 @@ export function GeneralSection({
           <h3 className="text-sm font-medium">
             {t("settings.general.sidebarAndHeader")}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            {t("settings.general.sidebarAndHeaderDescription")}
-          </p>
         </header>
         <div className="space-y-3">
           <ToggleRow
@@ -262,9 +255,6 @@ export function GeneralSection({
           <h3 className="text-sm font-medium">
             {t("settings.general.windowAndTerminal")}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            {t("settings.general.windowAndTerminalDescription")}
-          </p>
         </header>
         <div className="space-y-3">
           <ToggleRow
@@ -307,9 +297,6 @@ export function GeneralSection({
                   <p className="text-sm font-medium leading-none">
                     {t("settings.general.trayStyle")}
                   </p>
-                  <p className="text-xs text-fg-2">
-                    {t("settings.general.trayStyleHelp")}
-                  </p>
                 </div>
               </div>
               <SegmentedControl
@@ -351,9 +338,6 @@ export function GeneralSection({
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">
                   {t("settings.terminal.title")}
-                </p>
-                <p className="text-xs text-fg-2">
-                  {t("settings.general.terminalHelp")}
                 </p>
               </div>
             </div>
