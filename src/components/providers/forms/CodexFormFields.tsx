@@ -647,8 +647,8 @@ export function CodexFormFields({
   // 对应词条在 grokBuild.* 下。
   const isGrokBuild = appId === "grokbuild";
   const canEditCatalog = Boolean(onCatalogModelsChange);
-  // 有模型列表的卡（两种布局）：列表第一行就是默认模型，没有单独的默认模型框；列表为空时
-  // 直连布局才显示默认模型框。Grok Build 没有列表，官方卡不显示列表。
+  // 保留当前版本的默认行排序和编辑联动；经典布局另外显示独立默认模型输入。
+  // Grok Build 没有列表，官方卡不显示列表。
   const firstRowIsDefault = canEditCatalog && category !== "official";
   const canEditReasoning = Boolean(onCodexChatReasoningChange);
   const supportsThinking =
@@ -657,12 +657,13 @@ export function CodexFormFields({
   const supportsEffort = codexChatReasoning.supportsEffort === true;
 
   // 高级区在有任何可见配置时自动展开（仅折叠→展开，不会自动折叠）：自定义 UA /
-  // 请求覆盖 / 非默认的上游格式 / 已配置思考能力。模型列表在高级区外面，不算。
+  // 请求覆盖 / 非默认的上游格式 / 已配置思考能力 / 已有模型映射。空的原生配置保持折叠。
   const hasRequestOverrides = Boolean(
     localProxyHeadersOverride.trim() || localProxyBodyOverride.trim(),
   );
   const hasAnyAdvancedValue =
     isCopilotPreset ||
+    catalogModels.length > 0 ||
     !!customUserAgent ||
     hasRequestOverrides ||
     isAnthropicFormat ||
@@ -1868,11 +1869,12 @@ export function CodexFormFields({
   );
 
   // 默认模型 —— config.toml 顶层 model，Codex 启动时默认请求的模型。实时写回 TOML；留空则删行。
-  // 有模型列表时第一行就是它，不显示这个框（Grok Build 没有列表，一直显示）；列表为空时
-  // 两种布局都显示，聚合模式下发布的就是它。
+  // 经典布局保留独立输入；聚合布局仍使用列表第一行，空列表时才显示输入。
   const defaultModelField = category !== "official" &&
     onModelChange &&
-    (!firstRowIsDefault || catalogRows.length === 0) && (
+    (variant === "classic" ||
+      !firstRowIsDefault ||
+      catalogRows.length === 0) && (
       <div className="space-y-1.5">
         {labelWithHelp(
           t("codexConfig.defaultModelLabel", { defaultValue: "默认模型" }),
@@ -1880,9 +1882,9 @@ export function CodexFormFields({
             ? t("grokBuild.defaultModelHint", {
                 defaultValue: "Grok Build 默认请求的模型，随时可改。",
               })
-            : t("codexConfig.defaultModelHint", {
+            : t("codexConfig.classicDefaultModelHint", {
                 defaultValue:
-                  "Codex 默认请求的模型。添加模型列表后，列表第一行就是默认模型。",
+                  "Codex 默认请求的模型。留空时使用已配置映射的第一行；没有映射则使用 Codex 默认模型。",
               }),
           "codexDefaultModel",
         )}
@@ -1902,8 +1904,9 @@ export function CodexFormFields({
             }
             className="flex-1"
           />
-          {/* 有模型列表时用列表上的「获取模型列表」，这里不再放一个。 */}
-          {!canEditCatalog && (
+          {/* 高级区折叠时，默认模型旁保留旧版获取入口；展开后使用映射区的入口。 */}
+          {(!canEditCatalog ||
+            (variant === "classic" && !advancedExpanded)) && (
             <HoverTip content={t("providerForm.fetchModels")}>
               <Button
                 aria-label={t("providerForm.fetchModels")}
@@ -2071,49 +2074,7 @@ export function CodexFormFields({
       {apiKeySection}
       {endpointSection}
 
-      {/* 模型列表 —— 生成 Codex 的模型目录（model_catalog_json）：/model 菜单列哪些模型，
-          各自的窗口和思考等级。留空不生成。第一行是默认模型，子代理也从这里选。 */}
-      {firstRowIsDefault && (
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-0.5">
-                <FormLabel>
-                  {t("codexConfig.modelListTitle", {
-                    defaultValue: "模型列表",
-                  })}
-                </FormLabel>
-                <HelpTip
-                  title={t("codexConfig.modelListTitle", {
-                    defaultValue: "模型列表",
-                  })}
-                >
-                  {t("codexConfig.modelListDefaultHelp", {
-                    defaultValue:
-                      "这些模型会出现在 Codex 的 /model 里，第一行是默认模型。名字是官方 GPT 模型的行按官方条目生成，行里的显示名、窗口和思考等级不生效。",
-                  })}
-                </HelpTip>
-              </div>
-              {renderCatalogActionButtons(
-                handleAddCatalogRow,
-                t("codexConfig.addCatalogModel", {
-                  defaultValue: "手动添加",
-                }),
-              )}
-            </div>
-            <p className="text-xs leading-relaxed text-fg-2">
-              {t("codexConfig.modelListHint", {
-                defaultValue: "修改后需要重启 Codex。",
-              })}
-            </p>
-          </div>
-
-          {defaultModelNotInListNotice}
-          {catalogRows.length > 0 && renderCatalogRows()}
-        </div>
-      )}
-
-      {/* 默认模型：列表为空（或没有列表）时才显示 */}
+      {/* 经典版：默认模型独立设置，模型映射仍沿用已有数据。 */}
       {defaultModelField}
 
       {/* 子代理 —— config.toml 的 [agents] default_subagent_model / default_subagent_reasoning_effort。
@@ -2183,67 +2144,7 @@ export function CodexFormFields({
         </div>
       )}
 
-      {/* 自动审批 —— 写进模型目录每一行的 auto_review_model_override，Codex 按主模型那一行
-          选审批模型。只能选列表里的模型；聚合模式下不生效，改用聚合设置。 */}
-      {category !== "official" && onAutoReviewModelChange && (
-        <div className="space-y-1.5">
-          {labelWithHelp(
-            t("codexConfig.autoReviewModelLabel", {
-              defaultValue: "自动审批模型",
-            }),
-            t("codexConfig.autoReviewModelHint", {
-              defaultValue:
-                "Codex 开了自动审批（Approve for me）时，判断操作能不能放行用的模型。审批请求和主对话发给同一家，所以只能选这张卡模型列表里的。聚合模式下不生效，改用聚合页签「聚合设置」里的自动审批模型。改完需要重启 Codex。",
-            }),
-            "codexAutoReviewModel",
-          )}
-          <Select
-            value={autoReviewSelectValue}
-            onValueChange={(next) => {
-              // 表单里的 Radix Select 带一个隐藏的原生 select：编辑页加载时列表和已存的值同时
-              // 到达，值先于选项注册，它会回报一次空串。选项都不是空值，空串只能是这个，忽略。
-              if (!next) return;
-              onAutoReviewModelChange(next === AUTO_REVIEW_DEFAULT ? "" : next);
-            }}
-            disabled={autoReviewChoices.length === 0}
-          >
-            <SelectTrigger
-              id="codexAutoReviewModel"
-              aria-label={t("codexConfig.autoReviewModelLabel", {
-                defaultValue: "自动审批模型",
-              })}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={AUTO_REVIEW_DEFAULT}>
-                {autoReviewDefaultIsCodex
-                  ? t("codexConfig.autoReviewModelCodexDefault", {
-                      defaultValue: "Codex 默认（codex-auto-review）",
-                    })
-                  : t("codexConfig.autoReviewModelMainDefault", {
-                      defaultValue: "主模型自己审批（默认）",
-                    })}
-              </SelectItem>
-              {autoReviewChoices.map((choice) => (
-                <SelectItem key={choice.model} value={choice.model}>
-                  {choice.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {autoReviewChoices.length === 0 && (
-            <p className="text-xs leading-relaxed text-fg-2">
-              {t("codexConfig.autoReviewModelNoList", {
-                defaultValue:
-                  "这张卡没有模型列表：Codex 会用官方的 codex-auto-review 审批，只有部分转发 ChatGPT 账号的中转认它，不认就会报 404。在上面的模型列表里加上模型后就能选。",
-              })}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* 高级选项 —— 上游格式/思考能力/自定义 UA；预设供应商通常无需展开 */}
+      {/* 高级选项 —— 上游格式/思考能力/模型映射/自动审批/自定义 UA */}
       {category !== "official" && (
         <Collapsible
           open={advancedExpanded}
@@ -2288,6 +2189,110 @@ export function CodexFormFields({
                 )}
               >
                 {reasoningFields}
+              </div>
+            )}
+
+            {/* 经典版模型映射沿用现有目录编辑器与保存行为，只收回高级选项。 */}
+            {canEditCatalog && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-0.5">
+                      <FormLabel>
+                        {t("codexConfig.modelMappingTitle", {
+                          defaultValue: "模型映射（可选）",
+                        })}
+                      </FormLabel>
+                      <HelpTip
+                        title={t("codexConfig.modelMappingTitle", {
+                          defaultValue: "模型映射（可选）",
+                        })}
+                      >
+                        {t("codexConfig.modelMappingHelp", {
+                          defaultValue:
+                            "这些模型会出现在 Codex 的 /model 菜单里。默认模型在上方单独设置；官方 GPT 模型的显示名、窗口和思考等级沿用官方条目。",
+                        })}
+                      </HelpTip>
+                    </div>
+                    {renderCatalogActionButtons(
+                      handleAddCatalogRow,
+                      t("codexConfig.addCatalogModel", {
+                        defaultValue: "手动添加",
+                      }),
+                    )}
+                  </div>
+                  <p className="text-xs leading-relaxed text-fg-2">
+                    {t("codexConfig.modelListOptionalHint", {
+                      defaultValue:
+                        "留空使用 Codex 默认模型列表；填写后使用这里的列表，修改后需重启 Codex。",
+                    })}
+                  </p>
+                </div>
+
+                {defaultModelNotInListNotice}
+                {catalogRows.length > 0 && renderCatalogRows()}
+              </div>
+            )}
+
+            {/* 自动审批 —— 写进模型目录每一行的 auto_review_model_override，Codex 按主模型那一行
+          选审批模型。只能选列表里的模型；聚合模式下不生效，改用聚合设置。 */}
+            {onAutoReviewModelChange && (
+              <div className="space-y-1.5">
+                {labelWithHelp(
+                  t("codexConfig.autoReviewModelLabel", {
+                    defaultValue: "自动审批模型",
+                  }),
+                  t("codexConfig.autoReviewModelHint", {
+                    defaultValue:
+                      "Codex 开了自动审批（Approve for me）时，判断操作能不能放行用的模型。审批请求和主对话发给同一家，所以只能选这张卡模型列表里的。聚合模式下不生效，改用聚合页签「聚合设置」里的自动审批模型。改完需要重启 Codex。",
+                  }),
+                  "codexAutoReviewModel",
+                )}
+                <Select
+                  value={autoReviewSelectValue}
+                  onValueChange={(next) => {
+                    // 表单里的 Radix Select 带一个隐藏的原生 select：编辑页加载时列表和已存的值同时
+                    // 到达，值先于选项注册，它会回报一次空串。选项都不是空值，空串只能是这个，忽略。
+                    if (!next) return;
+                    onAutoReviewModelChange(
+                      next === AUTO_REVIEW_DEFAULT ? "" : next,
+                    );
+                  }}
+                  disabled={autoReviewChoices.length === 0}
+                >
+                  <SelectTrigger
+                    id="codexAutoReviewModel"
+                    aria-label={t("codexConfig.autoReviewModelLabel", {
+                      defaultValue: "自动审批模型",
+                    })}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AUTO_REVIEW_DEFAULT}>
+                      {autoReviewDefaultIsCodex
+                        ? t("codexConfig.autoReviewModelCodexDefault", {
+                            defaultValue: "Codex 默认（codex-auto-review）",
+                          })
+                        : t("codexConfig.autoReviewModelMainDefault", {
+                            defaultValue: "主模型自己审批（默认）",
+                          })}
+                    </SelectItem>
+                    {autoReviewChoices.map((choice) => (
+                      <SelectItem key={choice.model} value={choice.model}>
+                        {choice.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {autoReviewChoices.length === 0 && (
+                  <p className="text-xs leading-relaxed text-fg-2">
+                    {t("codexConfig.autoReviewModelNoList", {
+                      defaultValue:
+                        "这张卡没有模型列表：Codex 会用官方的 codex-auto-review 审批，只有部分转发 ChatGPT 账号的中转认它，不认就会报 404。在模型映射中加上模型后就能选。",
+                    })}
+                  </p>
+                )}
               </div>
             )}
 

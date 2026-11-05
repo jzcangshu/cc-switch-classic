@@ -20,3 +20,9 @@
 | [文档分层决策](decisions/implemented/process/2026-11-04-maintenance-docs.md)         | 需要理解或变更文档架构           | 决策依据                     |
 
 截图与图片留在本目录的原有资源目录，避免破坏用户手册和主页引用；不因整理维护文档批量搬动用户资料。新增长期模块规范时在这里登记，只有被任务触发的模块才需要阅读。
+
+## Codex（编程助手）提醒与模型列表
+
+[未确认客户端提醒的本机静音](decisions/implemented/bug-fix/2026-11-05-codex-unverified-reminders.md)：提醒的证据强度、关闭与静音的作用范围，以及模型列表留空的说明。
+
+[经典模型表单回退](decisions/implemented/bug-fix/2026-11-05-codex-classic-model-form.md)：独立默认模型、高级模型映射与升级配置保留。

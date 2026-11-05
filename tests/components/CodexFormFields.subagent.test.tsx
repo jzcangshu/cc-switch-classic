@@ -120,36 +120,38 @@ const rowModels = () =>
     .map((input) => (input as HTMLInputElement).value);
 
 describe("CodexFormFields direct layout", () => {
-  it("lets the list own the default model: no separate field, list outside the advanced section", () => {
+  it("restores the independent default field and keeps existing mappings visible in advanced options", () => {
     renderCodexForm({
       catalogModels: [{ model: "gpt-a" }],
       onCatalogModelsChange: vi.fn(),
     });
 
-    expect(screen.getByText("模型列表")).toBeVisible();
-    // 「第一行是默认模型」写在「模型列表」后面的「?」里。
-    expect(screen.getByRole("button", { name: "模型列表" })).toBeVisible();
-    expect(screen.queryByText("上游格式")).toBeNull();
-    expect(document.getElementById("codexDefaultModel")).toBeNull();
+    const advanced = screen.getByRole("button", { name: "高级选项" });
+    expect(advanced).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("模型映射（可选）")).toBeVisible();
+    expect(document.getElementById("codexDefaultModel")).toHaveValue("gpt-a");
+    fireEvent.click(advanced);
+    expect(screen.queryByText("模型映射（可选）")).toBeNull();
+    expect(document.getElementById("codexDefaultModel")).toHaveValue("gpt-a");
     expect(
       screen.getAllByRole("button", { name: /providerForm\.fetchModels/ }),
     ).toHaveLength(1);
   });
 
-  it("shows the default model field below an empty list, and seeds the first row with it", () => {
+  it("starts with the default model and reveals optional mappings only inside advanced options", () => {
     const onCatalogModelsChange = vi.fn();
     renderCodexForm({ catalogModels: [], onCatalogModelsChange });
 
-    const listTitle = screen.getByText("模型列表");
-    const defaultModel = document.getElementById("codexDefaultModel")!;
-    expect(
-      listTitle.compareDocumentPosition(defaultModel) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-
+    const advanced = screen.getByRole("button", { name: "高级选项" });
+    expect(advanced).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("模型映射（可选）")).toBeNull();
+    expect(document.getElementById("codexDefaultModel")).toHaveValue("gpt-a");
+    expect(onCatalogModelsChange).not.toHaveBeenCalled();
+    fireEvent.click(advanced);
+    expect(screen.getByText("模型映射（可选）")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "手动添加" }));
     expect(rowModels()).toEqual(["gpt-a", ""]);
-    expect(document.getElementById("codexDefaultModel")).toBeNull();
+    expect(document.getElementById("codexDefaultModel")).toHaveValue("gpt-a");
     const rows = onCatalogModelsChange.mock.calls.at(-1)?.[0] ?? [];
     expect(rows.map((row: { model: string }) => row.model)).toEqual([
       "gpt-a",
@@ -284,6 +286,8 @@ describe("CodexFormFields Auto Review model", () => {
       onCatalogModelsChange: vi.fn(),
       onAutoReviewModelChange: vi.fn(),
     });
+    expect(autoReviewSelect()).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "高级选项" }));
     const trigger = autoReviewSelect()!;
     expect(trigger).toBeDisabled();
     expect(trigger.textContent).toBe("Codex 默认（codex-auto-review）");
