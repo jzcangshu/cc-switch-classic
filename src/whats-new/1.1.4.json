@@ -3,31 +3,31 @@
   "items": [
     {
       "type": "new",
-      "zh": "供应商分组支持关闭、拖拽和菜单三种模式",
-      "zh-TW": "供應商分組支援關閉、拖曳及選單三種模式",
-      "en": "Provider grouping now supports Off, Drag and Menu modes",
-      "ja": "プロバイダーのグループ化にオフ・ドラッグ・メニューを追加"
+      "zh": "新增供应商分组，可切换关闭、拖拽或菜单模式，分组按应用分别保存",
+      "zh-TW": "新增供應商分組，可切換關閉、拖曳或選單模式，分組按應用分別儲存",
+      "en": "Provider grouping is here, with Off, Drag and Menu modes; each app keeps its own groups",
+      "ja": "プロバイダーのグループ化に対応。オフ・ドラッグ・メニューの3モード、アプリごとに保存"
     },
     {
       "type": "new",
-      "zh": "通过菜单新建、移动、排序或解散分组，关闭后保留分组",
-      "zh-TW": "透過選單新增、移動、排序或解散群組，關閉後保留群組",
-      "en": "Create, move, reorder and ungroup through menus; turning grouping off keeps your groups",
-      "ja": "メニューでグループ作成・移動・並べ替え・解除が可能。オフでも保持"
+      "zh": "菜单模式可新建、移动、排序、改名和解散分组，关闭分组后仍会保留",
+      "zh-TW": "選單模式可新增、移動、排序、改名和解散分組，關閉分組後仍會保留",
+      "en": "Menu mode creates, moves, reorders, renames and dissolves groups; turning grouping off keeps them",
+      "ja": "メニューモードでグループの作成・移動・並べ替え・改名・解除ができ、オフにしても保持"
     },
     {
       "type": "fix",
-      "zh": "修复折叠分组的缩略图重叠和分组保存覆盖问题",
-      "zh-TW": "修正摺疊群組的縮圖重疊及群組儲存覆寫問題",
-      "en": "Fixed overlapping collapsed previews and stale settings overwriting group changes",
-      "ja": "折りたたみ時のアイコン重なりと古い設定によるグループ上書きを修正"
+      "zh": "拖拽排序更顺滑：卡片边缘、间隙和“未分组”标题都能插入，落位不再跳动",
+      "zh-TW": "拖曳排序更順暢：卡片邊緣、間隙和「未分組」標題都能插入，落位不再跳動",
+      "en": "Sorting is easier: card edges, gaps and the Ungrouped heading accept drops, with no jumps",
+      "ja": "並べ替えが簡単に：カードの縁・隙間・「未分類」見出しにドロップでき、位置が飛ばない"
     },
     {
       "type": "fix",
-      "zh": "恢复普通排序与悬停操作，扩大拖拽插入范围并修复分组动画瞬移",
-      "zh-TW": "還原一般排序與懸停操作，擴大拖曳插入範圍並修正群組動畫瞬移",
-      "en": "Restored sorting and hover actions; widened insertion targets and fixed group motion",
-      "ja": "通常の並べ替えとホバー操作を復元。挿入範囲を拡大しグループ移動の瞬間移動を修正"
+      "zh": "Codex 表单恢复独立默认模型，模型映射移入高级选项，旧客户端提醒可关闭",
+      "zh-TW": "Codex 表單恢復獨立預設模型，模型對映移入進階選項，舊用戶端提醒可關閉",
+      "en": "Codex form: separate default model, mapping under Advanced, old-client reminders can be muted",
+      "ja": "Codex フォームは既定モデルを独立表示、マッピングは詳細設定へ、旧クライアント通知はオフ可能"
     }
   ]
 }
