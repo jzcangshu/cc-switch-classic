@@ -786,6 +786,11 @@ function SortableProviderCard(props: SortableProviderCardProps) {
   return (
     <div ref={setNodeRef} style={style}>
       <motion.div
+        layoutId={
+          isDragging || isSettling
+            ? undefined
+            : `provider-card-${props.appId}-${props.provider.id}`
+        }
         layout={isDragging || isSettling || reducedMotion ? false : "position"}
         animate={{
           x: isDragging || isSettling ? 0 : (transform?.x ?? 0),

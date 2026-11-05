@@ -54,8 +54,6 @@ export const EXPAND_DWELL_MS = 400;
 export const EDGE_BAND_RATIO = 0.18;
 /** 卡片正中 ± 该比例算精确重叠（几乎完全叠上，快速触发建组） */
 export const EXACT_BAND_RATIO = 0.1;
-/** 建组命中后认领板的延迟收回（避免 B 飞入瞬间认领板 pop） */
-export const MERGE_TARGET_LINGER_MS = 250;
 
 interface UseGroupDndInput {
   reducedMotion?: boolean;
@@ -67,7 +65,7 @@ interface UseGroupDndInput {
   commitLayout: (
     pending: PendingLayout,
     draftGroups: ProviderGroupDefinition[],
-  ) => void;
+  ) => Promise<boolean>;
   /** 非主分区（可添加等）卡片的拖拽沿用平铺逻辑 */
   onFlatDragEnd: (event: DragEndEvent) => void;
 }
@@ -118,6 +116,13 @@ function layoutMatchesPending(
   for (const group of groups) {
     if ((pending[group.id] ?? []).length > 0) required.add(group.id);
   }
+  const expectedGroups = groups
+    .filter((group) => required.has(group.id))
+    .map((group) => group.id);
+  const actualGroups = containers
+    .filter((container) => container.group && container.providerIds.length > 0)
+    .map((container) => container.id);
+  if (expectedGroups.join("\0") !== actualGroups.join("\0")) return false;
   const containerIds = new Set(containers.map((container) => container.id));
   if ([...required].some((id) => !containerIds.has(id))) return false;
   return containers.every((container) => {
@@ -181,16 +186,19 @@ export function useGroupDnd(input: UseGroupDndInput) {
   /**
    * 就地建组预览：merge fire 后新组先渲染在锚点卡 B 原来的未分组位置
    * （iOS 文件夹在 App 原位弹出的同款语义）。松手前保持就地不动，
-   * 松手后延迟 POST_DROP_SETTLE_MS 再升入分组区（layoutId FLIP 上移）。
+   * 拖影落位完成后在同一列表内移动到分组区，保持组节点及成员身份。
    */
   const [previewGroup, setPreviewGroup] = useState<{
     groupId: string;
     slotIndex: number;
+    anchorId: string;
   } | null>(null);
   /** previewGroup 的 ref 镜像（dragEnd 读最新值） */
-  const previewGroupRef = useRef<{ groupId: string; slotIndex: number } | null>(
-    null,
-  );
+  const previewGroupRef = useRef<{
+    groupId: string;
+    slotIndex: number;
+    anchorId: string;
+  } | null>(null);
   /**
    * 分组缝隙占位：把卡片拖到两组之间的留白时，在缝隙处预览一个落点，
    * 松手后卡片才归入「未分组」头部（拖拽中不移动真卡，避免其他卡片抢跑）。
@@ -199,16 +207,6 @@ export function useGroupDnd(input: UseGroupDndInput) {
     beforeGroupId: string;
   } | null>(null);
   const gapPreviewRef = useRef<{ beforeGroupId: string } | null>(null);
-  /**
-   * 预览组升格占位：previewGroup 清空后，正式组从原位飞入分组区期间，
-   * 未分组流用一个等高铁皮占位，禁止后续卡片（D）提前补位。
-   * 组落位动画完成后（onLayoutAnimationComplete）再释放。
-   */
-  const [elevatingGroup, setElevatingGroup] = useState<{
-    groupId: string;
-    slotIndex: number;
-    height: number;
-  } | null>(null);
   /**
    * 松手后的落位布局保持：drop 当帧分组/排序的乐观更新可能还没同步到 props，
    * 若立即清空 pending，卡片会按旧布局先弹回原位、下一帧再闪到目标位置。
@@ -237,11 +235,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
   const activeIdRef = useRef<string | null>(null);
   const intentRef = useRef<Intent | null>(null);
   const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lingerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elevationAfterDropRef = useRef<(() => void) | null>(null);
-  const elevateFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   /** 碰撞阶段捕获的指针 Y（波段判定用；键盘拖拽为 null） */
   const pointerYRef = useRef<number | null>(null);
   const keyboardDragRef = useRef(false);
@@ -297,7 +291,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
     return baseLayout.containers;
   }, [pending, draftGroups, postDropLayout, baseLayout, primaryProviders]);
 
-  // props 追上提交布局 → 释放落位保持；1.2s 兜底避免提交失败时永久占用
+  // props 追上提交布局才交还呈现；保存失败由提交结果明确回退。
   useEffect(() => {
     if (!postDropLayout || dragState) return;
     if (
@@ -310,12 +304,6 @@ export function useGroupDnd(input: UseGroupDndInput) {
       setPostDropLayout(null);
     }
   }, [postDropLayout, dragState, baseLayout]);
-
-  useEffect(() => {
-    if (!postDropLayout) return;
-    const timer = setTimeout(() => setPostDropLayout(null), 1200);
-    return () => clearTimeout(timer);
-  }, [postDropLayout]);
 
   const containerOf = useMemo(() => {
     const map: Record<string, string> = {};
@@ -344,22 +332,8 @@ export function useGroupDnd(input: UseGroupDndInput) {
     }
   }, []);
 
-  const clearLingerTimer = useCallback(() => {
-    if (lingerTimerRef.current !== null) {
-      clearTimeout(lingerTimerRef.current);
-      lingerTimerRef.current = null;
-    }
-  }, []);
-
-  const clearPreviewTimer = useCallback(() => {
+  const clearPendingElevation = useCallback(() => {
     elevationAfterDropRef.current = null;
-  }, []);
-
-  const clearElevateFallbackTimer = useCallback(() => {
-    if (elevateFallbackTimerRef.current !== null) {
-      clearTimeout(elevateFallbackTimerRef.current);
-      elevateFallbackTimerRef.current = null;
-    }
   }, []);
 
   const clearSettleTimer = useCallback(() => {
@@ -369,34 +343,16 @@ export function useGroupDnd(input: UseGroupDndInput) {
     }
   }, []);
 
-  /** 正式组落位动画完成：释放占位，后续卡片才开始补位 */
-  const completeGroupElevation = useCallback(
-    (groupId: string) => {
-      if (elevatingGroup?.groupId !== groupId) return;
-      clearElevateFallbackTimer();
-      setElevatingGroup(null);
-    },
-    [elevatingGroup, clearElevateFallbackTimer],
-  );
-
   // 挂载/卸载双向清理 settling：Fast Refresh 会保留 state，残留 settlingId
   // 会让卡片一直停在 opacity:0；卸载时清空全部定时器，残留回调不得再改状态
   useEffect(() => {
     setSettlingId(null);
     return () => {
       clearIntentTimer();
-      clearLingerTimer();
-      clearPreviewTimer();
-      clearElevateFallbackTimer();
+      clearPendingElevation();
       clearSettleTimer();
     };
-  }, [
-    clearIntentTimer,
-    clearLingerTimer,
-    clearPreviewTimer,
-    clearElevateFallbackTimer,
-    clearSettleTimer,
-  ]);
+  }, [clearIntentTimer, clearPendingElevation, clearSettleTimer]);
 
   const finishDropAnimation = useCallback(
     (sequence = dragSequenceRef.current) => {
@@ -427,16 +383,23 @@ export function useGroupDnd(input: UseGroupDndInput) {
 
   const endSettling = useCallback(() => {
     clearSettleTimer();
-    clearPreviewTimer();
+    clearPendingElevation();
     setSettlingId(null);
-  }, [clearSettleTimer, clearPreviewTimer]);
+  }, [clearSettleTimer, clearPendingElevation]);
 
-  /** 菜单移动等非拖拽提交复用落位保持：等 props 追上再切回 baseLayout */
-  const holdCommittedLayout = useCallback(
-    (nextPending: PendingLayout, nextGroups: ProviderGroupDefinition[]) => {
-      setPostDropLayout({ pending: nextPending, groups: nextGroups });
+  /** 同一提交入口保持最终布局，失败只撤回这一次提交，不影响后续操作。 */
+  const commitHeldLayout = useCallback(
+    async (
+      nextPending: PendingLayout,
+      nextGroups: ProviderGroupDefinition[],
+    ) => {
+      const held = { pending: nextPending, groups: nextGroups };
+      setPostDropLayout(held);
+      if (!(await input.commitLayout(nextPending, nextGroups))) {
+        setPostDropLayout((current) => (current === held ? null : current));
+      }
     },
-    [],
+    [input.commitLayout],
   );
 
   const showGapPreview = useCallback((beforeGroupId: string) => {
@@ -475,24 +438,15 @@ export function useGroupDnd(input: UseGroupDndInput) {
       intentLockedRef.current = false;
       initialPendingRef.current = null;
       clearIntentTimer();
-      clearLingerTimer();
-      clearElevateFallbackTimer();
-      setElevatingGroup(null);
       gapPreviewRef.current = null;
       setGapPreview(null);
       if (!keepPreview) {
         setPreviewGroup(null);
         previewGroupRef.current = null;
-        clearPreviewTimer();
+        clearPendingElevation();
       }
     },
-    [
-      clearIntentTimer,
-      clearLingerTimer,
-      clearPreviewTimer,
-      clearElevateFallbackTimer,
-      endSettling,
-    ],
+    [clearIntentTimer, clearPendingElevation, endSettling],
   );
 
   /** 悬停到点的执行：insert / merge / expand（全部先重校验再提交内存态） */
@@ -541,21 +495,22 @@ export function useGroupDnd(input: UseGroupDndInput) {
         setPending(result.pending);
         intentLockedRef.current = true;
         // 就地预览：新组先渲染在 B 原来的未分组位置。松手前禁止上移
-        //（iOS 预览框挂住不动），松手后再延迟升入分组区（见 handleDragEnd）
+        //（预览框保持原位），拖影完成后整体升入分组区（见 handleDragEnd）
         // 槽位按「移除 B/C 后剩下多少卡」算，避免预览组插到 D 之后。
         const slotIndex = previewGroupSlotIndex(
           base,
           activeId,
           intent.anchorId,
         );
-        previewGroupRef.current = { groupId: result.newGroupId, slotIndex };
+        previewGroupRef.current = {
+          groupId: result.newGroupId,
+          slotIndex,
+          anchorId: intent.anchorId,
+        };
         setPreviewGroup(previewGroupRef.current);
-        // 认领板延迟收回：与组容器入场衔接，避免 B 飞入瞬间板子 pop
-        const anchor = intent.anchorId;
-        lingerTimerRef.current = setTimeout(() => {
-          lingerTimerRef.current = null;
-          setMergeTargetId((current) => (current === anchor ? null : current));
-        }, MERGE_TARGET_LINGER_MS);
+        // 提示背景的身份交给新组，旧提示不再在组内额外挂载。
+        setMergeTargetId(null);
+        lastOverIdRef.current = result.newGroupId;
         return;
       }
 
@@ -563,7 +518,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
       expandedDuringDragRef.current.add(intent.groupId);
       input.setGroupCollapsed(intent.groupId, false);
     },
-    [clearPreviewTimer, input, t],
+    [clearPendingElevation, input, t],
   );
 
   /** 武装意图：意图相同计时继续，不同则重置（E1 的全部实现） */
@@ -736,32 +691,19 @@ export function useGroupDnd(input: UseGroupDndInput) {
       const created = [...createdGroupIdsRef.current];
       const hadPreview = previewGroupRef.current !== null;
       const hadGapPreview = gapPreviewRef.current !== null;
-      // 保留就地预览（松手前禁止上移；提交后再延迟升组），其余拖拽态全部复位
+      // 保留就地预览（拖影完成后才整体升组），其余拖拽态全部复位
       resetDragState(true);
       if (!activeType || !activeId) return;
 
-      /** 提交后延迟升组：让 dropAnimation 先落位、页面安定一下再 FLIP 上移 */
+      /** 拖影落位完成后移动同一个组节点，不跨树重挂或增加高度占位 */
       const schedulePreviewElevation = () => {
         if (!hadPreview) return;
-        clearPreviewTimer();
+        clearPendingElevation();
         elevationAfterDropRef.current = () => {
           const preview = previewGroupRef.current;
           if (!preview) return;
-          // 升格期间用等高铁皮占位，等正式组落位动画结束才允许后续卡片补位
-          const el = document.querySelector<HTMLElement>(
-            `[data-group-preview="${preview.groupId}"]`,
-          );
-          const height = el?.getBoundingClientRect().height ?? 0;
-          if (!input.reducedMotion) setElevatingGroup({ ...preview, height });
           setPreviewGroup(null);
           previewGroupRef.current = null;
-          clearElevateFallbackTimer();
-          elevateFallbackTimerRef.current = setTimeout(() => {
-            elevateFallbackTimerRef.current = null;
-            setElevatingGroup((current) =>
-              current?.groupId === preview.groupId ? null : current,
-            );
-          }, 900);
         };
         if (input.reducedMotion) finishDropAnimation();
       };
@@ -777,9 +719,8 @@ export function useGroupDnd(input: UseGroupDndInput) {
           const next = reorderGroups(draftNow, activeId, String(over.id));
           // 落位保持 + 分组冻结：等分组定义的乐观更新同步到 props 再释放，
           // 并让真组等拖影落位完成后再现身（避免松手瞬间全尺寸组闪现）
-          setPostDropLayout({ pending: pendingNow, groups: next });
           beginSettling(activeId);
-          input.commitLayout(pendingNow, next);
+          void commitHeldLayout(pendingNow, next);
         }
         schedulePreviewElevation();
         return;
@@ -867,21 +808,20 @@ export function useGroupDnd(input: UseGroupDndInput) {
         finalGroups = result.groups;
         finalPending = result.pending;
         // 组要消散了：就地预览立即拆掉（iOS 预览消散语义）
-        clearPreviewTimer();
+        clearPendingElevation();
         setPreviewGroup(null);
         previewGroupRef.current = null;
       }
       // 落位保持：提交后的乐观更新可能晚于本次渲染到达 props；
       // 先按住最终布局，防止卡片按旧布局弹回原位再闪到目标位置
-      setPostDropLayout({ pending: finalPending, groups: finalGroups });
-      input.commitLayout(finalPending, finalGroups);
+      void commitHeldLayout(finalPending, finalGroups);
       schedulePreviewElevation();
     },
     [
       applyHoverEffects,
       beginSettling,
-      clearElevateFallbackTimer,
-      clearPreviewTimer,
+      commitHeldLayout,
+      clearPendingElevation,
       input,
       resetDragState,
       finishDropAnimation,
@@ -974,6 +914,20 @@ export function useGroupDnd(input: UseGroupDndInput) {
         });
       }
 
+      // 布局变化不等于新的指针意图。包括组间缝隙在内的所有命中都遵守锁定，
+      // 避免刚建好的组在鼠标静止时被动画中的矩形重新判成移出分组。
+      const lastPointer = lastPointerRef.current;
+      if (
+        intentLockedRef.current &&
+        pointer &&
+        lastPointer &&
+        Math.hypot(pointer.x - lastPointer.x, pointer.y - lastPointer.y) <=
+          POINTER_MOVE_RESET_PX
+      ) {
+        const target = lastOverIdRef.current ?? activeIdRef.current;
+        return target ? [{ id: target }] : [];
+      }
+
       const pointerIntersections = pointerWithin({
         ...args,
         droppableContainers: filtered,
@@ -1044,6 +998,20 @@ export function useGroupDnd(input: UseGroupDndInput) {
       )?.data.current?.type as string | undefined;
 
       // 容器命中：收敛到容器内最近卡（悬停容器空白 = 落到最近卡处）
+      if (overId === UNGROUPED_ID) {
+        // 底部接收区明确表示追加，不再收敛到最近卡片中心。
+        anchorRef.current = {
+          containerId: overId,
+          anchorId: null,
+          anchorRect: null,
+        };
+        lastOverIdRef.current = overId;
+        effects.push(() => {
+          if (activeIdRef.current)
+            updateIntentFromOver(overId, "ungrouped", activeIdRef.current);
+        });
+        return [{ id: overId }];
+      }
       if (containerIdsRef.current.has(overId)) {
         const memberIds = pendingRef.current?.[overId] ?? [];
         const inner = closestCenter({
@@ -1146,11 +1114,9 @@ export function useGroupDnd(input: UseGroupDndInput) {
     activeDrag: dragState,
     mergeTargetId,
     previewGroup,
-    elevatingGroup,
     gapPreview,
     settlingId,
     finishDropAnimation: completeCurrentDrop,
-    holdCommittedLayout,
-    completeGroupElevation,
+    commitHeldLayout,
   };
 }

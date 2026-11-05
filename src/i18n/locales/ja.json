@@ -5079,6 +5079,7 @@
     "dragGroupHandle": "ドラッグでグループの順序を変更",
     "toggleAriaLabel": "グループを折りたたむ・展開する",
     "dropToUngrouped": "ドロップでグループから移動",
+    "dropToEnd": "離して末尾へ移動",
     "settingTitle": "プロバイダーのグループ化",
     "modeOff": "オフ",
     "modeDrag": "ドラッグ",

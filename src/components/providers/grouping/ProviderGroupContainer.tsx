@@ -19,6 +19,8 @@ interface ProviderGroupContainerProps {
   dragDisabled?: boolean;
   renameDisabled?: boolean;
   actions?: ReactNode;
+  /** 与建组提示共享背景身份，只作用于视觉层。 */
+  surfaceId?: string;
   onToggleCollapse: () => void;
   onRename: (name: string) => void;
   miniIcons: GroupMiniIcon[];
@@ -39,6 +41,7 @@ export function ProviderGroupContainer({
   dragDisabled = false,
   renameDisabled = false,
   actions,
+  surfaceId,
   onToggleCollapse,
   onRename,
   miniIcons,
@@ -103,9 +106,24 @@ export function ProviderGroupContainer({
         // 拖影落位中保持隐藏，等末帧再由真组现身（零闪现）
         opacity: isSettling ? 0 : isDragging ? 0.4 : undefined,
       }}
-      className="rounded-2xl border border-border/70 bg-black/[0.03] p-2.5 dark:bg-white/[0.04]"
+      className="isolate rounded-2xl border border-transparent p-2.5"
     >
-      <div
+      <motion.div
+        aria-hidden
+        layoutId={surfaceId}
+        data-group-surface
+        initial={false}
+        transition={
+          reducedMotion
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 320, damping: 30 }
+        }
+        className="pointer-events-none absolute -inset-px -z-10 rounded-2xl border border-border/70 bg-black/[0.03] dark:bg-white/[0.04]"
+      />
+      <motion.div
+        initial={surfaceId && !reducedMotion ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: reducedMotion ? 0 : 0.18 }}
         className="flex min-w-0 cursor-pointer select-none flex-wrap items-center gap-2 rounded-md px-1 py-1"
         onClick={onToggleCollapse}
       >
@@ -193,12 +211,12 @@ export function ProviderGroupContainer({
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
       <AnimatePresence initial={false}>
         {!isCollapsed && (
           <motion.div
             id={bodyId}
-            initial={{ height: 0, opacity: 0 }}
+            initial={surfaceId ? false : { height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: reducedMotion ? 0 : 0.22, ease: "easeOut" }}

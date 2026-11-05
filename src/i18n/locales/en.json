@@ -5079,6 +5079,7 @@
     "dragGroupHandle": "Drag to reorder groups",
     "toggleAriaLabel": "Collapse or expand group",
     "dropToUngrouped": "Drop to remove from group",
+    "dropToEnd": "Release to move to the end",
     "settingTitle": "Provider grouping",
     "modeOff": "Off",
     "modeDrag": "Drag",

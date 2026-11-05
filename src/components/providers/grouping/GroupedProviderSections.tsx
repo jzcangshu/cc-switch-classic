@@ -12,7 +12,6 @@ import {
   DndContext,
   DragOverlay,
   MeasuringStrategy,
-  useDroppable,
   type DragEndEvent,
   type Modifier,
 } from "@dnd-kit/core";
@@ -40,6 +39,7 @@ import {
   ProviderGroupContainer,
   type GroupMiniIcon,
 } from "./ProviderGroupContainer";
+import { UngroupedDropZone } from "./UngroupedDropZone";
 import { GroupDragGhost } from "./GroupDragGhost";
 import { useGroupDnd } from "./useGroupDnd";
 import {
@@ -100,11 +100,13 @@ export interface GroupedProviderSectionsProps {
  * 唯一的悬停视觉指引——除此之外拖拽期间无任何指示，只有物理让位）。
  * 渲染在卡片之下，卡片本体同时微缩，边缘从四周均匀露出。
  */
-function MergePlate() {
+function MergePlate({ anchorId }: { anchorId: string }) {
   const reducedMotion = useReducedMotion();
   return (
     <motion.div
       aria-hidden
+      data-merge-plate
+      layoutId={`group-surface-${anchorId}`}
       className="pointer-events-none absolute -inset-2 z-0 rounded-xl border border-border bg-black/[0.06] dark:bg-white/[0.09]"
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -122,8 +124,8 @@ function MergePlate() {
  * 分组视图：把主分区的卡片切成「分组容器 + 未分组」两个层级，其余分区原样跟在后面。
  * 拖拽模型 = dnd-kit 官方多容器模式：拖拽中 per-container items 即时更新（悬停
  * 门槛后），DragOverlay 拖影跟随，松手一次性提交（分组定义 + sortIndex 重写）。
- * 组容器的挂载（建组）/ 卸载（消散）统一走 AnimatePresence：入场 spring、
- * 离场高度收拢幽灵，杜绝任何瞬时出现 / 消失。
+ * 顶层组与未分组卡片共用稳定的父列表；预览升格只改变顺序。
+ * 背景与锚点卡使用共享视觉身份，退出节点脱离布局，避免干扰落点测量。
  */
 export function GroupedProviderSections({
   appId,
@@ -135,6 +137,7 @@ export function GroupedProviderSections({
   providerGroups,
   onFlatDragEnd,
 }: GroupedProviderSectionsProps) {
+  const { t } = useTranslation();
   const reducedMotion = Boolean(useReducedMotion());
   // 拖影的抬升和落位由同一层变换管理，避免内外两次缩放和中心点补偿。
   const overlayModifiers = useMemo<Modifier[]>(
@@ -212,12 +215,10 @@ export function GroupedProviderSections({
     activeDrag,
     mergeTargetId,
     previewGroup,
-    elevatingGroup,
     gapPreview,
     settlingId,
     finishDropAnimation,
-    holdCommittedLayout,
-    completeGroupElevation,
+    commitHeldLayout,
   } = useGroupDnd({
     reducedMotion,
     primaryProviders,
@@ -236,8 +237,7 @@ export function GroupedProviderSections({
   const menu = useGroupMenuActions(
     { containers, containerOf },
     (pending, draft) => {
-      holdCommittedLayout(pending, draft);
-      void commitLayout(pending, draft);
+      void commitHeldLayout(pending, draft);
     },
     isSaving || Boolean(activeDrag),
   );
@@ -299,7 +299,9 @@ export function GroupedProviderSections({
     return (
       <div className="relative">
         <AnimatePresence>
-          {isMergeTarget && <MergePlate key="merge-plate" />}
+          {isMergeTarget && (
+            <MergePlate key="merge-plate" anchorId={providerId} />
+          )}
         </AnimatePresence>
         {renderCard(provider, presentation, undefined, {
           isMergeTarget,
@@ -323,28 +325,26 @@ export function GroupedProviderSections({
     [containers],
   );
 
-  /** 组容器（正式 + 就地预览共用）：layoutId 跨树 FLIP 让预览组从 B 原位平滑升入分组区 */
+  /** 预览与正式组始终是同一父列表下的同一节点，整个组一起移动。 */
   const renderGroupContainer = (
     container: (typeof containers)[number],
     isPreview = false,
   ) => (
     <motion.div
       key={container.id}
-      layoutId={`group-${container.id}`}
-      layout={!reducedMotion}
+      layout={reducedMotion ? false : "position"}
       data-group-preview={isPreview ? container.id : undefined}
-      initial={reducedMotion ? false : { opacity: 0, y: -6, scale: 0.98 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, height: 0 }}
       transition={reducedMotion ? { duration: 0 } : GROUP_ENTER_SPRING}
-      // 正式组升格动画结束 → 释放未分组流占位，其他卡片此时才开始补位
-      onLayoutAnimationComplete={() => {
-        if (!isPreview) completeGroupElevation(container.id);
-      }}
     >
       <ProviderGroupContainer
         appId={appId}
         group={container.group!}
+        surfaceId={
+          isPreview ? `group-surface-${previewGroup?.anchorId}` : undefined
+        }
         isCollapsed={isGroupCollapsed(container.id)}
         isSettling={settlingId === container.id}
         dragDisabled={isSaving}
@@ -400,18 +400,6 @@ export function GroupedProviderSections({
           renderGroupContainer(previewContainer, true),
         );
       }
-    } else if (elevatingGroup) {
-      // 正式组升格期间保持原槽位高度：后续卡片（D）不得提前补位
-      nodes.splice(
-        Math.min(elevatingGroup.slotIndex, nodes.length),
-        0,
-        <div
-          key="group-elevating-placeholder"
-          data-group-elevating-placeholder
-          aria-hidden
-          style={{ height: elevatingGroup.height }}
-        />,
-      );
     }
     return nodes;
   })();
@@ -461,55 +449,72 @@ export function GroupedProviderSections({
       autoScroll={false}
     >
       <ProviderSectionTitle section={primarySection} />
-      {/* 外层：分组间排序（官方容器排序同构）。未分组容器不参与，固定最后。
-          就地预览期的新组暂不在分组区（渲染在未分组流的原位槽），
-          预览结束升入此处时靠 layoutId 从原位平滑飞上来。 */}
       <SortableContext
-        items={groupContainers.map((container) => container.id)}
-        strategy={verticalListSortingStrategy}
+        items={[
+          ...groupContainers.map((container) => container.id),
+          ...ungroupedIds,
+          ...(previewGroup ? [previewGroup.groupId] : []),
+        ]}
+        strategy={
+          activeDrag?.activeType === "group"
+            ? verticalListSortingStrategy
+            : frozenDisplacementStrategy
+        }
       >
-        <AnimatePresence initial={false}>
-          {groupContainers.flatMap((container) => [
-            ...(gapPreview?.beforeGroupId === container.id
-              ? [
-                  // 缝隙落点预览：只插占位，不移动真卡；松手后才归入未分组
-                  <motion.div
-                    key={`gap-preview-${container.id}`}
-                    aria-hidden
-                    data-gap-preview
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{
-                      height: activeDrag?.overlayHeight ?? 84,
-                      opacity: 1,
-                    }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={
-                      reducedMotion ? { duration: 0 } : GROUP_ENTER_SPRING
-                    }
-                    className="overflow-hidden"
-                  />,
-                ]
-              : []),
-            renderGroupContainer(container),
-          ])}
-        </AnimatePresence>
+        <div className="space-y-3">
+          <AnimatePresence initial={false} mode="popLayout">
+            {[
+              ...groupContainers.flatMap((container) => [
+                ...(gapPreview?.beforeGroupId === container.id
+                  ? [
+                      <motion.div
+                        key={`gap-preview-${container.id}`}
+                        aria-hidden
+                        data-gap-preview
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{
+                          height: activeDrag?.overlayHeight ?? 84,
+                          opacity: 1,
+                        }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={
+                          reducedMotion ? { duration: 0 } : GROUP_ENTER_SPRING
+                        }
+                        className="overflow-hidden"
+                      />,
+                    ]
+                  : []),
+                renderGroupContainer(container),
+              ]),
+              ...(groupContainers.length > 0
+                ? [
+                    <motion.h2
+                      key="ungrouped-heading"
+                      layout={reducedMotion ? false : "position"}
+                      className="px-1 pt-1 text-caption font-semibold text-fg-2"
+                    >
+                      {t("providerGroups.ungrouped", {
+                        defaultValue: "未分组",
+                      })}
+                    </motion.h2>,
+                  ]
+                : []),
+              ...ungroupedRenderNodes,
+            ]}
+          </AnimatePresence>
+          <UngroupedDropZone
+            active={Boolean(
+              isCardDragging &&
+                activeDrag &&
+                presentationById.has(activeDrag.activeId),
+            )}
+            fillViewport={otherSections.length === 0}
+            movingOut={Boolean(
+              activeDrag && containerOf[activeDrag.activeId] !== UNGROUPED_ID,
+            )}
+          />
+        </div>
       </SortableContext>
-
-      <UngroupedContainer
-        showHeader={groups.length > 0}
-        isEmptyDuringDrag={Boolean(
-          isCardDragging && ungroupedIds.length === 0 && !previewGroup,
-        )}
-      >
-        <SortableContext
-          items={ungroupedIds}
-          strategy={frozenDisplacementStrategy}
-        >
-          <div className="space-y-3">
-            {ungroupedRenderNodes.map((node) => node)}
-          </div>
-        </SortableContext>
-      </UngroupedContainer>
 
       {otherSections.map((section) => renderFlatSection(section))}
 
@@ -525,46 +530,5 @@ export function GroupedProviderSections({
         document.body,
       )}
     </DndContext>
-  );
-}
-
-/** 未分组区：无盒子保持现状观感；只有存在分组时才显示「未分组」标题，拖拽中始终可放置 */
-function UngroupedContainer({
-  showHeader,
-  isEmptyDuringDrag,
-  children,
-}: {
-  showHeader: boolean;
-  isEmptyDuringDrag: boolean;
-  children: ReactNode;
-}) {
-  const { t } = useTranslation();
-  const { setNodeRef } = useDroppable({
-    id: UNGROUPED_ID,
-    data: { type: "ungrouped" },
-  });
-  return (
-    <section
-      ref={setNodeRef}
-      data-provider-group="ungrouped"
-      className="space-y-3"
-    >
-      {showHeader && (
-        <div className="flex items-center gap-1 px-1 pt-1 text-caption font-semibold text-fg-2">
-          <h2 className="m-0 text-caption font-semibold">
-            {t("providerGroups.ungrouped", { defaultValue: "未分组" })}
-          </h2>
-        </div>
-      )}
-      {isEmptyDuringDrag ? (
-        <div className="rounded-xl border border-dashed border-border px-4 py-4 text-center text-caption text-fg-3">
-          {t("providerGroups.dropToUngrouped", {
-            defaultValue: "松手移出分组",
-          })}
-        </div>
-      ) : (
-        children
-      )}
-    </section>
   );
 }

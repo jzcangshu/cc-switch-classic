@@ -38,7 +38,7 @@ const end = {
   active: { id: "a" },
   over: { id: "b", data: { current: { type: "card" } } },
 } as unknown as DragEndEvent;
-function collision(x = 0, target: "card" | "group" = "card") {
+function collision(x = 0, target: "card" | "group" | "ungrouped" = "card") {
   return {
     pointerCoordinates: { x, y: 50 },
     droppableContainers: [
@@ -48,7 +48,8 @@ function collision(x = 0, target: "card" | "group" = "card") {
         rect: { current: { top: 0, height: 100 } },
       },
       {
-        id: target === "card" ? "b" : "g",
+        id:
+          target === "card" ? "b" : target === "ungrouped" ? UNGROUPED_ID : "g",
         data: { current: { type: target } },
         rect: { current: { top: 0, height: 100 } },
       },
@@ -57,7 +58,7 @@ function collision(x = 0, target: "card" | "group" = "card") {
 }
 function setup(collapsed = false, reducedMotion = false, keyboard = false) {
   vi.useFakeTimers();
-  const commitLayout = vi.fn();
+  const commitLayout = vi.fn().mockResolvedValue(true);
   const setGroupCollapsed = vi.fn();
   const hook = renderHook(() =>
     useGroupDnd({
@@ -187,4 +188,115 @@ describe("group drag completion", () => {
     act(() => result.current.finishDropAnimation());
     expect(result.current.settlingId).toBeNull();
   });
+});
+
+describe("bottom whitespace drop", () => {
+  it.each([0, 700])("appends to the end after %i ms of dwell", (dwell) => {
+    const { result, commitLayout } = setup();
+    act(() => {
+      result.current.collisionDetection(collision(0, "ungrouped"));
+      result.current.handlers.onDragMove();
+    });
+    act(() => vi.advanceTimersByTime(dwell));
+    act(() =>
+      result.current.handlers.onDragEnd({
+        ...end,
+        over: {
+          id: UNGROUPED_ID,
+          data: { current: { type: "ungrouped" } },
+        },
+      } as unknown as DragEndEvent),
+    );
+    expect(commitLayout).toHaveBeenCalledWith(
+      { [UNGROUPED_ID]: ["b", "a"] },
+      [],
+    );
+    expect(result.current.previewGroup).toBeNull();
+  });
+  it("moves a grouped card to the ungrouped tail without treating the last card as a merge target", () => {
+    const { result, commitLayout } = setup(true);
+    act(() =>
+      result.current.handlers.onDragStart({
+        ...start,
+        active: { ...start.active, id: "b" },
+      }),
+    );
+    act(() => {
+      result.current.collisionDetection(collision(0, "ungrouped"));
+      result.current.handlers.onDragMove();
+    });
+    act(() =>
+      result.current.handlers.onDragEnd({
+        ...end,
+        active: { id: "b" },
+        over: {
+          id: UNGROUPED_ID,
+          data: { current: { type: "ungrouped" } },
+        },
+      } as unknown as DragEndEvent),
+    );
+    expect(commitLayout).toHaveBeenCalledWith(
+      { g: [], [UNGROUPED_ID]: ["a", "b"] },
+      expect.any(Array),
+    );
+    expect(result.current.previewGroup).toBeNull();
+  });
+});
+
+it("does not reinterpret a stationary pointer as a group gap after the merge changes geometry", () => {
+  const { result, commitLayout } = setup();
+  act(() => {
+    result.current.collisionDetection(collision());
+    result.current.handlers.onDragMove();
+  });
+  act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
+  const preview = result.current.previewGroup!;
+  const args = {
+    ...collision(-1),
+    droppableContainers: [
+      {
+        id: "upper",
+        data: { current: { type: "group" } },
+        rect: { current: { top: 0, bottom: 40, left: -10, right: 100 } },
+      },
+      {
+        id: preview.groupId,
+        data: { current: { type: "group" } },
+        rect: { current: { top: 60, bottom: 160, left: -10, right: 100 } },
+      },
+    ],
+  } as unknown as Parameters<CollisionDetection>[0];
+  act(() => {
+    result.current.collisionDetection(args);
+    result.current.handlers.onDragMove();
+  });
+  expect(result.current.gapPreview).toBeNull();
+  act(() => result.current.handlers.onDragEnd(end));
+  expect(commitLayout).toHaveBeenCalledWith(
+    { [UNGROUPED_ID]: [], [preview.groupId]: ["a", "b"] },
+    expect.any(Array),
+  );
+});
+
+it("holds a confirmed order beyond a fixed timeout until data catches up", async () => {
+  const { result } = setup();
+  act(() => result.current.handlers.onDragCancel());
+  await act(async () => {
+    await result.current.commitHeldLayout({ [UNGROUPED_ID]: ["b", "a"] }, []);
+  });
+  act(() => vi.advanceTimersByTime(5000));
+  expect(
+    result.current.containers.find((c) => c.id === UNGROUPED_ID)?.providerIds,
+  ).toEqual(["b", "a"]);
+});
+it("releases a failed layout explicitly instead of waiting for a visual timeout", async () => {
+  const { result, commitLayout } = setup();
+  act(() => result.current.handlers.onDragCancel());
+  commitLayout.mockResolvedValueOnce(false);
+  await act(async () => {
+    await result.current.commitHeldLayout({ [UNGROUPED_ID]: ["b", "a"] }, []);
+  });
+  expect(
+    result.current.containers.find((c) => c.id === UNGROUPED_ID)?.providerIds,
+  ).toEqual(["a", "b"]);
 });

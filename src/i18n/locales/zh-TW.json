@@ -5079,6 +5079,7 @@
     "dragGroupHandle": "拖曳調整群組順序",
     "toggleAriaLabel": "摺疊或展開群組",
     "dropToUngrouped": "鬆手移出群組",
+    "dropToEnd": "放開移至末尾",
     "settingTitle": "供應商分組",
     "modeOff": "關閉",
     "modeDrag": "拖曳",
