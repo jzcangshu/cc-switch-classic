@@ -20,7 +20,12 @@ import {
   verticalListSortingStrategy,
   type SortingStrategy,
 } from "@dnd-kit/sortable";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useReducedMotion,
+} from "framer-motion";
 import { useTranslation } from "react-i18next";
 import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
@@ -449,72 +454,75 @@ export function GroupedProviderSections({
       autoScroll={false}
     >
       <ProviderSectionTitle section={primarySection} />
-      <SortableContext
-        items={[
-          ...groupContainers.map((container) => container.id),
-          ...ungroupedIds,
-          ...(previewGroup ? [previewGroup.groupId] : []),
-        ]}
-        strategy={
-          activeDrag?.activeType === "group"
-            ? verticalListSortingStrategy
-            : frozenDisplacementStrategy
-        }
-      >
-        <div className="space-y-3">
-          <AnimatePresence initial={false} mode="popLayout">
-            {[
-              ...groupContainers.flatMap((container) => [
-                ...(gapPreview?.beforeGroupId === container.id
+      {/* 共享布局测量通知：退出管理会保留未重渲染的卡片，也必须参与让位快照。 */}
+      <LayoutGroup>
+        <SortableContext
+          items={[
+            ...groupContainers.map((container) => container.id),
+            ...ungroupedIds,
+            ...(previewGroup ? [previewGroup.groupId] : []),
+          ]}
+          strategy={
+            activeDrag?.activeType === "group"
+              ? verticalListSortingStrategy
+              : frozenDisplacementStrategy
+          }
+        >
+          <div className="space-y-3">
+            <AnimatePresence initial={false} mode="popLayout">
+              {[
+                ...groupContainers.flatMap((container) => [
+                  ...(gapPreview?.beforeGroupId === container.id
+                    ? [
+                        <motion.div
+                          key={`gap-preview-${container.id}`}
+                          aria-hidden
+                          data-gap-preview
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{
+                            height: activeDrag?.overlayHeight ?? 84,
+                            opacity: 1,
+                          }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={
+                            reducedMotion ? { duration: 0 } : GROUP_ENTER_SPRING
+                          }
+                          className="overflow-hidden"
+                        />,
+                      ]
+                    : []),
+                  renderGroupContainer(container),
+                ]),
+                ...(groupContainers.length > 0
                   ? [
-                      <motion.div
-                        key={`gap-preview-${container.id}`}
-                        aria-hidden
-                        data-gap-preview
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{
-                          height: activeDrag?.overlayHeight ?? 84,
-                          opacity: 1,
-                        }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={
-                          reducedMotion ? { duration: 0 } : GROUP_ENTER_SPRING
-                        }
-                        className="overflow-hidden"
-                      />,
+                      <motion.h2
+                        key="ungrouped-heading"
+                        layout={reducedMotion ? false : "position"}
+                        className="px-1 pt-1 text-caption font-semibold text-fg-2"
+                      >
+                        {t("providerGroups.ungrouped", {
+                          defaultValue: "未分组",
+                        })}
+                      </motion.h2>,
                     ]
                   : []),
-                renderGroupContainer(container),
-              ]),
-              ...(groupContainers.length > 0
-                ? [
-                    <motion.h2
-                      key="ungrouped-heading"
-                      layout={reducedMotion ? false : "position"}
-                      className="px-1 pt-1 text-caption font-semibold text-fg-2"
-                    >
-                      {t("providerGroups.ungrouped", {
-                        defaultValue: "未分组",
-                      })}
-                    </motion.h2>,
-                  ]
-                : []),
-              ...ungroupedRenderNodes,
-            ]}
-          </AnimatePresence>
-          <UngroupedDropZone
-            active={Boolean(
-              isCardDragging &&
-                activeDrag &&
-                presentationById.has(activeDrag.activeId),
-            )}
-            fillViewport={otherSections.length === 0}
-            movingOut={Boolean(
-              activeDrag && containerOf[activeDrag.activeId] !== UNGROUPED_ID,
-            )}
-          />
-        </div>
-      </SortableContext>
+                ...ungroupedRenderNodes,
+              ]}
+            </AnimatePresence>
+            <UngroupedDropZone
+              active={Boolean(
+                isCardDragging &&
+                  activeDrag &&
+                  presentationById.has(activeDrag.activeId),
+              )}
+              fillViewport={otherSections.length === 0}
+              movingOut={Boolean(
+                activeDrag && containerOf[activeDrag.activeId] !== UNGROUPED_ID,
+              )}
+            />
+          </div>
+        </SortableContext>
+      </LayoutGroup>
 
       {otherSections.map((section) => renderFlatSection(section))}
 
