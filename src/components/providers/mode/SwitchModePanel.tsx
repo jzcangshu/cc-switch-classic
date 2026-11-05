@@ -144,9 +144,6 @@ export function SwitchModePanel({
   const [confirmFailover, setConfirmFailover] = useState(false);
   // 关掉的是哪一份提示（后端的 staleRevision）：目录或登录又变了就是新的一份，重新显示。
   const [staleDismissed, setStaleDismissed] = useState<string | null>(null);
-  useEffect(() => {
-    setStaleDismissed(null);
-  }, [app, active, directId, routeId, stack?.staleClients?.auth]);
   const staleRevision = stack?.staleRevision ?? "";
 
   // 供应商还没加载完时先等着，到了再弹

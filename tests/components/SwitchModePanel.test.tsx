@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -302,6 +303,20 @@ describe("SwitchModePanel — Stack mode", () => {
 
     // 同一份：再拉一次还是关着。
     await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+    expect(
+      screen.queryByText("proxy.stackMode.codexStale.title"),
+    ).not.toBeInTheDocument();
+
+    // 换供应商和模式，但模型目录和登录没变：同一份提示保持关闭。
+    mockMode("route", "other", "other");
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+    });
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryData(["providers", "codex", "mode"]),
+      ).toMatchObject({ mode: "route", routeProviderId: "other" }),
+    );
     expect(
       screen.queryByText("proxy.stackMode.codexStale.title"),
     ).not.toBeInTheDocument();

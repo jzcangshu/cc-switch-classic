@@ -25,12 +25,12 @@ function renderNotice(staleClients: CodexStaleClients) {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-  render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <CodexStaleClientsNotice staleClients={staleClients} />
     </QueryClientProvider>,
   );
-  return { invalidate };
+  return { invalidate, ...view };
 }
 
 function clickRestartAndConfirm() {
@@ -45,6 +45,7 @@ function clickRestartAndConfirm() {
 describe("CodexStaleClientsNotice", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it("explains a potentially cached account without claiming models are missing", () => {
@@ -107,6 +108,89 @@ describe("CodexStaleClientsNotice", () => {
       screen.queryByRole("button", { name: "common.close" }),
     ).not.toBeInTheDocument();
     expect(acknowledged).toBe(0);
+  });
+
+  it("remembers opting out of unverified reminders across remounts but keeps verified clients", () => {
+    const view = renderNotice({
+      daemon: false,
+      others: true,
+      unverified: true,
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "proxy.stackMode.codexStale.hideUnverified",
+      }),
+    );
+    expect(
+      screen.queryByText("proxy.stackMode.codexStale.unverifiedTitle"),
+    ).not.toBeInTheDocument();
+    view.unmount();
+
+    const next = renderNotice({
+      daemon: false,
+      others: true,
+      auth: true,
+      unverified: true,
+    });
+    expect(
+      screen.queryByText("proxy.stackMode.codexStale.unverifiedTitle"),
+    ).not.toBeInTheDocument();
+    next.unmount();
+
+    renderNotice({ daemon: false, others: true, auth: true });
+    expect(
+      screen.getByText("proxy.stackMode.codexStale.authTitle"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("proxy.stackMode.codexStale.others"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps a detected stale daemon visible when unverified desktop reminders are muted", () => {
+    renderNotice({ daemon: true, others: true, unverified: true });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "proxy.stackMode.codexStale.hideUnverified",
+      }),
+    );
+    expect(
+      screen.getByText("proxy.stackMode.codexStale.title"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "proxy.stackMode.codexStale.restart",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("proxy.stackMode.codexStale.others"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("proxy.stackMode.codexStale.unverifiedHint"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still allows muting for the current mount when local storage is unavailable", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage unavailable");
+      },
+      setItem: () => {
+        throw new Error("storage unavailable");
+      },
+    });
+    try {
+      renderNotice({ daemon: false, others: true, unverified: true });
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "proxy.stackMode.codexStale.hideUnverified",
+        }),
+      );
+      expect(
+        screen.queryByText("proxy.stackMode.codexStale.unverifiedTitle"),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("restarts the daemon only after the user confirms", async () => {

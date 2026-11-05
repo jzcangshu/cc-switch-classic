@@ -152,6 +152,16 @@ const fetchButton = () =>
     name: /^providerForm\.(fetchModels|modelPicker\.title)$/,
     hidden: true,
   })[0];
+function fetchFromMapping() {
+  const advanced = screen.queryByRole("button", {
+    name: "高级选项",
+    hidden: true,
+  });
+  if (advanced?.getAttribute("aria-expanded") === "false")
+    fireEvent.click(advanced);
+  fireEvent.click(fetchButton());
+}
+
 const providerKinds: ProviderKind[] = ["copilot", "xai", "config"];
 
 describe("Codex model-fetch lifecycle", () => {
@@ -178,7 +188,7 @@ describe("Codex model-fetch lifecycle", () => {
       copilotApiFormat: "openai_chat" as const,
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
     await waitFor(() => expect(fetchButton()).toBeEnabled());
     expect(screen.getByTestId("model-options")).toHaveTextContent("chat-model");
     expect(screen.getByTestId("model-options")).not.toHaveTextContent(
@@ -195,7 +205,7 @@ describe("Codex model-fetch lifecycle", () => {
     vi.mocked(copilotGetModelsForAccount).mockReturnValue(pending.promise);
     const props = makeProps("copilot");
     const { rerender } = render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
     rerender(<Harness {...props} copilotApiFormat="openai_chat" />);
     await act(async () => pending.resolve([advertisedModel()]));
     expect(props.onCatalogModelsChange).not.toHaveBeenCalled();
@@ -212,7 +222,7 @@ describe("Codex model-fetch lifecycle", () => {
       ]);
       const props = { ...makeProps("copilot"), codexModel: currentModel };
       render(<Harness {...props} />);
-      fireEvent.click(fetchButton());
+      fetchFromMapping();
       await waitFor(() => expect(fetchButton()).toBeEnabled());
       if (currentModel === "claude-model") {
         expect(props.onModelChange).not.toHaveBeenCalled();
@@ -230,7 +240,7 @@ describe("Codex model-fetch lifecycle", () => {
       const props = makeProps(kind);
       render(<Harness {...props} />);
 
-      fireEvent.click(fetchButton());
+      fetchFromMapping();
       expect(fetchButton()).toBeDisabled();
       expect(fetchMockFor(kind)).toHaveBeenCalledTimes(1);
       if (kind === "copilot") {
@@ -278,7 +288,7 @@ describe("Codex model-fetch lifecycle", () => {
     async (kind) => {
       fetchMockFor(kind).mockResolvedValue([]);
       render(<Harness {...makeProps(kind)} />);
-      fireEvent.click(fetchButton());
+      fetchFromMapping();
 
       await waitFor(() =>
         expect(toast.info).toHaveBeenCalledWith(
@@ -296,7 +306,7 @@ describe("Codex model-fetch lifecycle", () => {
       const error = new Error("model-list unavailable");
       fetchMockFor(kind).mockRejectedValue(error);
       render(<Harness {...makeProps(kind)} />);
-      fireEvent.click(fetchButton());
+      fetchFromMapping();
 
       await waitFor(() =>
         expect(showFetchModelsError).toHaveBeenCalledWith(
@@ -324,7 +334,7 @@ describe("Codex model-fetch lifecycle", () => {
       fetchMockFor(kind).mockReturnValue(pending.promise);
       const props = makeProps(kind);
       const view = render(<Harness {...props} />);
-      fireEvent.click(fetchButton());
+      fetchFromMapping();
       view.rerender(
         <Harness
           {...props}
@@ -357,7 +367,7 @@ describe("Codex model-fetch lifecycle", () => {
       catalogModels: [{ model: "model-1", contextWindow: 200_000 }],
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     await waitFor(() =>
       expect(props.onModelChange).toHaveBeenCalledWith("model-1"),
@@ -394,7 +404,7 @@ describe("Codex model-fetch lifecycle", () => {
       ],
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     await waitFor(() =>
       expect(props.onCatalogModelsChange).toHaveBeenCalledWith([
@@ -428,7 +438,7 @@ describe("Codex model-fetch lifecycle", () => {
       ],
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     await waitFor(() =>
       expect(props.onCatalogModelsChange).toHaveBeenCalledWith([
@@ -459,7 +469,7 @@ describe("Codex model-fetch lifecycle", () => {
       ],
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     await waitFor(() =>
       expect(props.onCatalogModelsChange).toHaveBeenCalledWith([
@@ -481,7 +491,7 @@ describe("Codex model-fetch lifecycle", () => {
         codexBaseUrl=""
       />,
     );
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     expect(fetchMockFor(kind)).not.toHaveBeenCalled();
     expect(fetchButton()).toBeEnabled();
@@ -509,7 +519,7 @@ describe("Codex model-fetch lifecycle", () => {
       ],
     };
     render(<Harness {...props} />);
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("checkbox", { name: "model-1" }));
@@ -531,7 +541,7 @@ describe("Codex model-fetch lifecycle", () => {
     render(
       <Harness {...makeProps("config")} onCatalogModelsChange={undefined} />,
     );
-    fireEvent.click(fetchButton());
+    fetchFromMapping();
 
     await waitFor(() =>
       expect(toast.success).toHaveBeenCalledWith(
