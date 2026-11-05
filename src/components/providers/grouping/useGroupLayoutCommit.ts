@@ -28,7 +28,7 @@ export function useGroupLayoutCommit(
   const [isSaving, setIsSaving] = useState(false);
   const commitLayout = useCallback(
     async (pending: PendingLayout, draftGroups: ProviderGroupDefinition[]) => {
-      if (busy.current || providerGroups.isSaving) return;
+      if (busy.current || providerGroups.isSaving) return false;
       busy.current = true;
       setIsSaving(true);
       let groupsSaved = false;
@@ -75,9 +75,11 @@ export function useGroupLayoutCommit(
         } catch (error) {
           console.error("Failed to refresh tray after grouping", error);
         }
+        return true;
       } catch (error) {
         console.error("Failed to commit provider grouping", error);
         if (groupsSaved) toast.error(t("providerGroups.sortSaveFailed"));
+        return false;
       } finally {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["providers", appId] }),

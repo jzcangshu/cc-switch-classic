@@ -171,10 +171,12 @@ export function ProviderList({
     setSearchTerm("");
   }, [appId]);
 
-  const { sortedProviders, sensors, handleDragEnd } = useDragSort(
-    providers,
-    appId,
-  );
+  const {
+    sortedProviders,
+    sensors,
+    handleDragEnd,
+    isSaving: isFlatSaving,
+  } = useDragSort(providers, appId);
 
   // 主页供应商卡片分组（Classic 层功能）：无分组时主页与原来完全一致
   const providerGroups = useProviderGroups(appId);
@@ -517,16 +519,11 @@ export function ProviderList({
       onOpenTerminal={appId === "agy" ? undefined : onOpenTerminal}
       onTest={handleTest}
       isTesting={isChecking(provider.id)}
-      groupMenu={groupMenu}
+      groupMenu={providerGroups.mode === "menu" ? groupMenu : undefined}
       isMergeTarget={flags?.isMergeTarget}
       isSettling={flags?.isSettling}
       useOverlayDrag={groupingApplicable && providerGroups.mode === "drag"}
-      dragDisabled={
-        flags?.dragDisabled ||
-        (groupingApplicable &&
-          providerGroups.mode === "menu" &&
-          Boolean(groupMenu))
-      }
+      dragDisabled={flags?.dragDisabled || isFlatSaving}
     />
   );
 
@@ -734,15 +731,21 @@ function SortableProviderCard(props: SortableProviderCardProps) {
     dragDisabled = false,
     ...cardProps
   } = props;
-  const { setNodeRef, attributes, listeners, transform, isDragging } =
-    useSortable({
-      id: props.provider.id,
-      disabled: dragDisabled,
-      // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
-      data: { type: "card" },
-      // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
-      transition: useOverlayDrag ? null : undefined,
-    });
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: props.provider.id,
+    disabled: dragDisabled,
+    // 自定义碰撞检测按 type 区分卡片 / 分组容器 / 未分组容器
+    data: { type: "card" },
+    // 分组视图走官方 FramerMotion 接法：关掉 dnd-kit CSS 过渡，位移交给 spring
+    transition: useOverlayDrag ? null : undefined,
+  });
 
   const style: CSSProperties = {
     position: "relative",
@@ -755,9 +758,11 @@ function SortableProviderCard(props: SortableProviderCardProps) {
   const card = (
     <ProviderCard
       {...cardProps}
-      dragHandleProps={
-        dragDisabled ? undefined : { attributes, listeners, isDragging }
-      }
+      dragHandleProps={{
+        attributes,
+        listeners,
+        isDragging: isDragging && !useOverlayDrag,
+      }}
     />
   );
 
@@ -766,32 +771,35 @@ function SortableProviderCard(props: SortableProviderCardProps) {
     return (
       <div
         ref={setNodeRef}
-        style={{ ...style, transform: CSS.Translate.toString(transform) }}
+        style={{
+          ...style,
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
       >
         {card}
       </div>
     );
   }
 
+  // 测量节点始终保持真实布局；视觉位移在内层，落点不再读取布局动画的中间态。
   return (
-    <motion.div
-      ref={setNodeRef}
-      layoutId={`card-${props.provider.id}`}
-      animate={{
-        // 拖拽/安定中的本体是隐藏占位，transform 置零：它稳在最终布局位置上，
-        // dropAnimation 的落点就是准确的目标槽位
-        x: isDragging || isSettling ? 0 : (transform?.x ?? 0),
-        y: isDragging || isSettling ? 0 : (transform?.y ?? 0),
-        scale: isMergeTarget ? 0.98 : 1,
-      }}
-      transition={
-        isDragging || isSettling || reducedMotion
-          ? { duration: 0 }
-          : CARD_SPRING
-      }
-      style={style}
-    >
-      {card}
-    </motion.div>
+    <div ref={setNodeRef} style={style}>
+      <motion.div
+        layout={isDragging || isSettling || reducedMotion ? false : "position"}
+        animate={{
+          x: isDragging || isSettling ? 0 : (transform?.x ?? 0),
+          y: isDragging || isSettling ? 0 : (transform?.y ?? 0),
+          scale: isMergeTarget ? 0.98 : 1,
+        }}
+        transition={
+          isDragging || isSettling || reducedMotion
+            ? { duration: 0 }
+            : CARD_SPRING
+        }
+      >
+        {card}
+      </motion.div>
+    </div>
   );
 }

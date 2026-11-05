@@ -23,11 +23,11 @@
       "ja": "折りたたみ時のアイコン重なりと古い設定によるグループ上書きを修正"
     },
     {
-      "type": "improve",
-      "zh": "打磨拖拽落位、慢移判定及取消恢复，支持减少动态效果",
-      "zh-TW": "改善拖曳落位、慢移判定及取消還原，支援減少動態效果",
-      "en": "Refined drop transitions, slow pointer movement and cancellation; added reduced motion support",
-      "ja": "ドロップ・低速移動・キャンセル時の動作を改善し、動きを減らす設定に対応"
+      "type": "fix",
+      "zh": "恢复常规排序、把手与悬停按钮，修复落位闪动和菜单点击",
+      "zh-TW": "還原一般排序、把手與懸停按鈕，修正落位閃動及選單點擊",
+      "en": "Restored standard sorting and hover actions; fixed drop flicker, handles and menu clicks",
+      "ja": "通常の並べ替えとホバー操作を復元し、ドロップのちらつき・ハンドル・メニュー操作を修正"
     }
   ]
 }

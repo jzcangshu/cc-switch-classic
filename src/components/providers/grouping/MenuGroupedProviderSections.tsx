@@ -1,11 +1,20 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { closestCenter, DndContext } from "@dnd-kit/core";
+import { closestCenter, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { resolveGroupedLayout, renameGroup } from "@/lib/providerGroups";
+import {
+  resolveGroupedLayout,
+  renameGroup,
+  layoutToPending,
+  moveProviderInPending,
+  pendingLayoutToContainers,
+  type GroupedLayout,
+  type PendingLayout,
+} from "@/lib/providerGroups";
+import type { ProviderGroupDefinition } from "@/types";
 import type { GroupedProviderSectionsProps } from "./GroupedProviderSections";
 import { ProviderGroupContainer } from "./ProviderGroupContainer";
 import { GroupActionMenu } from "./GroupActionMenu";
@@ -14,7 +23,7 @@ import { useGroupMenuActions } from "./useGroupMenuActions";
 import { useGroupLayoutCommit } from "./useGroupLayoutCommit";
 import { ProviderSectionTitle } from "../ProviderSectionTitle";
 
-/** 桌面模式的主区没有拖动传感器；其他业务分区保留各自的排序。 */
+/** 菜单负责归组，组内排序沿用普通列表的传感器、位移和过渡。 */
 export function MenuGroupedProviderSections({
   appId,
   sections,
@@ -33,39 +42,110 @@ export function MenuGroupedProviderSections({
     [primary],
   );
   const byId = new Map(primary?.items.map((item) => [item.provider.id, item]));
-  const layout = resolveGroupedLayout(providerGroups.groups, providers);
+  const [pendingLayout, setPendingLayout] = useState<{
+    pending: PendingLayout;
+    groups: ProviderGroupDefinition[];
+  } | null>(null);
+  const persistedLayout = useMemo(
+    () => resolveGroupedLayout(providerGroups.groups, providers),
+    [providerGroups.groups, providers],
+  );
+  const layout: GroupedLayout = useMemo(() => {
+    if (!pendingLayout) return persistedLayout;
+    const containers = pendingLayoutToContainers(
+      pendingLayout.groups,
+      pendingLayout.pending,
+      providers,
+    );
+    return {
+      containers,
+      containerOf: Object.fromEntries(
+        containers.flatMap((c) => c.providerIds.map((id) => [id, c.id])),
+      ),
+    };
+  }, [pendingLayout, persistedLayout, providers]);
   const { commitLayout, isSaving } = useGroupLayoutCommit(
     appId,
     providers,
     sortedProviders,
     providerGroups,
   );
+  const commit = async (
+    pending: PendingLayout,
+    groups: ProviderGroupDefinition[],
+  ) => {
+    if (isSaving) return;
+    setPendingLayout({ pending, groups });
+    if (!(await commitLayout(pending, groups))) setPendingLayout(null);
+  };
+  useEffect(() => {
+    if (!pendingLayout) return;
+    const current = persistedLayout.containers;
+    const held = layout.containers;
+    if (
+      current.length === held.length &&
+      current.every(
+        (c, i) =>
+          c.id === held[i].id &&
+          c.providerIds.length === held[i].providerIds.length &&
+          c.providerIds.every((id, j) => id === held[i].providerIds[j]),
+      )
+    )
+      setPendingLayout(null);
+  }, [pendingLayout, persistedLayout, layout]);
   const menu = useGroupMenuActions(
     layout,
     (pending, groups) => {
-      void commitLayout(pending, groups);
+      void commit(pending, groups);
     },
     isSaving,
   );
+  const handleSort = ({ active, over }: DragEndEvent) => {
+    if (isSaving || !over || active.id === over.id) return;
+    const container = layout.containerOf[String(active.id)];
+    if (!container || container !== layout.containerOf[String(over.id)]) return;
+    void commit(
+      moveProviderInPending(
+        layoutToPending(layout),
+        String(active.id),
+        container,
+        String(over.id),
+      ),
+      providerGroups.groups,
+    );
+  };
   return (
     <>
       {primary && <ProviderSectionTitle section={primary} />}
       {layout.containers.map((container) => {
         const cards = (
-          <div className="space-y-3">
-            {container.providerIds.map((id) => {
-              const item = byId.get(id);
-              return item ? (
-                <Fragment key={id}>
-                  {renderCard(
-                    item.provider,
-                    item.presentation,
-                    menu.buildGroupMenu(id),
-                  )}
-                </Fragment>
-              ) : null;
-            })}
-          </div>
+          <DndContext
+            sensors={flatSensors}
+            modifiers={flatModifiers}
+            collisionDetection={closestCenter}
+            onDragEnd={handleSort}
+          >
+            <SortableContext
+              items={container.providerIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {container.providerIds.map((id) => {
+                  const item = byId.get(id);
+                  return item ? (
+                    <Fragment key={id}>
+                      {renderCard(
+                        item.provider,
+                        item.presentation,
+                        menu.buildGroupMenu(id),
+                        { dragDisabled: isSaving },
+                      )}
+                    </Fragment>
+                  ) : null;
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
         );
         if (!container.group)
           return (

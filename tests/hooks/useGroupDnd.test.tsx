@@ -81,12 +81,27 @@ function setup(collapsed = false, reducedMotion = false, keyboard = false) {
 }
 afterEach(() => vi.useRealTimers());
 describe("group drag timing", () => {
+  it("collision measurement alone does not schedule a visual change before the sensor event", () => {
+    const { result } = setup();
+    act(() => result.current.collisionDetection(collision()));
+    act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
+    expect(result.current.previewGroup).toBeNull();
+    act(() => result.current.handlers.onDragMove());
+    act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
+    expect(result.current.previewGroup).not.toBeNull();
+  });
   it("does not let slow continuous motion accidentally create a group", () => {
     const { result } = setup();
-    act(() => result.current.collisionDetection(collision(0)));
+    act(() => {
+      result.current.collisionDetection(collision(0));
+      result.current.handlers.onDragMove();
+    });
     for (const x of [4, 8, 12, 16]) {
       act(() => vi.advanceTimersByTime(100));
-      act(() => result.current.collisionDetection(collision(x)));
+      act(() => {
+        result.current.collisionDetection(collision(x));
+        result.current.handlers.onDragMove();
+      });
     }
     expect(result.current.previewGroup).toBeNull();
     act(() => vi.advanceTimersByTime(250));
@@ -96,9 +111,15 @@ describe("group drag timing", () => {
   });
   it("disarms a hover after leaving all targets", () => {
     const { result, commitLayout } = setup();
-    act(() => result.current.collisionDetection(collision()));
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
     act(() => vi.advanceTimersByTime(100));
-    act(() => result.current.collisionDetection(collision(-1)));
+    act(() => {
+      result.current.collisionDetection(collision(-1));
+      result.current.handlers.onDragMove();
+    });
     act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
     expect(result.current.previewGroup).toBeNull();
     act(() => result.current.handlers.onDragCancel());
@@ -106,7 +127,10 @@ describe("group drag timing", () => {
   });
   it("keeps a new group in place until the drop animation finishes", () => {
     const { result, commitLayout } = setup();
-    act(() => result.current.collisionDetection(collision()));
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
     act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
     expect(result.current.previewGroup).not.toBeNull();
     act(() => result.current.handlers.onDragEnd(end));
@@ -119,7 +143,10 @@ describe("group drag timing", () => {
   });
   it("cancelling restores groups expanded during hovering", () => {
     const { result, setGroupCollapsed, commitLayout } = setup(true);
-    act(() => result.current.collisionDetection(collision(0, "group")));
+    act(() => {
+      result.current.collisionDetection(collision(0, "group"));
+      result.current.handlers.onDragMove();
+    });
     act(() => vi.advanceTimersByTime(EXPAND_DWELL_MS));
     expect(setGroupCollapsed).toHaveBeenCalledWith("g", false);
     act(() => result.current.handlers.onDragCancel());
@@ -128,7 +155,10 @@ describe("group drag timing", () => {
   });
   it("reduced motion never hides a released card", () => {
     const { result } = setup(false, true);
-    act(() => result.current.collisionDetection(collision()));
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
     act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
     act(() => result.current.handlers.onDragEnd(end));
     expect(result.current.settlingId).toBeNull();

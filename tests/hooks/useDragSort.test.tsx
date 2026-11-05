@@ -72,6 +72,102 @@ describe("useDragSort", () => {
     consoleErrorSpy.mockRestore();
   });
 
+  it("publishes the final order synchronously while saving and preserves query metadata", async () => {
+    let complete!: (ok: boolean) => void;
+    updateSortOrderMock.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        complete = resolve;
+      }),
+    );
+    const { wrapper, queryClient } = createWrapper();
+    queryClient.setQueryData(["providers", "claude"], {
+      providers: mockProviders,
+      currentProviderId: "b",
+    });
+    const { result } = renderHook(() => useDragSort(mockProviders, "claude"), {
+      wrapper,
+    });
+    let saving!: Promise<void>;
+    act(() => {
+      saving = result.current.handleDragEnd({
+        active: { id: "b" },
+        over: { id: "a" },
+      } as any);
+    });
+    expect(queryClient.getQueryData(["providers", "claude"])).toEqual({
+      providers: {
+        a: { ...mockProviders.a, sortIndex: 0 },
+        b: { ...mockProviders.b, sortIndex: 1 },
+        c: { ...mockProviders.c, sortIndex: 2 },
+      },
+      currentProviderId: "b",
+    });
+    await act(async () => {
+      complete(true);
+      await saving;
+    });
+  });
+
+  it.each(["reject", "false"])(
+    "restores order after a %s save failure",
+    async (failure) => {
+      if (failure === "reject")
+        updateSortOrderMock.mockRejectedValue(new Error("network"));
+      else updateSortOrderMock.mockResolvedValue(false);
+      const { wrapper, queryClient } = createWrapper();
+      const original = { providers: mockProviders, currentProviderId: "b" };
+      queryClient.setQueryData(["providers", "claude"], original);
+      const { result } = renderHook(
+        () => useDragSort(mockProviders, "claude"),
+        { wrapper },
+      );
+      await act(async () => {
+        await result.current.handleDragEnd({
+          active: { id: "b" },
+          over: { id: "a" },
+        } as any);
+      });
+      expect(queryClient.getQueryData(["providers", "claude"])).toEqual(
+        original,
+      );
+      expect(toastErrorMock).toHaveBeenCalledOnce();
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("keeps the dropped order after saving until the provider props actually catch up", async () => {
+    updateSortOrderMock.mockResolvedValue(true);
+    const { wrapper } = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ providers }) => useDragSort(providers, "claude"),
+      { wrapper, initialProps: { providers: mockProviders } },
+    );
+    await act(() =>
+      result.current.handleDragEnd({
+        active: { id: "b" },
+        over: { id: "a" },
+      } as any),
+    );
+    expect(result.current.sortedProviders.map((p) => p.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+    expect(result.current.isSaving).toBe(false);
+    rerender({
+      providers: {
+        a: { ...mockProviders.a, sortIndex: 0 },
+        b: { ...mockProviders.b, sortIndex: 1 },
+        c: { ...mockProviders.c, sortIndex: 2 },
+      },
+    });
+    expect(result.current.sortedProviders.map((p) => p.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
   it("should sort providers by sortIndex, createdAt, and name", () => {
     const { wrapper } = createWrapper();
 

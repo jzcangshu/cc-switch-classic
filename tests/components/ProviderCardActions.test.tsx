@@ -60,6 +60,33 @@ function renderActions(presentation: CardPresentation) {
 }
 
 describe("ProviderCardActions — classic controls with live presentation", () => {
+  it("opens the group menu by pointer and runs its action", async () => {
+    const user = userEvent.setup();
+    const createGroup = vi.fn();
+    const { card } = switchCards();
+    render(
+      <ProviderCardActions
+        providerName="Relay"
+        presentation={card(provider.id)}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        groupMenu={{
+          actions: [
+            { key: "create", label: "Create group", onSelect: createGroup },
+          ],
+          options: [],
+        }}
+      />,
+    );
+    const trigger = screen.getByRole("button", {
+      name: "providerGroups.manageProvider",
+    });
+    await user.click(trigger);
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Create group" }),
+    );
+    expect(createGroup).toHaveBeenCalledOnce();
+  });
   it("shows in-use as a disabled button and enables the selected direct provider", async () => {
     const user = userEvent.setup();
     const { input, card } = switchCards();

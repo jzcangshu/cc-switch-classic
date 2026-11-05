@@ -245,6 +245,13 @@ export function useGroupDnd(input: UseGroupDndInput) {
   /** 碰撞阶段捕获的指针 Y（波段判定用；键盘拖拽为 null） */
   const pointerYRef = useRef<number | null>(null);
   const keyboardDragRef = useRef(false);
+  // 碰撞在 DndContext 渲染期间执行；视觉状态只在随后传感器事件提交时更新。
+  const hoverEffectsRef = useRef<Array<() => void>>([]);
+  const applyHoverEffects = useCallback(() => {
+    const effects = hoverEffectsRef.current;
+    hoverEffectsRef.current = [];
+    effects.forEach((effect) => effect());
+  }, []);
   const dragSequenceRef = useRef(0);
   const [dragSequence, setDragSequence] = useState(0);
   /** 上一次指针位置（移动检测：慢扫不计时，静止才武装） */
@@ -453,6 +460,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
       // 新拖拽 / 取消 / 结束时必须解除上一轮的 settling 冻结，
       // 否则旧 settlingId 会让对应卡片一直停在 opacity:0
       endSettling();
+      hoverEffectsRef.current = [];
       pendingRef.current = null;
       draftGroupsRef.current = null;
       createdGroupIdsRef.current = [];
@@ -621,14 +629,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
     [resetDragState, groups, primaryProviders],
   );
 
-  /**
-   * 意图武装（波段 / 建组 / 展开 / 插入）挂在碰撞检测的同步路径上：
-   * dnd-kit 的 onDragOver 只在 over 变化时派发（指针在同一张卡上从边缘滑到
-   * 中心不触发），onDragMove 又是异步 effect（合成事件流下派发不可靠）——
-   * 只有 collisionDetection 每次传感器移动都会同步执行，anchor / 波段的
-   * 更新放这里才能保证「最后一次移动的位置」总是被解析。
-   * 由 collisionDetection 在存好 anchorRef 后调用。
-   */
+  /** 碰撞阶段记录锚点，传感器事件提交后再武装意图，避免渲染期间修改组件状态。 */
   const updateIntentFromOver = useCallback(
     (overId: string, overType: string | undefined, activeId: string) => {
       // 意图锁定：让位发生后的位置保持稳定，直到指针真实移动（见 intentLockedRef）
@@ -710,16 +711,18 @@ export function useGroupDnd(input: UseGroupDndInput) {
   /** over 消失（拖出有效区）时清意图与高亮；意图武装在碰撞检测同步路径上 */
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
+      applyHoverEffects();
       if (activeTypeRef.current !== "card" || !originPrimaryRef.current) return;
       if (!event.over) {
         disarmIntent();
       }
     },
-    [disarmIntent],
+    [disarmIntent, applyHoverEffects],
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      applyHoverEffects();
       const { active, over } = event;
       // 快照必须在 reset 前取全
       const activeType = activeTypeRef.current;
@@ -875,6 +878,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
       schedulePreviewElevation();
     },
     [
+      applyHoverEffects,
       beginSettling,
       clearElevateFallbackTimer,
       clearPreviewTimer,
@@ -900,37 +904,41 @@ export function useGroupDnd(input: UseGroupDndInput) {
    */
   const collisionDetection: CollisionDetection = useCallback(
     (args) => {
+      const effects: Array<() => void> = [];
+      hoverEffectsRef.current = effects;
       const pointer = args.pointerCoordinates;
       pointerYRef.current = pointer?.y ?? null;
-      // 移动检测：真实移动才解除意图锁定 + 重置武装中意图的计时（慢扫不 fire）
-      if (pointer) {
-        const last = lastPointerRef.current;
-        if (
-          last &&
-          Math.hypot(pointer.x - last.x, pointer.y - last.y) >
-            POINTER_MOVE_RESET_PX
-        ) {
-          intentLockedRef.current = false;
-          if (intentRef.current && intentTimerRef.current !== null) {
-            const armed = intentRef.current;
-            clearIntentTimer();
-            intentTimerRef.current = setTimeout(() => {
-              intentTimerRef.current = null;
-              const pendingIntent = intentRef.current;
-              intentRef.current = null;
-              if (pendingIntent) fireIntent(pendingIntent);
-            }, intentDelay(armed));
+      effects.push(() => {
+        // 移动检测：真实移动才解除意图锁定 + 重置武装中意图的计时（慢扫不 fire）
+        if (pointer) {
+          const last = lastPointerRef.current;
+          if (
+            last &&
+            Math.hypot(pointer.x - last.x, pointer.y - last.y) >
+              POINTER_MOVE_RESET_PX
+          ) {
+            intentLockedRef.current = false;
+            if (intentRef.current && intentTimerRef.current !== null) {
+              const armed = intentRef.current;
+              clearIntentTimer();
+              intentTimerRef.current = setTimeout(() => {
+                intentTimerRef.current = null;
+                const pendingIntent = intentRef.current;
+                intentRef.current = null;
+                if (pendingIntent) fireIntent(pendingIntent);
+              }, intentDelay(armed));
+            }
+          }
+          // 以本次稳定停留的起点累计距离，不能每一帧重置，否则慢移永远达不到阈值。
+          if (
+            !last ||
+            Math.hypot(pointer.x - last.x, pointer.y - last.y) >
+              POINTER_MOVE_RESET_PX
+          ) {
+            lastPointerRef.current = pointer;
           }
         }
-        // 以本次稳定停留的起点累计距离，不能每一帧重置，否则慢移永远达不到阈值。
-        if (
-          !last ||
-          Math.hypot(pointer.x - last.x, pointer.y - last.y) >
-            POINTER_MOVE_RESET_PX
-        ) {
-          lastPointerRef.current = pointer;
-        }
-      }
+      });
       const activeType = activeTypeRef.current;
       if (!activeType) return [];
 
@@ -1005,8 +1013,8 @@ export function useGroupDnd(input: UseGroupDndInput) {
             ) {
               // 缝隙 = 纯预览落点：不移动真卡，只在上/下两组之间插占位；
               // 松手后才归入「未分组」头部（见 handleDragEnd）。
-              disarmIntent();
-              showGapPreview(groupsByTop[i + 1].id);
+              effects.push(disarmIntent);
+              effects.push(() => showGapPreview(groupsByTop[i + 1].id));
               lastOverIdRef.current = UNGROUPED_ID;
               return [{ id: UNGROUPED_ID }];
             }
@@ -1015,14 +1023,13 @@ export function useGroupDnd(input: UseGroupDndInput) {
       }
 
       // 离开缝隙进入正常 droppable：撤掉缝隙占位
-      if (pointerIntersections.length > 0) clearGapPreview();
+      if (pointerIntersections.length > 0) effects.push(clearGapPreview);
 
       const intersections = pointer
         ? pointerIntersections
         : rectIntersection({ ...args, droppableContainers: filtered });
       if (intersections.length === 0) {
-        disarmIntent();
-        clearGapPreview();
+        effects.push(disarmIntent, clearGapPreview);
         if (recentlyMovedRef.current && activeIdRef.current) {
           lastOverIdRef.current = activeIdRef.current;
         }
@@ -1063,7 +1070,10 @@ export function useGroupDnd(input: UseGroupDndInput) {
             originPrimaryRef.current &&
             activeIdRef.current
           ) {
-            updateIntentFromOver(overId, overType, activeIdRef.current);
+            effects.push(() => {
+              if (activeIdRef.current)
+                updateIntentFromOver(overId, overType, activeIdRef.current);
+            });
           }
           return [...inner];
         }
@@ -1078,7 +1088,10 @@ export function useGroupDnd(input: UseGroupDndInput) {
           originPrimaryRef.current &&
           activeIdRef.current
         ) {
-          updateIntentFromOver(overId, overType, activeIdRef.current);
+          effects.push(() => {
+            if (activeIdRef.current)
+              updateIntentFromOver(overId, overType, activeIdRef.current);
+          });
         }
         return [{ id: overId }];
       }
@@ -1100,7 +1113,10 @@ export function useGroupDnd(input: UseGroupDndInput) {
         activeIdRef.current &&
         overId !== activeIdRef.current
       ) {
-        updateIntentFromOver(overId, overType, activeIdRef.current);
+        effects.push(() => {
+          if (activeIdRef.current)
+            updateIntentFromOver(overId, overType, activeIdRef.current);
+        });
       }
       const cards = intersections.filter(
         (collision) => !containerIdsRef.current.has(String(collision.id)),
@@ -1120,6 +1136,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
     collisionDetection,
     handlers: {
       onDragStart: handleDragStart,
+      onDragMove: applyHoverEffects,
       onDragOver: handleDragOver,
       onDragEnd: handleDragEnd,
       onDragCancel: handleDragCancel,

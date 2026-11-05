@@ -1,7 +1,6 @@
 import { useGroupLayoutCommit } from "./useGroupLayoutCommit";
 import { useGroupMenuActions } from "./useGroupMenuActions";
 import { GroupActionMenu } from "./GroupActionMenu";
-import { CreateProviderGroupDialog } from "./CreateProviderGroupDialog";
 import {
   useCallback,
   useMemo,
@@ -46,12 +45,9 @@ import { useGroupDnd } from "./useGroupDnd";
 import {
   createGroupDropAnimation,
   DRAG_LIFT_SCALE,
+  GROUP_DRAG_LIFT_SCALE,
   GROUP_ENTER_SPRING,
 } from "./groupMotion";
-
-const overlayModifiers: Modifier[] = [
-  ({ transform }) => ({ ...transform, x: 0 }),
-];
 
 /**
  * 冻结 dnd-kit 的让位投影（iOS 手感的根因修复）：
@@ -140,6 +136,26 @@ export function GroupedProviderSections({
   onFlatDragEnd,
 }: GroupedProviderSectionsProps) {
   const reducedMotion = Boolean(useReducedMotion());
+  // 拖影的抬升和落位由同一层变换管理，避免内外两次缩放和中心点补偿。
+  const overlayModifiers = useMemo<Modifier[]>(
+    () => [
+      ({ transform, active }) => ({
+        ...transform,
+        x: 0,
+        scaleX: reducedMotion
+          ? 1
+          : active?.data.current?.type === "group"
+            ? GROUP_DRAG_LIFT_SCALE
+            : DRAG_LIFT_SCALE,
+        scaleY: reducedMotion
+          ? 1
+          : active?.data.current?.type === "group"
+            ? GROUP_DRAG_LIFT_SCALE
+            : DRAG_LIFT_SCALE,
+      }),
+    ],
+    [reducedMotion],
+  );
   const { groups, saveAppGroups, isGroupCollapsed, setGroupCollapsed } =
     providerGroups;
 
@@ -285,7 +301,7 @@ export function GroupedProviderSections({
         <AnimatePresence>
           {isMergeTarget && <MergePlate key="merge-plate" />}
         </AnimatePresence>
-        {renderCard(provider, presentation, menu.buildGroupMenu(provider.id), {
+        {renderCard(provider, presentation, undefined, {
           isMergeTarget,
           isSettling: settlingId === providerId,
           dragDisabled: isSaving,
@@ -331,7 +347,7 @@ export function GroupedProviderSections({
         group={container.group!}
         isCollapsed={isGroupCollapsed(container.id)}
         isSettling={settlingId === container.id}
-        dragEnabled={!isSaving}
+        dragDisabled={isSaving}
         renameDisabled={isSaving}
         actions={
           <GroupActionMenu
@@ -411,12 +427,7 @@ export function GroupedProviderSections({
       const item = allItemsById.get(activeDrag.activeId);
       if (!item) return null;
       return (
-        <div
-          style={{
-            ...widthStyle,
-            transform: reducedMotion ? undefined : `scale(${DRAG_LIFT_SCALE})`,
-          }}
-        >
+        <div style={widthStyle}>
           {renderPlainCard(item.provider, item.presentation)}
         </div>
       );
@@ -429,7 +440,6 @@ export function GroupedProviderSections({
         group={container.group}
         miniIcons={buildMiniIcons(container.providerIds)}
         width={activeDrag.overlayWidth ?? undefined}
-        reducedMotion={reducedMotion}
       />
     );
   })();
@@ -441,6 +451,7 @@ export function GroupedProviderSections({
       onDragStart={(event) => {
         if (!isSaving) handlers.onDragStart(event);
       }}
+      onDragMove={handlers.onDragMove}
       onDragOver={handlers.onDragOver}
       onDragEnd={handlers.onDragEnd}
       onDragCancel={handlers.onDragCancel}
@@ -502,14 +513,13 @@ export function GroupedProviderSections({
 
       {otherSections.map((section) => renderFlatSection(section))}
 
-      <CreateProviderGroupDialog
-        open={menu.creatingFor !== null}
-        onClose={() => menu.setCreatingFor(null)}
-        onCreate={menu.create}
-      />
-
       {createPortal(
-        <DragOverlay dropAnimation={dropAnimation} modifiers={overlayModifiers}>
+        <DragOverlay
+          dropAnimation={dropAnimation}
+          modifiers={overlayModifiers}
+          adjustScale
+          style={{ transformOrigin: "0 0" }}
+        >
           {overlayContent}
         </DragOverlay>,
         document.body,

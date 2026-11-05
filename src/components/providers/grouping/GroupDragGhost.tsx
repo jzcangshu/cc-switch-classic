@@ -13,17 +13,15 @@ export function GroupDragGhost({
   group,
   miniIcons,
   width,
-  reducedMotion,
 }: {
   appId: AppId;
   group: ProviderGroupDefinition;
   miniIcons: GroupMiniIcon[];
   width?: number;
-  reducedMotion?: boolean;
 }) {
   return (
     <div
-      style={{ width, transform: reducedMotion ? undefined : "scale(1.02)" }}
+      style={{ width }}
       className=" rounded-2xl border border-border/70 bg-surface/95 p-2.5 shadow-2xl"
     >
       <div className="flex items-center gap-1.5 px-1 py-1">

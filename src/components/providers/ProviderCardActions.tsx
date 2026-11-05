@@ -89,8 +89,7 @@ export function ProviderCardActions({
     <div
       className={cn(
         "flex shrink-0 flex-wrap items-center justify-end gap-1.5 transition-opacity duration-200",
-        !groupMenu &&
-          "sm:opacity-0 sm:pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
+        "sm:opacity-0 sm:pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
       )}
     >
       {status && (
@@ -209,8 +208,8 @@ export function ProviderCardActions({
 
         {groupMenu && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <HoverTip content={groupMenuLabel}>
+            <HoverTip content={groupMenuLabel}>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -219,8 +218,8 @@ export function ProviderCardActions({
                 >
                   <FolderInput className="h-4 w-4" />
                 </Button>
-              </HoverTip>
-            </DropdownMenuTrigger>
+              </DropdownMenuTrigger>
+            </HoverTip>
             <DropdownMenuContent align="end">
               {groupMenu.actions?.map((action) => (
                 <DropdownMenuItem

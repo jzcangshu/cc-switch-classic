@@ -99,7 +99,7 @@ describe("shared group commit", () => {
           finish = resolve;
         }),
     );
-    let first!: Promise<void>;
+    let first!: Promise<boolean>;
     act(() => {
       first = result.current.commitLayout(pending, groups);
     });

@@ -16,6 +16,7 @@ interface ProviderGroupContainerProps {
   /** 拖影落位中：真组隐藏，等拖影末帧再现身（与卡片 settling 同语义） */
   isSettling?: boolean;
   dragEnabled?: boolean;
+  dragDisabled?: boolean;
   renameDisabled?: boolean;
   actions?: ReactNode;
   onToggleCollapse: () => void;
@@ -35,6 +36,7 @@ export function ProviderGroupContainer({
   isCollapsed,
   isSettling = false,
   dragEnabled = true,
+  dragDisabled = false,
   renameDisabled = false,
   actions,
   onToggleCollapse,
@@ -54,7 +56,7 @@ export function ProviderGroupContainer({
     isDragging,
   } = useSortable({
     id: group.id,
-    disabled: !dragEnabled,
+    disabled: !dragEnabled || dragDisabled,
     data: { type: "group" },
     // 组容器位移保留 dnd-kit CSS 过渡（官方多容器同款），与卡片 spring 观感对齐
     transition: {

@@ -5083,7 +5083,7 @@
     "modeOff": "Off",
     "modeDrag": "Drag",
     "modeMenu": "Menu",
-    "modeHelp": "Drag: hover over cards to create or join groups. Menu: use each card’s grouping button. Turning grouping off keeps your groups.",
+    "modeHelp": "Drag: hover to create or join groups. Menu: manage groups with the grouping button; use the left handle for standard sorting. Off keeps your groups.",
     "create": "New group",
     "createHelp": "Put this card in a new group. Add other cards using their grouping buttons.",
     "moveUp": "Move up",

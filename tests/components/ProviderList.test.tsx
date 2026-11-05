@@ -219,10 +219,8 @@ describe("ProviderList Component", () => {
       expect(
         Boolean(container.querySelector('[data-provider-group="mode-test"]')),
       ).toBe(mode !== "off");
-      expect(lastProps("a").dragHandleProps !== undefined).toBe(
-        mode !== "menu",
-      );
-      expect(Boolean(lastProps("a").groupMenu)).toBe(mode !== "off");
+      expect(lastProps("a").dragHandleProps !== undefined).toBe(true);
+      expect(Boolean(lastProps("a").groupMenu)).toBe(mode === "menu");
     },
   );
 

@@ -32,17 +32,16 @@ export function createGroupDropAnimation(
       )
         return;
       const isCard = active.data.current?.type === "card";
-      const lift = isCard ? DRAG_LIFT_SCALE : GROUP_DRAG_LIFT_SCALE;
       const from = CSS.Transform.toString(transform);
       const to = CSS.Transform.toString({
         x: transform.x - (dragOverlay.rect.left - active.rect.left),
         y: transform.y - (dragOverlay.rect.top - active.rect.top),
         scaleX: isCard
-          ? active.rect.width / dragOverlay.rect.width / lift
-          : 1 / lift,
+          ? (active.rect.width * transform.scaleX) / dragOverlay.rect.width
+          : 1,
         scaleY: isCard
-          ? active.rect.height / dragOverlay.rect.height / lift
-          : 1 / lift,
+          ? (active.rect.height * transform.scaleY) / dragOverlay.rect.height
+          : 1,
       });
       if (from === to) return;
       const animation = dragOverlay.node.animate(
