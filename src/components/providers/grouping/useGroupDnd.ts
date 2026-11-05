@@ -33,6 +33,10 @@ import {
 } from "@/lib/providerGroups";
 
 import { DROP_ANIMATION } from "./groupMotion";
+import {
+  resolveWhitespaceInsertion,
+  type GroupDropArea,
+} from "./groupCollision";
 
 // ─── 手感参数（全部集中此处，浏览器调优轮在此微调）─────────────────────
 
@@ -51,7 +55,7 @@ export const EXPAND_DWELL_MS = 400;
  * 对齐 iOS「悬停 App 本体 = 进文件夹、悬停 App 之间 = 挪位」：
  * 建组判定收在卡片正中带，缝隙一侧留给挪位。
  */
-export const EDGE_BAND_RATIO = 0.18;
+export const EDGE_BAND_RATIO = 0.35;
 /** 卡片正中 ± 该比例算精确重叠（几乎完全叠上，快速触发建组） */
 export const EXACT_BAND_RATIO = 0.1;
 
@@ -928,6 +932,39 @@ export function useGroupDnd(input: UseGroupDndInput) {
         return target ? [{ id: target }] : [];
       }
 
+      // 标题留白和卡片缝隙使用同一几何判定，复用现有插入计时与意图锁定。
+      if (pointer && originPrimary && activeIdRef.current) {
+        const areas = filtered.flatMap((container): GroupDropArea[] => {
+          const id = String(container.id);
+          const type = container.data.current?.type;
+          const rect = container.rect.current;
+          return (type === "card" || type === "group") && rect
+            ? [
+                {
+                  id,
+                  type,
+                  containerId: containerOfRef.current[id] ?? null,
+                  rect,
+                },
+              ]
+            : [];
+        });
+        const insertion = resolveWhitespaceInsertion(
+          pointer,
+          areas,
+          activeIdRef.current,
+          pendingRef.current?.[UNGROUPED_ID] ?? [],
+        );
+        if (insertion) {
+          const targetId = insertion.anchorId ?? UNGROUPED_ID;
+          lastOverIdRef.current = targetId;
+          effects.push(clearGapPreview, () =>
+            armIntent({ kind: "insert", ...insertion }),
+          );
+          return [{ id: targetId }];
+        }
+      }
+
       const pointerIntersections = pointerWithin({
         ...args,
         droppableContainers: filtered,
@@ -1091,7 +1128,13 @@ export function useGroupDnd(input: UseGroupDndInput) {
       );
       return [...cards, ...intersections.filter((c) => !cards.includes(c))];
     },
-    [clearGapPreview, disarmIntent, showGapPreview, updateIntentFromOver],
+    [
+      armIntent,
+      clearGapPreview,
+      disarmIntent,
+      showGapPreview,
+      updateIntentFromOver,
+    ],
   );
 
   const completeCurrentDrop = useCallback(
