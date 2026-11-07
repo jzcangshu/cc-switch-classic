@@ -1,0 +1,19 @@
+{
+  "version": "1.1.5",
+  "items": [
+    {
+      "type": "fix",
+      "zh": "修复检查更新易受网络与限流影响：优先读更新清单，API 作兜底",
+      "zh-TW": "修復檢查更新易受網路與限流影響：優先讀取更新清單，API 作後備",
+      "en": "Update checks read the update manifest first, avoiding API rate limits; the API stays as fallback",
+      "ja": "更新確認はまず更新リストを読みにいき（APIレート制限を回避）、APIはフォールバックに"
+    },
+    {
+      "type": "fix",
+      "zh": "检查更新失败时明确提示网络问题，不再误显示为已是最新",
+      "zh-TW": "檢查更新失敗時明確提示網路問題，不再誤顯示為已是最新",
+      "en": "Failed update checks now show a clear error instead of silently claiming you are up to date",
+      "ja": "更新確認に失敗したときは明確にエラーを表示し、最新と誤表示しない"
+    }
+  ]
+}

@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 /// CLASSIC_VERSION 必须与 src/lib/classicVersion.ts 同值 bump——v1.1.1 只改了 TS 侧，
 /// 更新判定滞留 1.1.0 造成全量用户更新提示死循环；测试模块有守卫单测拦不同步。
 pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-pub(crate) const CLASSIC_VERSION: &str = "1.1.4";
+pub(crate) const CLASSIC_VERSION: &str = "1.1.5";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -94,15 +94,22 @@ pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
     Ok(true)
 }
 
-/// 检查 CC Switch Classic 主版本更新：读新仓库 latest release 的版本号（tag 去 v 前缀），
-/// 与本地 CLASSIC_VERSION 比较，更新才返回 Some（版本号、release 页链接）。
-/// 仓库未建/无 release/限流一律返回 None（无更新），不与上游 farion1231 仓库发生任何关联。
+/// 检查 CC Switch Classic 主版本更新：与本地 CLASSIC_VERSION 比较，更新才返回
+/// Some（版本号、release 页链接）。取数两级来源：
+/// 1. latest.json 更新清单（github.com → release-assets CDN）：静态资产、不计 API
+///    限流，且与安装更新走同一条网络路径（检查得到就装得到）；
+/// 2. api.github.com latest release（原路径）作为兜底。
+/// 两级都失败（网络阻断/超时/限流）返回 Err，前端「检查更新」按钮会明确报
+/// 「检查更新失败」而不是误报「已是最新」；启动时的自动检查依旧静默忽略。
 #[tauri::command]
 pub async fn get_classic_update() -> Result<Option<ClassicUpdateInfo>, String> {
     let client = reqwest::Client::new();
-    let latest = fetch_github_latest_version(&client, CLASSIC_REPO).await;
+    let latest = match fetch_classic_manifest_version(&client).await {
+        Some(v) => Some(v),
+        None => fetch_github_latest_version(&client, CLASSIC_REPO).await,
+    };
     let Some(latest) = latest else {
-        return Ok(None);
+        return Err("GitHub 不可达：更新检查的两个来源（latest.json 清单与 releases API）都失败了，请检查网络后重试".to_string());
     };
     if !version_is_newer(&latest, CLASSIC_VERSION) {
         return Ok(None);
@@ -111,6 +118,32 @@ pub async fn get_classic_update() -> Result<Option<ClassicUpdateInfo>, String> {
         version: latest,
         release_url: format!("https://github.com/{CLASSIC_REPO}/releases/latest"),
     }))
+}
+
+/// 读 Classic 仓库的 latest.json 更新清单（更新器安装用同一地址），取其 `version`。
+/// 与 api.github.com 相互独立：API 被限流或被阻断时这条 CDN 路径通常仍可用。
+async fn fetch_classic_manifest_version(client: &reqwest::Client) -> Option<String> {
+    let url = format!("https://github.com/{CLASSIC_REPO}/releases/latest/download/latest.json");
+    let resp = client
+        .get(&url)
+        .header("User-Agent", "cc-switch")
+        .timeout(LATEST_PROBE_TIMEOUT)
+        .send()
+        .await
+        .ok()?
+        .error_for_status()
+        .ok()?;
+    let json = resp.json::<serde_json::Value>().await.ok()?;
+    classic_manifest_version_from_json(&json)
+}
+
+/// latest.json 清单的 `version` 就是发布版本（产品口径）；缺字段或非语义版本一律 None。
+/// 容忍 `v` 前缀，与 API 路径的 tag 处理一致。
+fn classic_manifest_version_from_json(json: &serde_json::Value) -> Option<String> {
+    json.get("version")
+        .and_then(|v| v.as_str())
+        .map(|s| s.strip_prefix('v').unwrap_or(s))
+        .and_then(release_display_version)
 }
 
 /// Classic 更新信息（serde 序列化给前端）
@@ -7126,6 +7159,28 @@ mod tests {
             github_release_version_from_json(&serde_json::json!({})),
             None
         );
+    }
+
+    #[test]
+    fn classic_manifest_version_reads_update_list_version_field() {
+        // latest.json 的 version 是产品口径（1.x），与安装更新共用同一份清单
+        let manifest = serde_json::json!({ "version": "1.1.5", "platforms": {} });
+        assert_eq!(
+            classic_manifest_version_from_json(&manifest).as_deref(),
+            Some("1.1.5")
+        );
+        // v 前缀 / 缺字段 / 限流 message 主体都拿不到版本号
+        let prefixed = serde_json::json!({ "version": "v1.2.0" });
+        assert_eq!(
+            classic_manifest_version_from_json(&prefixed).as_deref(),
+            Some("1.2.0")
+        );
+        assert_eq!(
+            classic_manifest_version_from_json(&serde_json::json!({})),
+            None
+        );
+        let kernel_only = serde_json::json!({ "notes": "4.0.20" });
+        assert_eq!(classic_manifest_version_from_json(&kernel_only), None);
     }
 
     #[test]

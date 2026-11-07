@@ -5,6 +5,15 @@ All notable changes to CC Switch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Classic（经典版）1.1.5 — 2026-11-07
+
+本节记录经典版自有变化，内核保持 4.0.20；以下历史版本仍采用上游内核编号。
+
+- 重做应用内更新检查的取数链路：优先读 GitHub 更新清单（latest.json，CDN 静态资产、不计 API 限流，与安装更新同一条网络路径），api.github.com latest release 降为兜底来源；两个来源都失败时明确返回错误，设置页的「检查更新」会提示"检查更新失败"并附原因，不再把检查失败误报为"已是最新"。启动时的自动检查保持静默。
+- v1.1.3 用户反馈的"检查不到 v1.1.4"即此缺陷：原实现只读 api.github.com 且任何失败（超时、限流 403、网络阻断）都静默返回无更新。
+- 发布正文（GitHub Release 说明）现由 release.yml 自动从 CHANGELOG 对应版本小节生成"### 本次更新"内容，缺失小节时发布失败；v1.1.4 的发布正文已补写。
+- 说明：便携版（绿色版）点击更新按钮会打开新版压缩包下载，解压覆盖 cc-switch.exe 即可，这是自 v1.0.0 起的设计；自动下载安装仅限 NSIS 安装版。
+
 ## Classic（经典版）1.1.4 — 2026-11-06
 
 本节记录经典版自有变化，内核保持 4.0.20；以下历史版本仍采用上游内核编号。
