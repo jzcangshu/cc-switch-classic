@@ -549,6 +549,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      # 发布正文要从仓库里的 CHANGELOG.md 提取版本小节；本 job 只下载产物，
+      # 原先没有 checkout（旧模板正文是内联的，用不到仓库文件）
+      - name: Checkout CHANGELOG source
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: CHANGELOG.md
+
       - name: Download built release artifacts
         uses: actions/download-artifact@v8
         with:
