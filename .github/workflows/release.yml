@@ -623,6 +623,50 @@ jobs:
           echo "Generated latest.json:" && cat "$tmp_json"
           mv "$tmp_json" release-assets/latest.json
 
+      # 发布正文必须包含本版本的更新内容：从 CHANGELOG 提取对应 Classic 版本小节。
+      # 缺小节直接失败（宁可挡住发布，也不许发没有更新内容的 release）。
+      - name: Resolve release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            BEGIN { insec = 0 }
+            /^## / {
+              if (insec) { exit }
+              if (index($0, "Classic") > 0 && index($0, ver) > 0) { insec = 1; next }
+            }
+            insec { print }
+          ' CHANGELOG.md > changelog-section.md
+          if [ ! -s changelog-section.md ]; then
+            echo "❌ CHANGELOG.md 缺少「Classic（经典版）${VERSION}」小节，无法生成发布正文" >&2
+            exit 1
+          fi
+          {
+            echo "## CC Switch Classic ${GITHUB_REF_NAME}"
+            echo
+            echo "在 V4 内核之上还原 V3 经典界面的 CC Switch 分支。"
+            echo
+            echo "### 本次更新"
+            echo
+            cat changelog-section.md
+            echo
+            echo "### 下载"
+            echo
+            echo "- **Windows (x86_64)**: \`CC-Switch-Classic-${GITHUB_REF_NAME}-Windows-setup.exe\`（安装版）或 \`CC-Switch-Classic-${GITHUB_REF_NAME}-Windows-Portable.zip\`（绿色版，解压即用）"
+            echo "- **Windows (ARM64)**: \`CC-Switch-Classic-${GITHUB_REF_NAME}-Windows-arm64-setup.exe\`（安装版）或 \`CC-Switch-Classic-${GITHUB_REF_NAME}-Windows-arm64-Portable.zip\`（绿色版）"
+            echo "- **Linux (x86_64)**: \`CC-Switch-Classic-${GITHUB_REF_NAME}-Linux-x86_64.AppImage\` / \`.deb\` / \`.rpm\`"
+            echo "- **Linux (ARM64)**: \`CC-Switch-Classic-${GITHUB_REF_NAME}-Linux-arm64.AppImage\` / \`.deb\` / \`.rpm\`"
+            echo "- **macOS (universal，未签名)**: \`CC-Switch-Classic-${GITHUB_REF_NAME}-macOS-unsigned.dmg\`（推荐）或 \`CC-Switch-Classic-${GITHUB_REF_NAME}-macOS-unsigned.zip\`"
+            echo
+            echo "> **macOS 未签名包**：首次打开需在「系统设置 → 隐私与安全性」里点击「仍要打开」放行；macOS 上暂不支持应用内自动更新。"
+            echo "> 安装版内的「检查更新」只跟随 Classic 主版本号，不会把您引回官方 V4 界面版。"
+            echo "> \`.sig\` / \`latest.json\` 为应用内自动更新专用，无需手动下载。"
+            echo
+            echo "### 反馈"
+            echo
+            echo "- Classic 界面相关问题请提 [本仓库 issues](https://github.com/jzcangshu/cc-switch-classic/issues)"
+            echo "- 内核功能问题建议先到 [上游 issues](https://github.com/farion1231/cc-switch/issues) 搜索"
+          } > release-notes.md
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v3
         with:
@@ -631,27 +675,7 @@ jobs:
           # GitHub 的 latest 指针不包含 prerelease
           prerelease: false
           name: CC Switch Classic ${{ github.ref_name }}
-          body: |
-            ## CC Switch Classic ${{ github.ref_name }}
-
-            在 V4 内核之上还原 V3 经典界面的 CC Switch 分支。
-
-            ### 下载
-
-            - **Windows (x86_64)**: `CC-Switch-Classic-${{ github.ref_name }}-Windows-setup.exe`（安装版）或 `CC-Switch-Classic-${{ github.ref_name }}-Windows-Portable.zip`（绿色版，解压即用）
-            - **Windows (ARM64)**: `CC-Switch-Classic-${{ github.ref_name }}-Windows-arm64-setup.exe`（安装版）或 `CC-Switch-Classic-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
-            - **Linux (x86_64)**: `CC-Switch-Classic-${{ github.ref_name }}-Linux-x86_64.AppImage` / `.deb` / `.rpm`
-            - **Linux (ARM64)**: `CC-Switch-Classic-${{ github.ref_name }}-Linux-arm64.AppImage` / `.deb` / `.rpm`
-            - **macOS (universal，未签名)**: `CC-Switch-Classic-${{ github.ref_name }}-macOS-unsigned.dmg`（推荐）或 `CC-Switch-Classic-${{ github.ref_name }}-macOS-unsigned.zip`
-
-            > **macOS 未签名包**：首次打开需在「系统设置 → 隐私与安全性」里点击「仍要打开」放行；macOS 上暂不支持应用内自动更新。
-            > 安装版内的「检查更新」只跟随 Classic 主版本号，不会把您引回官方 V4 界面版。
-            > `.sig` / `latest.json` 为应用内自动更新专用，无需手动下载。
-
-            ### 反馈
-
-            - Classic 界面相关问题请提 [本仓库 issues](https://github.com/jzcangshu/cc-switch-classic/issues)
-            - 内核功能问题建议先到 [上游 issues](https://github.com/farion1231/cc-switch/issues) 搜索
+          body_path: release-notes.md
           files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
