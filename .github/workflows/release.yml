@@ -317,7 +317,7 @@ jobs:
   # 安全」里放行（Gatekeeper），App 内自动更新在 macOS 上不可用（未签名包不参与 Updater）。
   macos-binary:
     name: Build macOS binary (${{ matrix.target }})
-    runs-on: macos-14
+    runs-on: macos-15
     needs: whats-new-check
     timeout-minutes: 90
     strategy:
@@ -394,7 +394,7 @@ jobs:
   # 未签名模式下不跑公证/签名/staple；DMG 用 create-dmg 产出（未签名 DMG 同样可打开）。
   macos-release:
     name: Bundle macOS release (unsigned)
-    runs-on: macos-14
+    runs-on: macos-15
     needs: macos-binary
     timeout-minutes: 45
     steps:
