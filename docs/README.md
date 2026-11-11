@@ -26,3 +26,5 @@
 [未确认客户端提醒的本机静音](decisions/implemented/bug-fix/2026-11-05-codex-unverified-reminders.md)：提醒的证据强度、关闭与静音的作用范围，以及模型列表留空的说明。
 
 [经典模型表单回退](decisions/implemented/bug-fix/2026-11-05-codex-classic-model-form.md)：独立默认模型、高级模型映射与升级配置保留。
+
+[模型目录的 Fast 能力](decisions/implemented/bug-fix/2026-11-11-codex-catalog-fast-mode.md)：保留官方 GPT 模型的速度档元数据，覆盖直连、路由及聚合模型。
