@@ -3177,6 +3177,23 @@ mod tests {
     }
 
     #[test]
+    fn responses_request_preserves_fast_service_tier_without_enabling_it_by_default() {
+        let input = json!({
+            "model": "gpt-5.5",
+            "input": [{"role": "user", "content": "hi"}]
+        });
+        assert!(responses_to_chat_completions(input.clone())
+            .unwrap()
+            .get("service_tier")
+            .is_none());
+
+        let mut fast_input = input;
+        fast_input["service_tier"] = json!("priority");
+        let result = responses_to_chat_completions(fast_input).unwrap();
+        assert_eq!(result["service_tier"], "priority");
+    }
+
+    #[test]
     fn responses_request_maps_input_file_content_parts() {
         let input = json!({
             "model": "gpt-5.4",

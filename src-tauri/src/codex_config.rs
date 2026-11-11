@@ -1334,6 +1334,7 @@ fn codex_catalog_model_entry(
     entry_obj.insert("context_window".to_string(), json!(context_window));
     entry_obj.insert("max_context_window".to_string(), json!(context_window));
     entry_obj.insert("priority".to_string(), json!(1000 + priority));
+    // 通用模板的速度档不能代表当前模型；匹配官方模型时由专用分支保留其能力。
     entry_obj.insert("additional_speed_tiers".to_string(), json!([]));
     entry_obj.insert("service_tiers".to_string(), json!([]));
     entry_obj.insert("availability_nux".to_string(), Value::Null);
@@ -2317,9 +2318,8 @@ fn codex_official_model_entry(
     }
     // 官方隐藏的条目用户明确写了，也要出现在选择器里。
     obj.insert("visibility".to_string(), json!("list"));
-    // 速度档、升级提示归官方账号。
-    obj.insert("service_tiers".to_string(), json!([]));
-    obj.insert("additional_speed_tiers".to_string(), json!([]));
+    // 速度档是模型能力：保留官方声明，让 /fast 命令与请求里的 priority 都能生效。
+    // 官方账号的可用性、升级提示仍不带到第三方。
     obj.insert("availability_nux".to_string(), Value::Null);
     obj.insert("upgrade".to_string(), Value::Null);
     // 第三方不支持 Responses Lite 协议。
@@ -5124,7 +5124,11 @@ wire_api = "responses"
                 "tool_mode": "code_mode_only",
                 "use_responses_lite": true,
                 "visibility": "hide",
-                "service_tiers": [{ "id": "priority", "name": "Fast" }],
+                "service_tiers": [{
+                    "id": "priority",
+                    "name": "Fast",
+                    "description": "Fast processing"
+                }],
                 "additional_speed_tiers": ["fast"],
                 "upgrade": { "model": "gpt-next" },
                 "context_window": 272_000,
@@ -5214,11 +5218,14 @@ wire_api = "responses"
         assert_eq!(gpt["default_reasoning_level"], "low");
         assert_eq!(gpt["supported_reasoning_levels"][1]["effort"], "xhigh");
         assert_eq!(gpt["supports_image_detail_original"], true);
-        // 官方账号、官方后端的字段改掉。
+        // 官方账号、官方后端的字段改掉，模型的速度档保留。
         assert_eq!(gpt["use_responses_lite"], false);
         assert_eq!(gpt["visibility"], "list");
-        assert_eq!(gpt["service_tiers"], json!([]));
-        assert_eq!(gpt["additional_speed_tiers"], json!([]));
+        assert_eq!(
+            gpt["service_tiers"],
+            official_gpt_rows()[1]["service_tiers"]
+        );
+        assert_eq!(gpt["additional_speed_tiers"], json!(["fast"]));
         assert_eq!(gpt["upgrade"], Value::Null);
         assert_eq!(gpt["priority"], 1000);
 
@@ -5367,6 +5374,57 @@ wire_api = "responses"
                 .unwrap()
                 .unwrap();
                 assert_eq!(regenerated, catalog);
+            }
+        });
+    }
+
+    #[test]
+    fn fast_tiers_follow_the_matched_official_model() {
+        let mut official = official_gpt_rows();
+        official[0]["service_tiers"] = json!([]);
+        official[0]["additional_speed_tiers"] = json!([]);
+        with_official_models(official, || {
+            for profile in [
+                CodexCatalogToolProfile::NativeResponses,
+                CodexCatalogToolProfile::ProxyChat,
+                CodexCatalogToolProfile::Anthropic,
+                CodexCatalogToolProfile::Copilot,
+            ] {
+                let models = catalog_for(
+                    json!([
+                        { "model": "openai/gpt-5.5" },
+                        { "model": "gpt-6" },
+                        { "model": "custom-model" }
+                    ]),
+                    "",
+                    profile,
+                );
+                let mirrors_openai = matches!(
+                    profile,
+                    CodexCatalogToolProfile::NativeResponses | CodexCatalogToolProfile::ProxyChat
+                );
+                for (index, model) in models.iter().enumerate() {
+                    let supports_fast = index == 0 && mirrors_openai;
+                    assert_eq!(
+                        model["service_tiers"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .any(|tier| tier["id"] == "priority"),
+                        supports_fast,
+                        "{} {profile:?}",
+                        model["slug"]
+                    );
+                    assert_eq!(
+                        model["additional_speed_tiers"],
+                        if supports_fast {
+                            json!(["fast"])
+                        } else {
+                            json!([])
+                        }
+                    );
+                    assert!(model.get("default_service_tier").is_none_or(Value::is_null));
+                }
             }
         });
     }
@@ -5537,6 +5595,11 @@ wire_api = "responses"
                 "GPT-6 Sol prompt"
             );
             assert_eq!(model["use_responses_lite"], false);
+            assert_eq!(
+                model["service_tiers"],
+                official_gpt_rows()[1]["service_tiers"]
+            );
+            assert_eq!(model["additional_speed_tiers"], json!(["fast"]));
         }
         // 各家按自己的链路：走 Chat 的那家不发 original 精度的图片。
         assert_eq!(models[0]["supports_image_detail_original"], true);
