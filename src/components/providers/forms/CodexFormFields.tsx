@@ -2297,7 +2297,43 @@ export function CodexFormFields({
         </div>
       )}
 
-      {/* 高级选项 —— 上游格式/思考能力/模型映射/自动审批/子代理并发/自定义 UA */}
+      {/* 子代理并发上限 —— config.toml 的 [agents] max_threads，Codex 的全局设置（官方供应商也显示），
+          保存时写进 live。留空删键，回到 Codex 默认值。按上游独立小节放置（官方卡同样生效），
+          不收进高级选项：经典布局里官方卡本无高级选项，收进去会失去入口。 */}
+      {onAgentMaxThreadsChange && (
+        <div className="space-y-1.5">
+          {labelWithHelp(
+            t("codexConfig.agentMaxThreadsLabel", {
+              defaultValue: "子代理并发上限",
+            }),
+            t("codexConfig.agentMaxThreadsHint", {
+              defaultValue:
+                "一个 Codex 会话里最多同时开多少个子代理（不含主代理）。这是 Codex 的全局设置，写进 config.toml 的 [agents] max_threads，切换供应商时保持不变。留空用 Codex 默认值：经典子 agent 工具 6 个，新版工具 3 个。Codex 不支持不限，最小为 1；开得越多，同时消耗的额度越多。重新打开 Codex 后生效。",
+            }),
+            "codexAgentMaxThreads",
+          )}
+          <Input
+            id="codexAgentMaxThreads"
+            value={agentMaxThreads}
+            inputMode="numeric"
+            onChange={(event) => onAgentMaxThreadsChange(event.target.value)}
+            placeholder={t("codexConfig.agentMaxThreadsPlaceholder", {
+              defaultValue: "留空则用 Codex 默认值",
+            })}
+          />
+          {multiAgentV2Total !== undefined && (
+            <p className="text-xs leading-relaxed text-fg-2">
+              {t("codexConfig.agentMaxThreadsV2Override", {
+                total: multiAgentV2Total,
+                defaultValue:
+                  "config.toml 的 [features.multi_agent_v2] 写了总数 {{total}}（含主代理），使用新版子 agent 工具时以它为准。",
+              })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 高级选项 —— 上游格式/思考能力/模型映射/自动审批/自定义 UA */}
       {category !== "official" && (
         <Collapsible
           open={advancedExpanded}
@@ -2443,42 +2479,6 @@ export function CodexFormFields({
                     {t("codexConfig.autoReviewModelNoList", {
                       defaultValue:
                         "这张卡没有模型列表：Codex 会用官方的 codex-auto-review 审批，只有部分转发 ChatGPT 账号的中转认它，不认就会报 404。在模型映射中加上模型后就能选。",
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* 子代理并发上限 —— config.toml 的 [agents] max_threads，Codex 的全局设置，
-                保存时写进 live。留空删键，回到 Codex 默认值。经典布局收在高级选项里，
-                官方卡不显示（走 Codex 默认）。 */}
-            {onAgentMaxThreadsChange && (
-              <div className="space-y-1.5">
-                {labelWithHelp(
-                  t("codexConfig.agentMaxThreadsLabel", {
-                    defaultValue: "子代理并发上限",
-                  }),
-                  t("codexConfig.agentMaxThreadsHint", {
-                    defaultValue:
-                      "一个 Codex 会话里最多同时开多少个子代理（不含主代理）。这是 Codex 的全局设置，写进 config.toml 的 [agents] max_threads，切换供应商时保持不变。留空用 Codex 默认值：经典子 agent 工具 6 个，新版工具 3 个。Codex 不支持不限，最小为 1；开得越多，同时消耗的额度越多。重新打开 Codex 后生效。",
-                  }),
-                  "codexAgentMaxThreads",
-                )}
-                <Input
-                  id="codexAgentMaxThreads"
-                  value={agentMaxThreads}
-                  inputMode="numeric"
-                  onChange={(event) => onAgentMaxThreadsChange(event.target.value)}
-                  placeholder={t("codexConfig.agentMaxThreadsPlaceholder", {
-                    defaultValue: "留空则用 Codex 默认值",
-                  })}
-                />
-                {multiAgentV2Total !== undefined && (
-                  <p className="text-xs leading-relaxed text-fg-2">
-                    {t("codexConfig.agentMaxThreadsV2Override", {
-                      total: multiAgentV2Total,
-                      defaultValue:
-                        "config.toml 的 [features.multi_agent_v2] 写了总数 {{total}}（含主代理），使用新版子 agent 工具时以它为准。",
                     })}
                   </p>
                 )}

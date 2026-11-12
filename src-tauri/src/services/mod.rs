@@ -64,7 +64,6 @@ pub use usage_stats::{
 
 pub mod session_usage_kimi;
 pub mod session_usage_mcode;
-pub mod session_usage_omp;
 
 pub mod session_usage_agy;
 pub mod session_usage_dsh;

@@ -11517,8 +11517,15 @@ mod tests {
         let home = dirs::home_dir().expect("home should resolve");
         let bun_bin = home.join(".bun").join("bin");
         assert!(build_tool_search_paths("omp").contains(&bun_bin));
-        // Other Bun-installable tools keep their previous search set.
-        assert!(!build_tool_search_paths("gemini").contains(&bun_bin));
+        // Other Bun-installable tools keep their previous search set. The
+        // effective-PATH merge (registry PATH on Windows) legitimately surfaces
+        // ~/.bun/bin for every tool on machines whose user PATH already has it,
+        // so the negative assertion only applies when the ambient effective
+        // PATH does not carry the directory itself.
+        let ambient_has_bun = effective_path_os()
+            .map(|paths| std::env::split_paths(&paths).any(|dir| dir == bun_bin))
+            .unwrap_or(false);
+        assert!(ambient_has_bun || !build_tool_search_paths("gemini").contains(&bun_bin));
     }
 
     #[cfg(target_os = "windows")]
