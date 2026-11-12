@@ -90,16 +90,16 @@ describe("Pi provider presets", () => {
   });
 
 
-  // #7859: 官方 V4.1 Flash 识图，V4 Pro 仍是纯文本
-  it("declares image input for official DeepSeek V4.1 Flash only", () => {
+  // #7859: 官方 V4.1 Flash 识图；2026-10-25 起官方预设只留 Flash
+  it("declares image input for official DeepSeek V4.1 Flash", () => {
     const models =
       piProviderPresets.find((preset) => preset.name === "DeepSeek")
         ?.settingsConfig.models ?? [];
     const input = (id: string) =>
       models.find((model) => model.id === id)?.input;
 
+    expect(models.map((model) => model.id)).toEqual(["deepseek-flash"]);
     expect(input("deepseek-flash")).toEqual(["text", "image"]);
-    expect(input("deepseek-v4-pro")).toEqual(["text"]);
   });
 
   // #7956: 火山各套餐端点不同，Agent Plan 曾误用 Coding Plan 的端点

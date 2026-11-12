@@ -420,3 +420,46 @@ describe("ProviderCardActions — mode items in the more menu", () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("ProviderCardActions — open terminal", () => {
+  it("is a button on the card, not an item in the more menu", async () => {
+    const user = userEvent.setup();
+    const onOpenTerminal = vi.fn();
+    render(
+      <ProviderCardActions
+        providerName="Claude Official"
+        presentation={{ buttons: [], chips: [] }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+        onOpenTerminal={onOpenTerminal}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "provider.openTerminal" }),
+    );
+    expect(onOpenTerminal).toHaveBeenCalledTimes(1);
+
+    // 我方形态：终端是卡上常驻按钮；没有 menuItems/groupMenu 时 ⋯ 菜单整体不渲染
+    expect(
+      screen.queryByRole("button", { name: "providerCard.action.more" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("isn't shown for apps without it", () => {
+    render(
+      <ProviderCardActions
+        providerName="Kimi"
+        presentation={{ buttons: [], chips: [] }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", {
+        name: "provider.openTerminal",
+      }),
+    ).not.toBeInTheDocument();
+  });
+});

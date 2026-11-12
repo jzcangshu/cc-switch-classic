@@ -29,6 +29,7 @@ import {
   useDiscoverableSkillsFailures,
   useInstallSkill,
   useInstalledSkills,
+  useRefreshDiscoverableSkills,
   useRemoveSkillRepo,
   useSearchSkillsSh,
   useSkillRepos,
@@ -72,18 +73,16 @@ const POPOVER_CLASS =
 /** 仓库的增删和停用（发现段的「仓库」弹层和仓库管理抽屉共用） */
 export function useSkillRepoActions() {
   const { t } = useTranslation();
-  const { refetch: refetchDiscoverable } = useDiscoverableSkills();
   const addRepoMutation = useAddSkillRepo();
   const removeRepoMutation = useRemoveSkillRepo();
 
   const addRepo = async (repo: SkillRepo) => {
-    await addRepoMutation.mutateAsync(repo);
-    const { data: fresh } = await refetchDiscoverable();
+    const discovery = await addRepoMutation.mutateAsync(repo);
     toast.success(
       t("skills.repo.addSuccess", {
         owner: repo.owner,
         name: repo.name,
-        count: countRepoSkills(fresh ?? [], repo),
+        count: countRepoSkills(discovery?.skills ?? [], repo),
       }),
       { closeButton: true },
     );
@@ -191,8 +190,8 @@ export function SkillsPage({
     isFetching: fetchingDiscoverable,
     isError: discoverError,
     error: discoverErrorValue,
-    refetch: refetchDiscoverable,
   } = useDiscoverableSkills();
+  const refreshDiscoverable = useRefreshDiscoverableSkills();
   const { data: repoFailures = [] } = useDiscoverableSkillsFailures();
   const { data: installedSkills = [] } = useInstalledSkills();
   const {
@@ -438,7 +437,7 @@ export function SkillsPage({
   };
 
   const reload = () => {
-    void refetchDiscoverable();
+    void refreshDiscoverable();
     void refetchRepos();
   };
 

@@ -24,7 +24,6 @@ const expectedChatPresets = new Map<
     {
       baseUrl: "https://qianfan.baidubce.com/v2/tokenplan/personal",
       contextWindows: {
-        "deepseek-v4-pro": 1048576,
         "deepseek-v4-flash": 1048576,
         "deepseek-v4-flash-0731": 1048576,
         "glm-5.2": 1048576,
@@ -96,7 +95,7 @@ describe("Codex Chat provider presets", () => {
   it.each([
     ["StepFun API", "https://api.stepfun.com/v1", "step-3.7-flash"],
     ["StepFun API en", "https://api.stepfun.ai/v1", "step-3.7-flash"],
-    ["Baidu Qianfan", "https://qianfan.baidubce.com/v2", "deepseek-v4-pro"],
+    ["Baidu Qianfan", "https://qianfan.baidubce.com/v2", "deepseek-v4-flash"],
     [
       "Astron Coding Plan",
       "https://maas-coding-api.cn-huabei-1.xf-yun.com/v1",
@@ -224,7 +223,6 @@ describe("Codex Chat provider presets", () => {
         {
           contextWindows: {
             "deepseek-flash": 1048576,
-            "deepseek-v4-pro": 1048576,
           },
         },
       ],

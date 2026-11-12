@@ -131,7 +131,7 @@ describe("Kimi account entry in the add-provider dialog", () => {
     );
     const group = await screen.findByRole("region", { name: "Kimi Code" });
     expect(
-      within(group).getByRole("button", { name: "kimi.oauth.signIn" }),
+      within(group).getByRole("button", { name: "添加账号" }),
     ).toBeEnabled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -141,7 +141,7 @@ describe("Kimi account entry in the add-provider dialog", () => {
     const group = await openAuthCenter();
     // 先选登录区域，再在选择块里点登录
     fireEvent.click(
-      within(group).getByRole("button", { name: "kimi.oauth.signIn" }),
+      within(group).getByRole("button", { name: "添加账号" }),
     );
     fireEvent.click(
       within(group).getByRole("button", { name: "kimi.oauth.signIn" }),

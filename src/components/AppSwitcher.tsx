@@ -39,6 +39,7 @@ const APP_ICON_NAME: Record<AppId, string> = {
   kimi: "kimi",
   agy: "antigravity",
   omp: "omp",
+  dsh: "deepseek",
 };
 
 const APP_DISPLAY_NAME: Record<AppId, string> = {
@@ -55,6 +56,7 @@ const APP_DISPLAY_NAME: Record<AppId, string> = {
   kimi: "Kimi Code",
   agy: "Antigravity",
   omp: "Oh My Pi",
+  dsh: "DeepSeek Harness",
 };
 
 /** 应用图标 + 角标（Claude Code / Desktop 用角标区分终端与桌面） */

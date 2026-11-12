@@ -53,6 +53,29 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
     iconColor: "#4285F4",
   },
   {
+    name: "Compshare",
+    nameKey: "providerForm.presets.ucloud",
+    websiteUrl: "https://www.compshare.cn",
+    apiKeyUrl:
+      "https://www.compshare.cn/coding-plan?ytag=GPU_YY_YX_git_cc-switch",
+    // api.modelverse.cn/v1beta/models（2026-10-31）公开列出 gemini-3.8-flash 等原生模型；
+    // 编程套餐地址 cp.compshare.cn 没有 /v1beta，所以只收按量版
+    settingsConfig: {
+      env: {
+        GOOGLE_GEMINI_BASE_URL: "https://api.modelverse.cn",
+        GEMINI_API_KEY: "",
+        GEMINI_MODEL: "gemini-3.8-flash",
+      },
+    },
+    baseURL: "https://api.modelverse.cn",
+    model: "gemini-3.8-flash",
+    description: "Compshare",
+    category: "aggregator",
+    endpointCandidates: ["https://api.modelverse.cn"],
+    icon: "ucloud",
+    iconColor: "#000000",
+  },
+  {
     name: "Tu-zi",
     nameKey: "providerForm.presets.tuzi",
     websiteUrl: "https://api.tu-zi.com",
@@ -262,18 +285,19 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   },
   {
     name: "TokenFlux",
-    websiteUrl: "https://tokenflux.dev",
-    apiKeyUrl: "https://tokenflux.dev/keys",
+    websiteUrl: "https://tokenflux.com",
+    apiKeyUrl: "https://tokenflux.com/keys",
     settingsConfig: {
       env: {
-        GOOGLE_GEMINI_BASE_URL: "https://tokenflux.dev",
+        GOOGLE_GEMINI_BASE_URL: "https://tokenflux.com",
         GEMINI_MODEL: "gemini-3.8-flash",
       },
     },
-    baseURL: "https://tokenflux.dev",
+    baseURL: "https://tokenflux.com",
     model: "gemini-3.8-flash",
     description: "TokenFlux",
     category: "aggregator",
+    endpointCandidates: ["https://tokenflux.com", "https://tokenflux.dev"],
     icon: "tokenflux",
   },
   {

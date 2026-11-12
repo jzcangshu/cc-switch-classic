@@ -27,6 +27,8 @@ import {
   sectionPresetRows,
 } from "@/components/providers/forms/presetGroups";
 import { providerPresets } from "@/config/claudeProviderPresets";
+import {
+} from "@/config/dshProviderPresets";
 import { codexProviderPresets } from "@/config/codexProviderPresets";
 import {
   PRESET_FAMILIES,
@@ -242,11 +244,11 @@ describe("preset families", () => {
     expect(hits("moonshot")).toEqual([["family:kimi", []]]);
   });
 
-  it("merges Claude's visible presets into 108 rows", () => {
+  it("merges Claude's visible presets into 67 rows", () => {
     const claudeEntries = providerPresets
       .map((item, index) => ({ id: `claude-${index}`, preset: item }))
       .filter((entry) => !entry.preset.hidden);
-    expect(groupPresetRows(claudeEntries)).toHaveLength(65);
+    expect(groupPresetRows(claudeEntries)).toHaveLength(67);
   });
 
   it("orders plans and regions as the design does where a family says so", () => {

@@ -53,6 +53,8 @@ fn merge_settings_for_save(
     incoming.proxy_client_host = existing.proxy_client_host.clone();
     // 分组成员只经专用命令保存，避免设置页的旧快照撤销刚完成的分组操作。
     incoming.provider_groups = existing.provider_groups.clone();
+    // 轻量模式状态只由进入 / 退出轻量模式时写，前端缓存里的值总是旧的。
+    incoming.lightweight_mode = existing.lightweight_mode;
     incoming
 }
 
@@ -464,6 +466,18 @@ mod tests {
             merged.provider_grouping_mode,
             Some(crate::settings::ProviderGroupingMode::Off)
         );
+    }
+
+    #[test]
+    fn save_settings_should_keep_the_existing_lightweight_mode() {
+        let existing = AppSettings {
+            lightweight_mode: true,
+            ..AppSettings::default()
+        };
+
+        let merged = merge_settings_for_save(AppSettings::default(), &existing);
+
+        assert!(merged.lightweight_mode);
     }
 
     #[test]

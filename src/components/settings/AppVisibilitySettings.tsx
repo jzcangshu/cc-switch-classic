@@ -30,6 +30,7 @@ const APP_META: Record<AppId, { icon: string; nameKey: string }> = {
   kimi: { icon: "kimi", nameKey: "apps.kimi" },
   agy: { icon: "antigravity", nameKey: "apps.agy" },
   omp: { icon: "omp", nameKey: "apps.omp" },
+  dsh: { icon: "deepseek", nameKey: "apps.dsh" },
 };
 
 const APP_CONFIG = APP_IDS.map((id) => ({ id, ...APP_META[id] }));
@@ -73,7 +74,7 @@ export function AppVisibilitySettings({
       </header>
       <div className="flex flex-wrap gap-1 rounded-md border border-border bg-background p-1">
         {APP_CONFIG.map((app) => {
-          const isVisible = visibleApps[app.id];
+          const isVisible = Boolean(visibleApps[app.id]);
           // Disable button if this is the last visible app
           const isDisabled = isVisible && visibleCount <= 1;
 

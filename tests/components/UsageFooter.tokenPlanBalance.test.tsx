@@ -32,7 +32,6 @@ function renderFooter(result: UsageResult, inline = false) {
         providerId={provider.id}
         appId="claude"
         usageEnabled={true}
-        isCurrent={true}
         inline={inline}
       />
     </QueryClientProvider>,
