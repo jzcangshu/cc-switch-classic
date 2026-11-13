@@ -53,15 +53,10 @@ const OPENAI_COMPLETIONS_COMPAT = {
   maxTokensField: "max_tokens",
 } as const;
 
-const DEEPSEEK_THINKING_COMPAT = {
-  ...OPENAI_COMPLETIONS_COMPAT,
-  requiresReasoningContentOnAssistantMessages: true,
-  thinkingFormat: "deepseek",
-} as const;
-
 // 1823/132248: thinking.type defaults to "enabled"; disabling requires an explicit
 // {"type":"disabled"}. The same doc says reasoning_content need not be echoed back
-// on multi-turn, so we don't reuse DEEPSEEK_THINKING_COMPAT wholesale.
+// on multi-turn, so unlike DeepSeek itself we don't force
+// requiresReasoningContentOnAssistantMessages here.
 const TENCENT_DEEPSEEK_THINKING_COMPAT = {
   ...OPENAI_COMPLETIONS_COMPAT,
   thinkingFormat: "deepseek",
@@ -99,39 +94,6 @@ const KIMI_K3_COMPAT = {
  * another application's presets at runtime.
  */
 const piProviderPresetDefinitions: PiProviderPreset[] = [
-  {
-    name: "TokenPlus",
-    websiteUrl: "https://www.tokenplus.cn/",
-    apiKeyUrl: "https://www.tokenplus.cn/workspace",
-    category: "aggregator",
-    partnerPromotionKey: "tokenplus",
-    icon: "tokenplus",
-    providerKey: "cc-switch-tokenplus",
-    settingsConfig: {
-      name: "TokenPlus",
-      baseUrl: "https://api.tokenplus.cn/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("deepseek/deepseek-v4.1-flash-1017", {
-          id: "deepseek/deepseek-v4.1-flash-1017",
-          name: "DeepSeek V4.1 Flash 1017",
-        }),
-        piModel("zai/glm-5.3-flash", {
-          id: "z-ai/glm-5.3-flash",
-          name: "GLM 5.3 Flash",
-        }),
-        piModel("moonshotai/kimi-k3.1-pro", {
-          id: "moonshot-ai/kimi-k3.1-pro",
-          name: "Kimi K3.1 Pro",
-        }),
-        piModel("minimax/minimax-m3.1-flash", {
-          id: "minimax/m3.1-flash",
-          name: "MiniMax M3.1 Flash",
-        }),
-      ],
-    },
-  },
   {
     name: "Kimi",
     family: "kimi",
@@ -368,111 +330,6 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     },
     category: "aggregator",
     icon: "code0",
-  },
-  {
-    name: "TeamoRouter",
-    providerKey: "cc-switch-teamo-router",
-    websiteUrl: "https://teamorouter.com",
-    apiKeyUrl:
-      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
-    settingsConfig: {
-      name: "TeamoRouter",
-      baseUrl: "https://api.teamorouter.com/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        piModel("openai/gpt-6.1-sol", { id: "gpt-6.1-sol" }),
-        piModel("openai/gpt-6-astra", { id: "gpt-6-astra" }),
-        piModel("openai/gpt-5.6-sol", {
-          id: "gpt-5.6-sol",
-        }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "teamorouter",
-    icon: "teamorouter",
-  },
-  {
-    name: "TeamoRouter Claude",
-    providerKey: "cc-switch-teamo-router-claude",
-    websiteUrl: "https://teamorouter.com",
-    apiKeyUrl:
-      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
-    settingsConfig: {
-      name: "TeamoRouter Claude",
-      baseUrl: "https://api.teamorouter.com",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", { id: "claude-opus-5-5" }),
-        piModel("anthropic/claude-sonnet-5.5", { id: "claude-sonnet-5-5" }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "teamorouter",
-    icon: "teamorouter",
-  },
-  {
-    name: "PPIO",
-    providerKey: "cc-switch-ppio",
-    websiteUrl: "https://ppio.com",
-    apiKeyUrl: "https://ppio.com/activity/ccswitch",
-    settingsConfig: {
-      name: "PPIO",
-      baseUrl: "https://api.ppio.com/openai/v1",
-      api: "openai-completions",
-      apiKey: "",
-      models: [
-        {
-          ...piModel("deepseek/deepseek-v4-flash", {
-            id: "deepseek/deepseek-v4.1-flash",
-            name: "DeepSeek V4.1 Flash",
-            contextWindow: 1_048_576,
-            maxTokens: 393_216,
-            thinkingProfile: "deepseekV4",
-          }),
-          compat: { ...DEEPSEEK_THINKING_COMPAT },
-        },
-        piModel("moonshotai/kimi-k3.1-pro", { id: "moonshotai/kimi-k3.1-pro" }),
-        piModel("zai/glm-5.3", { id: "zai-org/glm-5.3" }),
-      ],
-    },
-    category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "ppio",
-    icon: "ppio",
-    iconColor: "#2874FF",
-  },
-  {
-    name: "ClaudeCN",
-    providerKey: "cc-switch-claude-cn",
-    websiteUrl: "https://claudecn.top",
-    apiKeyUrl: "https://claudecn.ai/register?aff=HEL9",
-    settingsConfig: {
-      name: "ClaudeCN",
-      baseUrl: "https://claudecn.top",
-      api: "anthropic-messages",
-      apiKey: "",
-      models: [
-        piModel("anthropic/claude-opus-5.5", {
-          id: "claude-opus-5-5",
-        }),
-        piModel("anthropic/claude-sonnet-5.5", {
-          id: "claude-sonnet-5-5",
-        }),
-        piModel("anthropic/claude-haiku-5.5", {
-          id: "claude-haiku-5-5",
-        }),
-        piModel("anthropic/claude-fable-5.1", { id: "claude-fable-5-1" }),
-      ],
-    },
-    category: "third_party",
-    isPartner: true,
-    partnerPromotionKey: "claudecn",
-    icon: "claudecn",
   },
   {
     name: "火山 Agent Plan",

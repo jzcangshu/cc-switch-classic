@@ -1914,7 +1914,8 @@ function InstalledRow({
           {!enabled && <NeutralBadge>{t("mcpPage.notEnabled")}</NeutralBadge>}
         </div>
         <div className="flex min-w-0 whitespace-nowrap text-caption text-fg-2">
-          {skill.description && (
+          {/* 批量失败的原因换掉那一行的描述：描述会截断，接在后面会被截掉看不见 */}
+          {skill.description && !(failure && failedApp) && (
             <span className="min-w-0 truncate" title={skill.description}>
               {skill.description}
             </span>

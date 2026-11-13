@@ -60,10 +60,6 @@ describe("usage format helpers", () => {
     expect(formatTokensShort(123_456_789, "ko_KR")).toBe("1.23억");
   });
 
-  it("resolves Korean date locales", () => {
-    expect(getLocaleFromLanguage("ko")).toBe("ko-KR");
-    expect(getLocaleFromLanguage("ko-KR")).toBe("ko-KR");
-  });
   it.each(["kok", "kok-IN", "kos"])(
     "does not apply Korean date or token formats to %s",
     (language) => {

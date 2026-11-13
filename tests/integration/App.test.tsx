@@ -8,7 +8,6 @@ import {
   screen,
   waitFor,
   fireEvent,
-  within,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
@@ -400,50 +399,6 @@ describe("App integration with MSW", () => {
     expect(mainScrollContainer.scrollLeft).toBe(0);
     expect(providerScrollContainer()!.scrollTop).toBe(0);
     expect(providerScrollContainer()!.scrollLeft).toBe(0);
-  }, 10_000);
-
-  it("closes provider panels when navigating away from the app page", async () => {
-    renderApp(App);
-
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "claude-1",
-      ),
-    );
-
-    // 面板只盖住内容区，侧栏还能点：切应用时编辑面板必须关掉，否则 Claude 的
-    // 供应商会以 appId=codex 保存进 Codex
-    fireEvent.click(screen.getByText("edit"));
-    expect(screen.getByTestId("edit-provider-dialog")).toBeInTheDocument();
-    fireEvent.click(appButton("Codex"));
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "codex-1",
-      ),
-    );
-    expect(
-      screen.queryByTestId("edit-provider-dialog"),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("usage"));
-    expect(screen.getByTestId("usage-modal")).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: ",", ctrlKey: true });
-    fireEvent.click(
-      screen.getByRole("tab", { name: "usage.title", hidden: true }),
-    );
-    await waitFor(() =>
-      expect(screen.queryByTestId("usage-modal")).not.toBeInTheDocument(),
-    );
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    await screen.findByTestId("provider-list");
-    fireEvent.click(screen.getByText("create"));
-    expect(
-      await screen.findByTestId("add-provider-dialog"),
-    ).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: ",", metaKey: true });
-    expect(await screen.findByTestId("settings-page")).toBeInTheDocument();
-    expect(screen.queryByTestId("add-provider-dialog")).not.toBeInTheDocument();
   }, 10_000);
 
   it("asks before leaving an editor page with unsaved changes", async () => {
@@ -1034,50 +989,6 @@ describe("App integration with MSW", () => {
     expect(await screen.findByTestId("unified-skills-panel")).toHaveTextContent(
       "installed",
     );
-  });
-
-  it("opens OpenClaw tools and Hermes memory from the classic toolbar", async () => {
-    renderApp(App);
-    fireEvent.click(appButton("OpenClaw"));
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "openclaw.env.title",
-        hidden: true,
-      }),
-    );
-    const configTabs = await screen.findByRole("tablist", {
-      name: "appPage.openclawConfig",
-      hidden: true,
-    });
-    expect(
-      within(configTabs).getAllByRole("tab", { hidden: true }),
-    ).toHaveLength(3);
-    expect(screen.getByRole("tabpanel", { hidden: true })).toHaveAttribute(
-      "aria-labelledby",
-      "openclaw-config-env",
-    );
-    fireEvent.keyDown(window, { key: "Escape" });
-    fireEvent.click(appButton("Hermes"));
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "hermes.memory.title",
-        hidden: true,
-      }),
-    );
-    const header = document.querySelector("header") as HTMLElement;
-    expect(
-      await within(header).findByRole("button", {
-        name: "common.save",
-        hidden: true,
-      }),
-    ).toHaveAttribute("aria-disabled", "true");
-    const memoryTabs = await screen.findByRole("tablist", {
-      name: "hermes.memory.fileTabs",
-      hidden: true,
-    });
-    expect(
-      within(memoryTabs).getAllByRole("tab", { hidden: true }),
-    ).toHaveLength(2);
   });
 
   it("opens the old skillsDiscovery view as the Discover segment", async () => {

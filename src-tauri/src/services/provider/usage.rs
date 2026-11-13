@@ -75,6 +75,8 @@ pub(crate) async fn execute_and_format_usage_result(
 
             let msg = match err {
                 AppError::Localized { zh, en, .. } => {
+                    // 经典版仅维护四语言：非英文一律回落中文文案
+                    if lang == "en" {
                         en
                     } else {
                         zh

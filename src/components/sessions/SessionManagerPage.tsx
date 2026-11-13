@@ -176,9 +176,8 @@ export function SessionManagerPage({
   const [groupMode, setGroupMode] = useState<GroupMode>(readGroupMode);
   const [expanded, setExpanded] = useState<Set<string>>(readExpanded);
   const [readerKey, setReaderKey] = useState<string | null>(null);
-  // 点了行下方某条摘录打开的：跳到那条消息，而不是最相关的那条。
-  // 当前值暂无读者（正文搜索接线后由 reader 消费），先只保留写入侧。
-  const [, setReaderJump] = useState<{
+  // 点了行下方某条摘录打开的：跳到那条消息，而不是最相关的那条
+  const [readerJump, setReaderJump] = useState<{
     key: string;
     messageIndex: number;
   } | null>(null);
@@ -385,8 +384,16 @@ export function SessionManagerPage({
     }
   }, [readerKey, readerSession, isLoading]);
 
-  // 正文搜索接线前的占位：readerHit（摘录定位）由结果列表与 reader 消费，
-  // 接线时恢复 readerInitialFind 的计算并传给阅读器。
+  // 从正文命中打开的会话：阅读页带上查询词，并跳到摘录所在的那条消息
+  const readerHit = readerSession ? contentHitOf(readerSession) : undefined;
+  const readerInitialFind = useMemo(() => {
+    if (!trimmedQuery || !readerHit) return undefined;
+    const messageIndex =
+      readerJump && readerJump.key === readerKey
+        ? readerJump.messageIndex
+        : readerHit.snippets[0]?.messageIndex;
+    return { query: trimmedQuery, messageIndex };
+  }, [trimmedQuery, readerHit, readerJump, readerKey]);
 
   const transcript = useSessionTranscript(
     readerSession?.providerId,
@@ -1199,6 +1206,7 @@ export function SessionManagerPage({
                 appName={appName(readerSession.providerId)}
                 transcript={transcript}
                 listQuery={trimmedQuery}
+                initialFind={readerInitialFind}
                 launchTerminal={terminalName}
                 hasPrev={readerIndex > 0}
                 hasNext={

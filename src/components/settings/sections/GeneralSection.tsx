@@ -18,6 +18,14 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Button } from "@/components/ui/button";
 import { ToggleRow } from "@/components/ui/toggle-row";
 import { isLinux } from "@/lib/platform";
+import {
+  setDensity,
+  setZoom,
+  useInterfacePrefs,
+  ZOOM_LEVELS,
+  type Density,
+  type ZoomLevel,
+} from "@/lib/interfacePrefs";
 import { AppVisibilitySettings } from "@/components/settings/AppVisibilitySettings";
 import { TerminalSelect } from "@/components/settings/TerminalSettings";
 import { SkillsStorageSettings } from "@/components/skills/SkillsStorageSheet";
@@ -58,6 +66,7 @@ export function GeneralSection({
 }: GeneralSectionProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
+  const { density, zoom } = useInterfacePrefs();
 
   return (
     <>
@@ -153,6 +162,35 @@ export function GeneralSection({
                 label: t("settings.general.quotaDisplayUsed"),
               },
             ]}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm font-medium">{t("settings.general.density")}</p>
+          <SegmentedControl<Density>
+            size="sm"
+            aria-label={t("settings.general.density")}
+            value={density}
+            onValueChange={setDensity}
+            items={[
+              { value: "compact", label: t("settings.general.densityCompact") },
+              {
+                value: "comfortable",
+                label: t("settings.general.densityComfortable"),
+              },
+            ]}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm font-medium">{t("settings.general.zoom")}</p>
+          <SegmentedControl<`${ZoomLevel}`>
+            size="sm"
+            aria-label={t("settings.general.zoom")}
+            value={`${zoom}`}
+            onValueChange={(value) => setZoom(Number(value) as ZoomLevel)}
+            items={ZOOM_LEVELS.map((level) => ({
+              value: `${level}` as const,
+              label: `${Math.round(level * 100)}%`,
+            }))}
           />
         </div>
       </section>

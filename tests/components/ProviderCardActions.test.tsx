@@ -463,9 +463,9 @@ describe("ProviderCardActions — open terminal", () => {
     );
 
     const button = screen.getByRole("button", {
-      name: "providerCard.action.openTerminal",
+      name: "provider.openTerminal",
     });
-    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).toHaveAttribute("disabled");
     await user.click(button);
     expect(onOpenTerminal).not.toHaveBeenCalled();
     expect(await screen.findByRole("tooltip")).toHaveTextContent(

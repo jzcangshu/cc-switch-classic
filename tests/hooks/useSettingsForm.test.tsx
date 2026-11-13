@@ -29,12 +29,13 @@ afterEach(() => {
 });
 
 describe("useSettingsForm Hook", () => {
-  it("ignores an unsupported cached language sharing the Chinese prefix", () => {
+  it("maps an unsupported cached Chinese-variant language to zh", () => {
+    // 经典版四语言白名单按 zh 前缀宽匹配：zh 变体缓存一律回落中文界面
     useSettingsQueryMock.mockReturnValue({ data: null, isLoading: false });
     window.localStorage.setItem("language", "zha");
     (i18n as any).language = "en";
     const { result } = renderHook(() => useSettingsForm());
-    expect(result.current.readPersistedLanguage()).toBe("en");
+    expect(result.current.readPersistedLanguage()).toBe("zh");
   });
 
   it.each([

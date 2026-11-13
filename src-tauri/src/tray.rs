@@ -3436,23 +3436,18 @@ mod tests {
     }
 
     #[test]
-    fn locale_maps_korean_without_matching_other_language_subtags() {
-        for locale in ["ko", "ko-KR", "ko-KP", "KO-kr"] {
-            assert_eq!(map_locale_to_tray_language(locale), "ko");
-        }
-        for locale in ["kok", "kok-IN", "kos"] {
-            assert_eq!(map_locale_to_tray_language(locale), "en");
+    fn locale_falls_back_to_english_for_unsupported_korean_variants() {
+        // 经典版四语言：韩语及其变体不进托盘语言，全部回落英文
+        for locale in ["ko", "ko-KR", "ko-KP", "KO-kr", "kok", "kok-IN", "kos"] {
+            assert_eq!(map_locale_to_tray_language(locale), "en", "{locale}");
         }
     }
 
     #[test]
-    fn locale_maps_russian_without_matching_other_language_subtags() {
-        for locale in ["ru", "ru-RU", "ru-UA", "RU-ru"] {
-            assert_eq!(map_locale_to_tray_language(locale), "ru");
-        }
-        // 卢森尼亚语 rue、Rupuni 等以 ru 开头但不是俄语，按不支持的语言回落英文
-        for locale in ["rue", "rue-UA", "rup"] {
-            assert_eq!(map_locale_to_tray_language(locale), "en");
+    fn locale_falls_back_to_english_for_unsupported_cyrillic_variants() {
+        // 俄语及卢森尼亚语（rue）、Rupuni（rup）等以 ru 开头但不是俄语的，都回落英文
+        for locale in ["ru", "ru-RU", "ru-UA", "RU-ru", "rue", "rue-UA", "rup"] {
+            assert_eq!(map_locale_to_tray_language(locale), "en", "{locale}");
         }
     }
 

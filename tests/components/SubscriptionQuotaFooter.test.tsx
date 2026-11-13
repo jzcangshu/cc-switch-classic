@@ -227,10 +227,13 @@ describe("Antigravity quota groups", () => {
       { name: "agy_gemini_argon_weekly", utilization: 70, resetsAt: null },
       ...agyTiers.slice(2),
     ]);
-    const lines = screen.getByRole("button", { name: "查看各档额度" }).children;
+    // 经典版按钮末尾带下拉箭头 svg，行数只数行 span
+    const lines = Array.from(
+      screen.getByRole("button", { name: "查看各档额度" }).children,
+    ).filter((el) => el.tagName === "SPAN");
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toHaveTextContent("Gemini 剩余 30%");
-    expect(lines[1]).toHaveTextContent("Claude/GPT 剩余 5%");
+    expect(lines[0]).toHaveTextContent("Gemini:剩余 30%");
+    expect(lines[1]).toHaveTextContent("Claude/GPT:剩余 5%");
   });
 
   it("opens one dropdown listing all four windows; ↻ still refreshes", async () => {
