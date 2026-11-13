@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { DatabaseUpgrade } from "./components/DatabaseUpgrade";
 import { UpdateProvider } from "./contexts/UpdateContext";
+import { initializeInterfacePrefs } from "@/lib/interfacePrefs";
 import "./index.css";
 // 导入国际化配置
 import i18n, { syncLanguageFromSettings } from "./i18n";
@@ -34,6 +35,7 @@ import { disableContextMenu } from "@/lib/disableContextMenu";
 disableContextMenu();
 
 installGlobalErrorHandlers();
+disableContextMenu();
 
 // 根据平台添加 body class，便于平台特定样式
 try {
@@ -94,6 +96,9 @@ try {
 }
 
 async function bootstrap() {
+  // 界面密度和缩放要在任何界面渲染之前用上（含下面的数据库升级界面），首屏不会先按紧凑尺寸画一遍
+  initializeInterfacePrefs();
+
   // 启动早期主动查询后端初始化错误，避免事件竞态
   try {
     const initError = (await invoke(

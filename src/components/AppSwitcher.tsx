@@ -26,6 +26,7 @@ interface AppSwitcherProps {
 }
 
 const APP_ICON_NAME: Record<AppId, string> = {
+  copilot: "githubcopilot",
   claude: "claude",
   "claude-desktop": "claude",
   codex: "openai",
@@ -43,6 +44,7 @@ const APP_ICON_NAME: Record<AppId, string> = {
 };
 
 const APP_DISPLAY_NAME: Record<AppId, string> = {
+  copilot: "Copilot CLI",
   claude: "Claude Code",
   "claude-desktop": "Claude Desktop",
   codex: "Codex",

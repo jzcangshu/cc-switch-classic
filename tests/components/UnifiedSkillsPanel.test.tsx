@@ -422,6 +422,8 @@ describe("UnifiedSkillsPanel", () => {
       ).toBeInTheDocument(),
     );
     expect(screen.getByText(/skillsPage.rowFail/)).toBeInTheDocument();
+    // 失败原因换掉那一行的描述，不接在描述后面被截掉；没失败的行照常显示描述
+    expect(screen.getAllByText("Alpha description")).toHaveLength(1);
     expect(m.toastWarning).toHaveBeenCalledWith(
       expect.stringContaining("appMatrix.toast.partialFail"),
       expect.objectContaining({
@@ -574,6 +576,30 @@ describe("UnifiedSkillsPanel", () => {
     );
   });
 
+  it("turns off only the selected Skills in one app from the selection bar", async () => {
+    m.installed = [
+      makeSkill({ id: "a", name: "A", apps: { codex: true } }),
+      makeSkill({ id: "b", name: "B", apps: { codex: true } }),
+    ];
+    renderPanel();
+    await userEvent.click(
+      screen.getAllByRole("checkbox", { name: "skillsPage.selectAria" })[1],
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /skillsPage.bulk.disable/ }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: /Codex/ }),
+    );
+    await waitFor(() =>
+      expect(m.bulkToggle).toHaveBeenCalledWith({
+        ids: ["b"],
+        app: "codex",
+        enabled: false,
+      }),
+    );
+  });
+
   it("selects every listed Skill from the header checkbox", async () => {
     m.installed = [
       makeSkill({ id: "a", name: "A" }),
@@ -674,70 +700,6 @@ describe("UnifiedSkillsPanel", () => {
     );
     width.mockRestore();
     height.mockRestore();
-  });
-
-  it("filters to Skills with updates from the header count and updates them after confirming", async () => {
-    m.installed = [
-      makeSkill({ id: "a", name: "A" }),
-      makeSkill({ id: "b", name: "B" }),
-    ];
-    m.updates = [
-      { id: "b", name: "B", remoteHash: "x" },
-      { id: "gone", name: "Gone", remoteHash: "y" },
-    ];
-    renderPanel();
-    // 更新横幅已去掉：页头的「N 个可更新」、行上的徽标、「检查更新」按钮说的是同一件事
-    expect(screen.getAllByText("skills.updateAvailable")).toHaveLength(1);
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    // 全部更新和重新检查都是直接入口，不用先筛选或展开菜单。
-    expect(
-      screen.getAllByRole("button", { name: "skillsPage.updateAllCount" }),
-    ).toHaveLength(1);
-    expect(
-      screen.getByRole("button", { name: "skills.checkUpdates" }),
-    ).toBeInTheDocument();
-
-    const chip = screen.getByRole("button", {
-      name: "skillsPage.headerUpdates",
-    });
-    expect(chip).toHaveAttribute("aria-pressed", "false");
-    await userEvent.click(chip);
-    expect(chip).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
-
-    // 再点一次恢复全部
-    await userEvent.click(chip);
-    expect(chip).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
-
-    await userEvent.click(chip);
-    await userEvent.click(
-      screen.getByRole("button", { name: "skillsPage.updateAllCount" }),
-    );
-    // 确认框列出要更新哪些；已经不在本机的「Gone」不列
-    const list = screen.getByRole("list", {
-      name: "skillsPage.confirm.updateListAria",
-    });
-    const rows = within(list).getAllByRole("listitem");
-    expect(rows).toHaveLength(1);
-    expect(within(rows[0]).getByText("B")).toBeInTheDocument();
-    // 仓库名可点，打开的地址和列表行的来源链接一致
-    const openExternal = vi
-      .spyOn(settingsApi, "openExternal")
-      .mockResolvedValue(undefined);
-    await userEvent.click(
-      within(rows[0]).getByRole("button", { name: "owner/repo" }),
-    );
-    expect(openExternal).toHaveBeenCalledWith("https://github.com/owner/repo");
-    openExternal.mockRestore();
-    expect(within(list).queryByText("Gone")).not.toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole("button", {
-        name: "skillsPage.confirm.updateAllButton",
-      }),
-    );
-    await waitFor(() => expect(m.updateSkill).toHaveBeenCalledTimes(1));
-    expect(m.updateSkill).toHaveBeenCalledWith("b");
   });
 
   it("opens discovery directly, returns to installed, and keeps the discovery state mounted", async () => {
@@ -1115,6 +1077,7 @@ describe("UnifiedSkillsPanel", () => {
           kimi: false,
           dsh: false,
           agy: false,
+          copilot: false,
         },
       },
     ]);

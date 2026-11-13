@@ -69,6 +69,7 @@ export function AddProviderDialog({
     appId !== "mcode" &&
     appId !== "dsh" &&
     appId !== "kimi" &&
+    appId !== "copilot" &&
     appId !== "grokbuild" &&
     appId !== "claude-desktop";
   const [manageUniversalOpen, setManageUniversalOpen] = useState(false);
@@ -271,7 +272,8 @@ export function AddProviderDialog({
           appId === "mcode" ||
           appId === "kimi" ||
           appId === "dsh" ||
-          appId === "omp") &&
+          appId === "omp" ||
+          appId === "copilot") &&
         values.providerKey
       ) {
         providerData.providerKey = values.providerKey;

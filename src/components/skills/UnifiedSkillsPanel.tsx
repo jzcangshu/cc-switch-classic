@@ -41,6 +41,7 @@ import {
   useCheckSkillUpdates,
   useDeleteSkillBackup,
   useDiscoverableSkills,
+  useDiscoverableSkillsFailures,
   useImportSkillsFromApps,
   useInstallSkillsFromZip,
   useInstalledSkills,
@@ -929,6 +930,7 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
     setStatusFilter("updates");
   };
 
+  // 可更新的数量只在工具栏的「全部更新（N 个）」上说一次；要只看可更新的，用状态筛选
   const header = (
     <AppPageHeader
       className="h-auto min-h-16 flex-wrap py-3"
@@ -1147,7 +1149,6 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
       );
     }
 
-    const selectionActive = selected.size > 0;
     const nVisibleSelected = filteredSkills.filter((skill) =>
       selected.has(skill.id),
     ).length;
@@ -1186,7 +1187,7 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
                 />
               </span>
               <div className="-ms-0.5 flex min-w-0 flex-1 items-center gap-0.5">
-                {selectionActive ? (
+                {selected.size > 0 ? (
                   <>
                     <span className="shrink-0 whitespace-nowrap pe-1.5 ps-2.5 text-body font-medium tabular-nums">
                       {t("skillsPage.bulk.selected", { count: selected.size })}
@@ -1465,6 +1466,8 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
     nUnmanaged > 0 && dismissedUnmanaged !== nUnmanaged && nInstalled > 0;
   const showUpdateRepoFailBanner =
     updateRepoFailures.length > 0 && dismissedRepoFailAt !== updatesCheckedAt;
+  const showNotices = showUnmanagedBanner || showUpdateRepoFailBanner;
+  const showInstalledToolbar = loadOk && nInstalled > 0;
 
   const uninstallTargets =
     confirm?.kind === "uninstall"
@@ -1587,7 +1590,8 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
 
           <NoticeSlot
             className={cn(
-              (showUnmanagedBanner || showUpdateRepoFailBanner) && "px-6 pt-3",
+              showNotices && "px-6 pb-3",
+              showNotices && !showInstalledToolbar && "pt-3",
             )}
           >
             {showUpdateRepoFailBanner && (
@@ -1645,7 +1649,12 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
             )}
           </NoticeSlot>
 
-          <div className="flex min-h-0 flex-1 flex-col px-6 pb-5 pt-3">
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col px-6 pb-5",
+              !showInstalledToolbar && !showNotices && "pt-3",
+            )}
+          >
             {renderInstalledBody()}
           </div>
         </div>
@@ -1914,22 +1923,22 @@ function InstalledRow({
             <>
               <span
                 id={failId}
-                className={cn(
-                  "min-w-0 truncate text-warning-text",
-                  skill.description && "ms-1.5",
-                )}
+                className="min-w-0 truncate"
+                title={failure.error}
               >
                 {t("skillsPage.rowFail", {
                   app: APP_DISPLAY_NAME[failedApp],
                   error: failure.error,
                 })}
+              </span>
+              <span aria-hidden="true" className="shrink-0">
                 &nbsp;·&nbsp;
               </span>
               <button
                 type="button"
                 aria-describedby={failId}
                 onClick={onFixSync}
-                className="shrink-0 text-warning-text underline underline-offset-[3px]"
+                className="shrink-0 underline underline-offset-[3px]"
               >
                 {t("skillsPage.fixSync")}
               </button>
@@ -2005,23 +2014,14 @@ function InstalledRow({
                 aria-label={t("skillsPage.rowMoreAria", { name: skill.name })}
                 disabled={disabled}
               >
-                {isUpdating ? (
-                  <Loader2 className="h-[15px] w-[15px] animate-spin" />
-                ) : (
-                  <MoreHorizontal
-                    className="h-[15px] w-[15px]"
-                    strokeWidth={1.5}
-                  />
-                )}
+                <MoreHorizontal
+                  className="h-[15px] w-[15px]"
+                  strokeWidth={1.5}
+                />
               </Button>
             </DropdownMenuTrigger>
           </HoverTip>
           <DropdownMenuContent align="end" className="min-w-[180px]">
-            {hasUpdate && (
-              <DropdownMenuItem onSelect={onUpdate}>
-                {t("skills.update")}
-              </DropdownMenuItem>
-            )}
             {(skill.readmeUrl || hasRepo) && (
               <DropdownMenuItem onSelect={onOpenDocs}>
                 {t("mcpPage.openDocs")}
@@ -2149,11 +2149,13 @@ function AppMenuButton({
 function RepoManagerContainer({ onClose }: { onClose: () => void }) {
   const { data: repos = [] } = useSkillRepos();
   const { data: discoverable = [] } = useDiscoverableSkills();
+  const { data: failures = [] } = useDiscoverableSkillsFailures();
   const { addRepo, removeRepo, setRepoEnabled } = useSkillRepoActions();
   return (
     <RepoManagerPanel
       repos={repos}
       skills={discoverable}
+      failures={failures}
       onAdd={addRepo}
       onRemove={removeRepo}
       onToggle={setRepoEnabled}

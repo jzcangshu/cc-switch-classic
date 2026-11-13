@@ -13,6 +13,7 @@ import { TrayPanel } from "./TrayPanel";
 disableContextMenu();
 
 installGlobalErrorHandlers();
+disableContextMenu();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -17,6 +17,7 @@ interface AppVisibilitySettingsProps {
  * TypeScript 会强制在这里补上，设置里的开关就不会悄悄漏掉新应用。
  */
 const APP_META: Record<AppId, { icon: string; nameKey: string }> = {
+  copilot: { icon: "githubcopilot", nameKey: "apps.copilot" },
   claude: { icon: "claude", nameKey: "apps.claudeCode" },
   "claude-desktop": { icon: "claude", nameKey: "apps.claudeDesktop" },
   codex: { icon: "openai", nameKey: "apps.codex" },

@@ -42,6 +42,7 @@ vi.mock("@tanstack/react-virtual", () => ({
         key: index,
         start: index * 100,
       })),
+    measure: () => undefined,
     measureElement: () => undefined,
     scrollToIndex: () => undefined,
   }),
@@ -79,6 +80,7 @@ const openAppMenu = async () =>
   userEvent.click(screen.getByRole("button", { name: /^应用：/ }));
 
 const EXPANDED_KEY = "cc-switch.sessionManager.expandedProjects";
+
 
 describe("SessionManagerPage", () => {
   beforeEach(() => {
@@ -178,6 +180,8 @@ describe("SessionManagerPage", () => {
     };
 
     setSessionFixtures(sessions, messages);
+    // 正文搜索默认关闭；大多数用例要连正文一起搜，先打开，默认关闭的行为单独测
+    setSettings({ sessionContentSearchEnabled: true });
   });
 
   it("shows Oh My Pi sessions from its app and in the all-apps filter", async () => {
@@ -341,8 +345,8 @@ describe("SessionManagerPage", () => {
     await openAppMenu();
     const menu = await screen.findByRole("menu");
     const items = within(menu).getAllByRole("menuitemradio");
-    // 全部应用 + 13 个来源，按会话数从多到少
-    expect(items).toHaveLength(14);
+    // 全部应用 + 14 个来源，按会话数从多到少
+    expect(items).toHaveLength(15);
     expect(items[0]).toHaveTextContent("全部应用5");
     expect(items[1]).toHaveTextContent("Codex3");
     expect(items[items.length - 1]).toHaveTextContent("无会话");
@@ -377,6 +381,7 @@ describe("SessionManagerPage", () => {
         dsh: false,
         agy: false,
         omp: false,
+        copilot: false,
       },
     });
     renderPage("codex");
@@ -416,8 +421,15 @@ describe("SessionManagerPage", () => {
 
     fireEvent.change(search, { target: { value: "zzz" } });
     expect(
-      await screen.findByText("没有标题、目录或首末消息匹配“zzz”的会话"),
+      await screen.findByText("没有会话的标题、目录或消息正文包含“zzz”"),
     ).toBeInTheDocument();
+    // 已开启正文搜索时不再提供开启入口
+    expect(
+      screen.queryByRole("button", { name: "搜索消息正文" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("开启后会在本地为消息正文建立索引"),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "清除搜索" }));
     expect(await screen.findByText("Alpha Session")).toBeInTheDocument();
   });

@@ -8,7 +8,7 @@ import { ToggleRow } from "@/components/ui/toggle-row";
 import { toast } from "@/lib/toast";
 
 export const DEFAULT_CODEX_QUOTA_PROTECTION = {
-  enabled: false,
+  enabled: true,
   fiveHourThreshold: 95,
   weeklyThreshold: 98,
 };

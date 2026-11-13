@@ -36,19 +36,23 @@ const getInitialLanguage = (): Language => {
   }
 
   if (
-    navigatorLang?.startsWith("zh-tw") ||
-    navigatorLang?.startsWith("zh-hk") ||
-    navigatorLang?.startsWith("zh-mo") ||
-    navigatorLang?.startsWith("zh-hant")
+    navigatorLang === "zh-tw" ||
+    navigatorLang?.startsWith("zh-tw-") ||
+    navigatorLang === "zh-hk" ||
+    navigatorLang?.startsWith("zh-hk-") ||
+    navigatorLang === "zh-mo" ||
+    navigatorLang?.startsWith("zh-mo-") ||
+    navigatorLang === "zh-hant" ||
+    navigatorLang?.startsWith("zh-hant-")
   ) {
     return "zh-TW";
   }
 
-  if (navigatorLang?.startsWith("zh")) {
+  if (navigatorLang === "zh" || navigatorLang?.startsWith("zh-")) {
     return "zh";
   }
 
-  if (navigatorLang?.startsWith("ja")) {
+  if (navigatorLang === "ja" || navigatorLang?.startsWith("ja-")) {
     return "ja";
   }
 
@@ -56,7 +60,7 @@ const getInitialLanguage = (): Language => {
     return "en";
   }
 
-  // 认得出系统语言、但界面没有这种语言（德、法、韩…）时用英文：英文大多数人能读，简中几乎不能
+  // 认得出系统语言、但界面没有这种语言（德、法等）时用英文：英文大多数人能读，简中几乎不能
   return navigatorLang ? "en" : DEFAULT_LANGUAGE;
 };
 

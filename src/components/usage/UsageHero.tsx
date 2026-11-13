@@ -52,6 +52,10 @@ interface TitleTheme {
 
 const TITLE_THEMES: Record<AppType | "all", TitleTheme> = {
   all: { accent: "text-primary", iconBg: "bg-primary/10" },
+  copilot: {
+    accent: "text-indigo-600 dark:text-indigo-400",
+    iconBg: "bg-indigo-500/10",
+  },
   claude: {
     accent: "text-amber-600 dark:text-amber-400",
     iconBg: "bg-amber-500/10",

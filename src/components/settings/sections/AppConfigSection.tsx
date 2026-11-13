@@ -25,6 +25,7 @@ const DIRECTORY_FIELD: Record<DirectoryAppId, keyof Settings> = {
   hermes: "hermesConfigDir",
   pi: "piConfigDir",
   omp: "ompConfigDir",
+  dsh: "dshConfigDir",
 };
 
 const DIRECTORY_LABEL: Record<DirectoryAppId, string> = {
@@ -37,6 +38,7 @@ const DIRECTORY_LABEL: Record<DirectoryAppId, string> = {
   hermes: "settings.hermesConfigDir",
   pi: "settings.piConfigDir",
   omp: "settings.ompConfigDir",
+  dsh: "settings.dshConfigDir",
 };
 
 const DIRECTORY_PLACEHOLDER: Record<DirectoryAppId, string> = {
@@ -49,6 +51,7 @@ const DIRECTORY_PLACEHOLDER: Record<DirectoryAppId, string> = {
   hermes: "settings.browsePlaceholderHermes",
   pi: "settings.browsePlaceholderPi",
   omp: "settings.browsePlaceholderOmp",
+  dsh: "settings.browsePlaceholderDsh",
 };
 
 const DIRECTORY_APPS: DirectoryAppId[] = [
@@ -61,6 +64,7 @@ const DIRECTORY_APPS: DirectoryAppId[] = [
   "hermes",
   "pi",
   "omp",
+  "dsh",
 ];
 
 interface AppConfigSectionProps {

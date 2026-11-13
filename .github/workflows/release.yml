@@ -207,6 +207,10 @@ jobs:
 
       - name: Build Tauri App (Linux)
         if: runner.os == 'Linux'
+        env:
+          # AppImage linuxdeploy 会打包 libwayland-client，引发 Wayland 会话崩溃
+          # （上游 c70d61de）；排除后由系统库提供。
+          LINUXDEPLOY_EXCLUDED_LIBRARIES: libwayland-client.so*
         run: pnpm tauri build --bundles appimage,deb,rpm
 
       - name: Prepare Windows Assets

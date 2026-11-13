@@ -62,6 +62,8 @@ interface ProviderCardActionsProps {
   onOpenTerminal?: () => void;
   /** 这张卡打开的终端是否与 CC Switch 的切换隔离（见 terminalIsIsolated），决定提示里带不带「环境隔离」 */
   openTerminalIsolated?: boolean;
+  /** 卡片终端打不通时的原因（只能经路由用的卡，见 terminalNeedsRoute）：按钮仍在、置灰 */
+  openTerminalDisabledReason?: string;
   groupMenu?: ProviderGroupMenu;
 }
 
@@ -79,6 +81,7 @@ export function ProviderCardActions({
   onConfigureUsage,
   onOpenTerminal,
   openTerminalIsolated,
+  openTerminalDisabledReason,
   groupMenu,
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
@@ -176,16 +179,20 @@ export function ProviderCardActions({
         </HoverTip>
         {onOpenTerminal && (
           <HoverTip
-            content={t(
-              openTerminalIsolated
-                ? "provider.openTerminalIsolated"
-                : "provider.openTerminal",
-            )}
+            content={
+              openTerminalDisabledReason ??
+              t(
+                openTerminalIsolated
+                  ? "provider.openTerminalIsolated"
+                  : "provider.openTerminal",
+              )
+            }
           >
             <Button
               variant="ghost"
               size="icon"
               aria-label={t("provider.openTerminal")}
+              disabled={Boolean(openTerminalDisabledReason)}
               onClick={onOpenTerminal}
               className={cn(
                 iconButtonClass,
