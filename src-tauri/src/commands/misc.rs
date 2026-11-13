@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 /// CLASSIC_VERSION 必须与 src/lib/classicVersion.ts 同值 bump——v1.1.1 只改了 TS 侧，
 /// 更新判定滞留 1.1.0 造成全量用户更新提示死循环；测试模块有守卫单测拦不同步。
 pub(crate) const CLASSIC_REPO: &str = "jzcangshu/cc-switch-classic";
-pub(crate) const CLASSIC_VERSION: &str = "1.1.5";
+pub(crate) const CLASSIC_VERSION: &str = "1.2.0";
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::AppHandle;

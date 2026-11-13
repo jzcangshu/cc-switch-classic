@@ -5,6 +5,26 @@ All notable changes to CC Switch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Classic（经典版）1.2.0 — 2026-11-14
+
+本节记录经典版自有变化；本版跟进官方内核 4.0.20 → 4.0.29，故产品版本升次版本。以下历史版本的「Classic（经典版）」小节编号沿用当次产品版本。
+
+### 跟进内核（4.0.20 → 4.0.29）
+
+- 吸收上游四个版本的修复与能力：会话管理正文搜索、Copilot CLI 受管应用（应用切换、可见性、配置目录、提示词文件全链）、界面密度与缩放设置、Codex 官方额度保护、统一 Codex 会话历史、OpenRouter 余额显示修复、弹层拖拽条（ModalDragStrip）等；逐项裁决记录见维护线。
+- 行为变更提示：Codex 官方额度保护默认开启（上游语义），可在设置中调整阈值或关闭。
+
+### 经典版接线与适配
+
+- 会话正文搜索补齐经典双栏布局的读取侧：点搜索结果直接打开阅读器并定位到命中消息。
+- 抽屉/弹层拖拽条接回 Sheet 弹层；Linux 自绘窗口按钮复刻条改用实测页头高度（经典页头 h-16=64，修正与上游常量的错位）。
+- 供应商卡片补套餐名（planSuffix）显示与终端置灰原因提示；未加入 Copilot 的卡终端按上游语义置灰并给出原因。
+- 官方额度保护文案与 MCP 连接状态、供应商分组共三组 locale 重复键死块修复（四语言），新增「JSON 重复键 = 0」文本级防回归测试；供应商分组 8 个 v2 拖拽键回填 v1.1.5 口径文案。
+
+### 预设口径（延续无推广契约）
+
+- 移除合并带入的 218 个第三方推广预设与四语言推广文案，保留火山系直营、Kimi 与 google-official 功能哨兵；新采用上游社区预设 4 家（TokenFactory / ClaudeAPI / Code0 / Genesis），其中 ClaudeAPI 与 Code0 的申请链接去除注册归因码。
+
 ## Classic（经典版）1.1.5 — 2026-11-07
 
 本节记录经典版自有变化，内核保持 4.0.20；以下历史版本仍采用上游内核编号。

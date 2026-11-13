@@ -1,0 +1,33 @@
+{
+  "version": "1.2.0",
+  "items": [
+    {
+      "type": "new",
+      "zh": "会话管理支持正文搜索，点结果直接跳到对应消息",
+      "zh-TW": "會話管理支援正文搜尋，點結果直接跳到對應訊息",
+      "en": "Session search now looks into message bodies and jumps straight to the hit",
+      "ja": "セッション検索が本文も対象にし、該当メッセージへ直接ジャンプします"
+    },
+    {
+      "type": "new",
+      "zh": "新增 Copilot CLI 受管应用支持",
+      "zh-TW": "新增 Copilot CLI 受管應用支援",
+      "en": "Copilot CLI is now a managed app, with prompt files and config directories wired",
+      "ja": "Copilot CLI を管理対象アプリとして追加しました"
+    },
+    {
+      "type": "new",
+      "zh": "外观设置新增界面密度与缩放调节",
+      "zh-TW": "外觀設定新增介面密度與縮放調整",
+      "en": "General settings gain interface density and zoom controls",
+      "ja": "設定に表示密度とズーム調整を追加しました"
+    },
+    {
+      "type": "improve",
+      "zh": "跟进内核 4.0.29：Codex 官方额度保护默认开启，可在设置调整",
+      "zh-TW": "跟進內核 4.0.29：Codex 官方額度保護預設開啟，可在設定調整",
+      "en": "Kernel 4.0.29: Codex official quota protection is now on by default (adjustable in settings)",
+      "ja": "コア 4.0.29 追随：Codex 公式クォータ保護が既定で有効（設定で変更可）"
+    }
+  ]
+}
