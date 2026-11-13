@@ -315,7 +315,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "Code0",
     providerKey: "cc-switch-code0",
     websiteUrl: "https://code0.ai",
-    apiKeyUrl: "https://code0.ai/agent/register/B2XHxGjGmRvqgznY",
+    apiKeyUrl: "https://code0.ai",
     settingsConfig: {
       name: "Code0",
       baseUrl: "https://code0.ai/v1",

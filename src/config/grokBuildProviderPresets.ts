@@ -86,7 +86,7 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
   {
     name: "Code0",
     websiteUrl: "https://code0.ai",
-    apiKeyUrl: "https://code0.ai/agent/register/B2XHxGjGmRvqgznY",
+    apiKeyUrl: "https://code0.ai",
     auth: grokAuth(),
     config: grokPresetConfig("Code0", "https://code0.ai/v1"),
     endpointCandidates: ["https://code0.ai/v1"],

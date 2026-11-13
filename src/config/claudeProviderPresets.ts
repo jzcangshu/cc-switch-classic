@@ -217,7 +217,7 @@ export const providerPresets: ProviderPreset[] = [
   {
     name: "ClaudeAPI",
     websiteUrl: "https://www.apito.ai",
-    apiKeyUrl: "https://console.apito.ai/agent/register/pQBql2buaqiX3dDS",
+    apiKeyUrl: "https://console.apito.ai",
     settingsConfig: {
       env: {
         ANTHROPIC_BASE_URL: "https://gw.apito.ai",
@@ -230,7 +230,7 @@ export const providerPresets: ProviderPreset[] = [
   {
     name: "Code0",
     websiteUrl: "https://code0.ai",
-    apiKeyUrl: "https://code0.ai/agent/register/B2XHxGjGmRvqgznY",
+    apiKeyUrl: "https://code0.ai",
     settingsConfig: {
       env: {
         ANTHROPIC_BASE_URL: "https://code0.ai",

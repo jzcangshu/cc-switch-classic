@@ -494,7 +494,7 @@ export const codexProviderPresets: CodexProviderPreset[] = [
   {
     name: "Code0",
     websiteUrl: "https://code0.ai",
-    apiKeyUrl: "https://code0.ai/agent/register/B2XHxGjGmRvqgznY",
+    apiKeyUrl: "https://code0.ai",
     category: "aggregator",
     auth: generateThirdPartyAuth(""),
     config: generateThirdPartyConfig(
