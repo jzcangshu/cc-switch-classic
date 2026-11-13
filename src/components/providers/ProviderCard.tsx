@@ -802,7 +802,11 @@ export function ProviderCard({
             openTerminalDisabledReason={
               terminalNeedsRoute(provider, appId)
                 ? t("provider.openTerminalNeedsRoute")
-                : undefined
+                : appId === "copilot" &&
+                    !isOfficial &&
+                    provider.meta?.liveConfigManaged !== true
+                  ? t("copilot.terminalNeedsAdd")
+                  : undefined
             }
             groupMenu={groupMenu}
           />

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "@/i18n/locales/en.json";
 import ja from "@/i18n/locales/ja.json";
@@ -91,5 +93,40 @@ describe("locale coverage", () => {
       expect(missingMentions).toEqual([]);
     },
   );
+});
+
+// JSON 重复键后者生效（last-wins）：上面按解析后对象断言的用例看不到被遮蔽的死块，
+// 合并拼接时键落进死块就会静默丢文案（v4.0.29 合并实际踩过），必须在文本层检测。
+function duplicateKeys(raw: string): string[] {
+  const seen = new Map<string, number>();
+  const stack: { indent: number; key: string }[] = [];
+  for (const line of raw.split("\n")) {
+    const m = line.match(/^(\s*)"([^"]+)":\s*(\{)?/);
+    if (!m) continue;
+    const indent = m[1].length;
+    while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+    const path = [...stack.map((s) => s.key), m[2]].join(".");
+    if (m[3]) {
+      stack.push({ indent, key: m[2] });
+      continue;
+    }
+    seen.set(path, (seen.get(path) ?? 0) + 1);
+  }
+  return [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k);
+}
+
+describe("locale raw text hygiene", () => {
+  const locales = [
+    ["zh", zh],
+    ["zh-TW", zhTW],
+    ["en", en],
+    ["ja", ja],
+  ] as const;
+
+  it.each(locales.map(([name]) => name))("%s.json has no duplicate keys", (name) => {
+    // vitest 转换后 import.meta.url 不是真实文件路径，按仓库根解析
+    const raw = readFileSync(resolve(process.cwd(), `src/i18n/locales/${name}.json`), "utf8");
+    expect(duplicateKeys(raw)).toEqual([]);
+  });
 });
 

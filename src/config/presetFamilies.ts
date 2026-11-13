@@ -6,7 +6,7 @@
  * `planKey`（套餐，见 PRESET_PLAN_KEYS）和 `regionKey`（地区，见 PRESET_REGION_KEYS）。
  * 只在一个维度上有差别的只写那一个（例如智谱只有国内 / 海外，火山只有不同套餐）。
  * 只给在同一个应用里真有多个版本的厂商打；某个应用里只剩一个版本时不打，照旧单独一行。
- * 两个都没写的版本用它的域名当标签（例如 SudoCode 的 sudocode.chat / sudocode.us）。
+ * 两个都没写的版本用它的域名当标签。
  */
 export interface PresetFamilyInfo {
   /** 合成那一行的名称 */
@@ -22,7 +22,6 @@ export const PRESET_FAMILIES = {
   astron: { name: "Astron" },
   "aws-bedrock": { name: "AWS Bedrock" },
   "baidu-qianfan": { name: "Baidu Qianfan" },
-  compshare: { name: "Compshare", nameKey: "providerForm.presets.ucloud" },
   kimi: {
     name: "Kimi",
     planOrder: ["payg", "coding"],
@@ -35,14 +34,12 @@ export const PRESET_FAMILIES = {
   },
   qianwen: { name: "千问AI平台" },
   qwencloud: { name: "QwenCloud" },
-  siliconflow: { name: "SiliconFlow" },
   soruxgpt: {
     name: "SoruxGPT",
     planOrder: ["payg", "codingPlan"],
   },
   stepfun: { name: "StepFun" },
   streamlake: { name: "StreamLake" },
-  sudocode: { name: "SudoCode" },
   tencent: {
     name: "Tencent Cloud",
     nameKey: "providerPreset.family.tencent",

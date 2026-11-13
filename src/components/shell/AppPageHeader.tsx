@@ -20,7 +20,8 @@ export const WindowControlsContext = createContext<ReactNode>(null);
 export const PageBackContext = createContext<(() => void) | null>(null);
 
 const NO_DRAG = { WebkitAppRegion: "no-drag" } as React.CSSProperties;
-const PAGE_HEADER_HEIGHT = 52;
+// 经典页头 h-16=64（上游是 52）：仅作实测前的初值，以 usePageHeaderBottom 实测为准
+const PAGE_HEADER_HEIGHT = 64;
 
 interface AppPageHeaderProps {
   /** 标题前的可操作元素（二级页的返回按钮）；和 icon 二选一 */
@@ -42,7 +43,7 @@ interface AppPageHeaderProps {
 }
 
 /**
- * 内容区页头：高 52，整条可拖动窗口，左边是图标 + 标题，右边是操作。
+ * 内容区页头：高 64（h-16），整条可拖动窗口，左边是图标 + 标题，右边是操作。
  */
 export function AppPageHeader({
   leading,
@@ -185,10 +186,11 @@ export function ModalDragStrip() {
       onMouseDown={(event) => event.preventDefault()}
     >
       {windowControls && (
+        // 高度跟着实测页头走（经典 h-16=64，上游 52 的常量会对不齐）：
         // 让开页头 1px 下边框，和页头里的按钮严丝合缝，不然半透明遮罩下会有重影
         <div
           className="absolute bottom-px end-4 flex items-center gap-1"
-          style={{ height: PAGE_HEADER_HEIGHT - 1, ...NO_DRAG }}
+          style={{ height: height - 1, ...NO_DRAG }}
         >
           {windowControls}
         </div>

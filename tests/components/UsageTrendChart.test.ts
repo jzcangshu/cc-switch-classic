@@ -119,6 +119,17 @@ describe("formatUsageTrendTickLabel", () => {
 });
 
 describe("formatUsageTrendTokenTickLabel", () => {
+  // 上游对语言是严格匹配，zhb/jam 这类伪造变体拿不到 CJK 单位；经典是宽匹配
+  // （zh*/ja* 前缀一律归入 zh/ja），变体拿到 CJK 单位才是预期——断言随语义反转
+  it.each(["zhb", "jam"])(
+    "maps zh*/ja* prefixed variants to CJK axis units for %s",
+    (locale) => {
+      const formatter = createUsageTrendTokenTickFormatter(locale);
+      expect(formatUsageTrendTokenTickLabel(50_000_000, formatter)).toMatch(
+        /[千亿億万萬]/,
+      );
+    },
+  );
 
   it("uses localized compact units for large token axis ticks", () => {
     const zhFormatter = createUsageTrendTokenTickFormatter("zh-CN");

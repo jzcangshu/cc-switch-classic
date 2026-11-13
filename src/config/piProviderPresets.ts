@@ -55,8 +55,8 @@ const OPENAI_COMPLETIONS_COMPAT = {
 
 // 1823/132248: thinking.type defaults to "enabled"; disabling requires an explicit
 // {"type":"disabled"}. The same doc says reasoning_content need not be echoed back
-// on multi-turn, so unlike DeepSeek itself we don't force
-// requiresReasoningContentOnAssistantMessages here.
+// on multi-turn, so we don't force requiresReasoningContentOnAssistantMessages here
+// (DeepSeek's own API needs the echo; this one doesn't).
 const TENCENT_DEEPSEEK_THINKING_COMPAT = {
   ...OPENAI_COMPLETIONS_COMPAT,
   thinkingFormat: "deepseek",

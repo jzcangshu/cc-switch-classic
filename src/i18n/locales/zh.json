@@ -1179,8 +1179,6 @@
       "title": "Skills 同步方式",
       "symlink": "软连接",
       "copy": "文件复制"
-    },
-    "codexQuotaProtection": {
     }
   },
   "apps": {
@@ -2232,16 +2230,6 @@
     "sdkOptions": "SDK 选项",
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
-  },
-  "providerGroups": {
-    "ungrouped": "未分组",
-    "dropToUngrouped": "松手移出分组",
-    "toggleAriaLabel": "折叠或展开分组",
-    "renameAriaLabel": "分组名称",
-    "dragGroupHandle": "拖动调整分组顺序",
-    "newGroup": "新建分组",
-    "moveTo": "移动到分组",
-    "saveFailed": "分组保存失败"
   },
   "providerPreset": {
     "label": "预设供应商",
@@ -4908,9 +4896,7 @@
       "sseRejectedTitle": "{{apps}} 不支持 SSE",
       "sseRejectedBody": "这些应用只支持 stdio 和 HTTP（Streamable HTTP），保存时会写入失败。请改选 HTTP，或取消勾选这些应用。"
     },
-    "resync": "按这里的开关重写各应用配置",
-    "connection": {
-    }
+    "resync": "按这里的开关重写各应用配置"
   },
   "skillsPage": {
     "headerUpdates": "{{count}} 个可更新",
@@ -5293,6 +5279,14 @@
     }
   },
   "providerGroups": {
+    "ungrouped": "未分组",
+    "dropToUngrouped": "松手移出分组",
+    "toggleAriaLabel": "折叠或展开分组",
+    "renameAriaLabel": "分组名称",
+    "dragGroupHandle": "拖动调整分组顺序",
+    "newGroup": "新建分组",
+    "moveTo": "移动到分组",
+    "saveFailed": "分组保存失败",
     "dropToEnd": "松手移至末尾",
     "settingTitle": "供应商分组",
     "modeOff": "关闭",

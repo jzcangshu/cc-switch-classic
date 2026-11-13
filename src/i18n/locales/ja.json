@@ -1179,8 +1179,6 @@
       "title": "スキル同期方式",
       "symlink": "シンボリックリンク",
       "copy": "ファイルコピー"
-    },
-    "codexQuotaProtection": {
     }
   },
   "apps": {
@@ -2232,16 +2230,6 @@
     "sdkOptions": "SDK オプション",
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
-  },
-  "providerGroups": {
-    "ungrouped": "未分類",
-    "dropToUngrouped": "離すとグループから外れます",
-    "toggleAriaLabel": "グループを折りたたむ／展開",
-    "renameAriaLabel": "グループ名",
-    "dragGroupHandle": "ドラッグでグループ順を変更",
-    "newGroup": "新しいグループ",
-    "moveTo": "グループに移動",
-    "saveFailed": "グループの保存に失敗しました"
   },
   "providerPreset": {
     "label": "プロバイダータイプ",
@@ -4908,9 +4896,7 @@
       "sseRejectedTitle": "{{apps}} は SSE に対応していません",
       "sseRejectedBody": "これらのアプリは stdio と HTTP（Streamable HTTP）のみに対応しているため、保存時の書き込みが失敗します。HTTP に切り替えるか、これらのアプリのチェックを外してください。"
     },
-    "resync": "ここのスイッチで各アプリの設定を書き直す",
-    "connection": {
-    }
+    "resync": "ここのスイッチで各アプリの設定を書き直す"
   },
   "skillsPage": {
     "headerUpdates": "{{count}} 件の更新",
@@ -5293,6 +5279,14 @@
     }
   },
   "providerGroups": {
+    "ungrouped": "未分類",
+    "dropToUngrouped": "ドロップでグループから移動",
+    "toggleAriaLabel": "グループを折りたたむ・展開する",
+    "renameAriaLabel": "グループ名",
+    "dragGroupHandle": "ドラッグでグループの順序を変更",
+    "newGroup": "新規グループ",
+    "moveTo": "グループへ移動",
+    "saveFailed": "グループの保存に失敗しました",
     "dropToEnd": "離して末尾へ移動",
     "settingTitle": "プロバイダーのグループ化",
     "modeOff": "オフ",

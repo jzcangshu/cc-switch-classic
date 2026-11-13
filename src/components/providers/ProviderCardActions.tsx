@@ -188,19 +188,22 @@ export function ProviderCardActions({
               )
             }
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t("provider.openTerminal")}
-              disabled={Boolean(openTerminalDisabledReason)}
-              onClick={onOpenTerminal}
-              className={cn(
-                iconButtonClass,
-                "hover:text-emerald-600 dark:hover:text-emerald-400",
-              )}
-            >
-              <Terminal className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            {/* 原生 disabled 的按钮收不到悬停，置灰原因必须经外层 span 才弹得出来 */}
+            <span>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("provider.openTerminal")}
+                disabled={Boolean(openTerminalDisabledReason)}
+                onClick={onOpenTerminal}
+                className={cn(
+                  iconButtonClass,
+                  "hover:text-emerald-600 dark:hover:text-emerald-400",
+                )}
+              >
+                <Terminal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </span>
           </HoverTip>
         )}
         <IconAction

@@ -1179,8 +1179,6 @@
       "title": "Skill Sync Method",
       "symlink": "Symlink",
       "copy": "Copy Files"
-    },
-    "codexQuotaProtection": {
     }
   },
   "apps": {
@@ -2232,16 +2230,6 @@
     "sdkOptions": "SDK Options",
     "modelOptionKeyPlaceholder": "provider",
     "modelOptionValuePlaceholder": "{\"order\": [\"baseten\"]}"
-  },
-  "providerGroups": {
-    "ungrouped": "Ungrouped",
-    "dropToUngrouped": "Release to remove from group",
-    "toggleAriaLabel": "Collapse or expand group",
-    "renameAriaLabel": "Group name",
-    "dragGroupHandle": "Drag to reorder groups",
-    "newGroup": "New group",
-    "moveTo": "Move to group",
-    "saveFailed": "Failed to save groups"
   },
   "providerPreset": {
     "label": "Provider Preset",
@@ -4908,9 +4896,7 @@
       "sseRejectedTitle": "SSE isn't supported by {{apps}}",
       "sseRejectedBody": "These apps only support stdio and HTTP (Streamable HTTP), so writing to them will fail on save. Switch to HTTP, or untick these apps."
     },
-    "resync": "Rewrite every app's config from these switches",
-    "connection": {
-    }
+    "resync": "Rewrite every app's config from these switches"
   },
   "skillsPage": {
     "headerUpdates": "{{count}} updates",
@@ -5293,6 +5279,14 @@
     }
   },
   "providerGroups": {
+    "ungrouped": "Ungrouped",
+    "dropToUngrouped": "Drop to remove from group",
+    "toggleAriaLabel": "Collapse or expand group",
+    "renameAriaLabel": "Group name",
+    "dragGroupHandle": "Drag to reorder groups",
+    "newGroup": "New group",
+    "moveTo": "Move to group",
+    "saveFailed": "Failed to save groups",
     "dropToEnd": "Release to move to the end",
     "settingTitle": "Provider grouping",
     "modeOff": "Off",

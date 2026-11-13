@@ -8,6 +8,7 @@ import {
   screen,
   waitFor,
   fireEvent,
+  within,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
@@ -998,6 +999,59 @@ describe("App integration with MSW", () => {
     expect(await screen.findByTestId("unified-skills-panel")).toHaveTextContent(
       "discover",
     );
+  });
+
+  it("opens OpenClaw tools and Hermes memory from the classic toolbar", async () => {
+    renderApp(App);
+    fireEvent.click(appButton("OpenClaw"));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "openclaw.env.title",
+        hidden: true,
+      }),
+    );
+    const configTabs = await screen.findByRole("tablist", {
+      name: "appPage.openclawConfig",
+      hidden: true,
+    });
+    expect(
+      within(configTabs).getAllByRole("tab", { hidden: true }),
+    ).toHaveLength(3);
+    expect(screen.getByRole("tabpanel", { hidden: true })).toHaveAttribute(
+      "aria-labelledby",
+      "openclaw-config-env",
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.click(appButton("Hermes"));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "hermes.memory.title",
+        hidden: true,
+      }),
+    );
+    // 懒加载页面切走后保挂载（Suspense 把旧树 display:none 藏起来），
+    // querySelector("header") 会命中隐藏的旧页头；按内联样式挑可见的当前页头，
+    // 等新页头提交完再查。弹层 aria-hidden 会让角色查询看不见内容，按钮查询带 hidden
+    const header = await waitFor(() => {
+      const visible = [...document.querySelectorAll("header")].find(
+        (h) => getComputedStyle(h).display !== "none",
+      );
+      expect(visible).toBeDefined();
+      return visible as HTMLElement;
+    });
+    expect(
+      await within(header).findByRole("button", {
+        name: "common.save",
+        hidden: true,
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+    const memoryTabs = await screen.findByRole("tablist", {
+      name: "hermes.memory.fileTabs",
+      hidden: true,
+    });
+    expect(
+      within(memoryTabs).getAllByRole("tab", { hidden: true }),
+    ).toHaveLength(2);
   });
 
   it("shows all eight native resize cursors and restores existing inline styles", async () => {
