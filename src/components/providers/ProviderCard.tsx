@@ -623,6 +623,7 @@ export function ProviderCard({
                 <span className="min-w-0 truncate" title={agyModel}>
                   {agyModel}
                 </span>
+                {planSuffix("-ms-0.5")}
               </div>
             ) : claudeBoundAccountId ? (
               <ClaudeBoundAccountLine

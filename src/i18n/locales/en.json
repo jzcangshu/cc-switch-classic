@@ -205,10 +205,6 @@
       "extraArgsPlaceholder": "e.g. --debug --append-system-prompt \"Be brief\"",
       "extraArgsHint": "Added after the launch command, for this terminal only. Separate with spaces; quote values that contain spaces.",
 
-      "extraArgsHint": "Added after the launch command, for this terminal only. Separate with spaces; quote values that contain spaces.",
-      "agySwitchTitle": "This switches agy's sign-in",
-      "agySwitchBody": "Before opening, agy's sign-in switches to {{account}}, and agy sessions started afterwards use this account.",
-      "agySwitchRunning": "agy is running: open agy sessions keep the previous account and may write it back. Quit them first if you can.",
       "isolationBodyCopilot": "copilot in this terminal starts with --model set to the first model of \"{{name}}\", for this session only. The endpoint and key come from Copilot's providers.json, so other terminals can pick it with /model too."
     },
     "name": "Provider Name",
@@ -284,8 +280,7 @@
     "editCurrentNotice": "This is the provider in use. Saving takes effect right away; the next request uses the new settings.",
     "liveConfigReadFailed": "Couldn't read the {{app}} config file",
     "liveConfigReadFailedHint": "Adding or removing providers will fail until the config file is fixed.",
-    "searchButtonTip": "Search providers ({{shortcut}})",
-    "openTerminalIsolated": "Open Terminal with This Provider (Isolated)"
+    "searchButtonTip": "Search providers ({{shortcut}})"
   },
   "claudeCode": {
     "needsRouting": "Needs Routing",
@@ -460,14 +455,10 @@
       "visibleApps": "Apps shown in the app switcher",
 
       "density": "Density",
-      "densityHelp": "Comfortable uses larger text and taller controls. Compact keeps the original sizes.",
       "densityComfortable": "Comfortable",
       "densityCompact": "Compact",
       "zoom": "Zoom",
-      "zoomHelp": "You can also press {{shortcut}} + / {{shortcut}} −, and {{shortcut}} 0 to reset.",
       "quotaDisplayHelp": "Whether each quota window on provider cards, in Accounts and in the tray shows how much is left or how much is used. Balances and Credits always show what is left.",
-      "sidebarAndHeader": "Sidebar and header",
-      "visibleApps": "Apps shown in the sidebar",
       "goToApps": "Open Apps",
       "updates": "New versions of your apps",
       "checkToolUpdates": "Check for new versions of your apps at launch",
@@ -1189,17 +1180,7 @@
       "symlink": "Symlink",
       "copy": "Copy Files"
     },
-    "languageOptionTurkish": "Türkçe",
     "codexQuotaProtection": {
-      "title": "Official quota protection",
-      "help": "Pause new official requests when either usage threshold is reached; third-party models remain available. Covers Codex official requests through CC Switch local routing only. Usage is read from the quota information official responses already carry, so normal use adds no extra requests; only the first request, or one after about 5 idle minutes, triggers a separate quota lookup. When usage can't be determined (network problems, expired login, and so on) requests go through as usual instead of being blocked. Requests already admitted and other apps can still push usage past a threshold; while paused, ordinary-quota exhaustion won't activate Luna Reserve.",
-      "thresholds": "Usage cutoffs for official requests",
-      "fiveHour": "5-hour usage (%)",
-      "weekly": "Weekly usage (%)",
-      "save": "Save thresholds",
-      "reset": "Restore defaults",
-      "hint": "Pause at either cutoff. Defaults: 95% / 98%. Saved changes apply to new requests immediately.",
-      "invalid": "Enter whole numbers from 1 to 99."
     }
   },
   "apps": {
@@ -1220,8 +1201,7 @@
     "omp": "Oh My Pi",
     "dsh": "DeepSeek Harness",
 
-    "copilot": "Copilot CLI",
-    "omp": "Oh My Pi"
+    "copilot": "Copilot CLI"
   },
   "mcode": {
     "empty": {
@@ -1390,9 +1370,6 @@
     "rawConfig": "config.toml",
     "invalidToml": "Invalid config.toml: {{error}}",
     "defaultModelPlaceholder": "e.g. grok-4.5",
-    "defaultModelHint": "The model Grok Build requests by default; change it anytime without waiting for a preset update.",
-    "reasoningEffortHint": "Enable when the upstream supports thinking-depth control such as low/high/max. Enabling this also turns on thinking mode and converts the request's reasoning effort into the upstream Chat parameter.",
-    "maxOutputTokensHint": "The default 8192 ceiling can truncate long or thinking-heavy responses (stop_reason=max_tokens). This value overrides the request's max_tokens on the Anthropic path. Do not exceed the real output ceiling of the model/gateway or it may 400. Leave empty to use the default 8192.",
 
     "defaultModelHint": "The model Grok Build requests by default; change it anytime.",
     "reasoningEffortHint": "Turn on when the upstream supports thinking depth such as low/high/max. Also turns on thinking mode and maps the request's reasoning effort to the upstream Chat parameter.",
@@ -2129,8 +2106,6 @@
     "impersonateClaudeCodeLabel": "Emulate Claude Code client",
     "impersonateClaudeCodeHint": "Enable when the gateway (or its upstream) restricts usage to Claude Code: spoofs the User-Agent, anthropic-beta and x-app headers, and injects the Claude Code identity as the first system prompt line.",
     "maxOutputTokensLabel": "Max output tokens",
-    "maxOutputTokensPlaceholder": "Leave empty to use the default 8192",
-    "maxOutputTokensHint": "Codex does not forward model_max_output_tokens in the request body, so the default 8192 ceiling can truncate long or thinking-heavy responses (stop_reason=max_tokens). This value overrides the request's max_tokens on the Anthropic path. Do not exceed the real output ceiling of the model/gateway or it may 400. Leave empty to use the default 8192.",
 
     "maxOutputTokensPlaceholder": "Leave empty to use the default 32000",
     "maxOutputTokensHint": "Codex sends no output limit, so 32000 is sent by default, and thinking counts toward it. If the gateway's output limit is lower it returns 400; enter a value it supports here. This value is sent as Anthropic's max_tokens.",
@@ -2153,14 +2128,12 @@
     "subagentModelHint": "The model and reasoning effort Codex sub-agents use by default. Empty follows the main agent; a model alone uses its own default effort. Ignored in Aggregation mode, where the sub-agent model in the Aggregation tab's settings applies instead.",
     "subagentModelNotInCatalog": "This model is not in the model list: Codex can't get its context window, and when routing converts requests to Chat / Anthropic it is replaced by the default model.",
     "agentMaxThreadsLabel": "Sub-agent concurrency limit",
-    "agentMaxThreadsHint": "How many sub-agents (not counting the main agent) one Codex session can run at the same time; it stays the same when you switch providers. Leave empty for the Codex default (6 with the classic sub-agent tools, 3 with the new ones); the minimum is 1 and there is no unlimited option. Applies to new conversations.",
     "agentMaxThreadsPlaceholder": "Leave empty for the Codex default",
     "agentMaxThreadsV2Override": "[features.multi_agent_v2] in config.toml sets a total of {{total}} (including the main agent), which applies when the new sub-agent tools are used.",
     "autoReviewModelLabel": "Auto Review model",
     "autoReviewModelHint": "The model Codex uses to decide whether an action may go ahead when automatic approval (Approve for me) is on. Approval requests go to the same provider as the conversation, so only models in this card's model list can be picked. Ignored in Aggregation mode, where the Auto Review model in the Aggregation tab's settings applies instead. Restart Codex after changes.",
     "autoReviewModelCodexDefault": "Codex default (codex-auto-review)",
     "autoReviewModelMainDefault": "Main model reviews itself (default)",
-    "autoReviewModelNoList": "This card has no model list: Codex reviews approvals with the official codex-auto-review, which only some relays that forward to ChatGPT accounts accept; the rest return 404. Add model mappings to pick one.",
 
     "autoReviewModelNoList": "This card has no model list: Codex reviews approvals with the official codex-auto-review, which only some relays that forward to ChatGPT accounts accept; the rest return 404. Add models to the list above to pick one.",
     "officialSpeedTiersLabel": "Keep official Fast tier",
@@ -2200,10 +2173,7 @@
     "upstreamFormatCopilotRouteHint": "Every mode requires routing, which injects the Copilot account credentials. A protocol you pick explicitly fails for models that don't support it.",
     "maxOutputTokensWarning": "Don't exceed the real output limit of the model or gateway, or requests return 400.",
     "routeOnlySettingsHint": "The two settings below only apply in routing and Aggregation modes.",
-    "agentMaxThreadsLabel": "Sub-agent concurrency limit",
-    "agentMaxThreadsHint": "How many sub-agents (not counting the main agent) one Codex session can run at the same time. This is a Codex-wide setting written to [agents] max_threads in config.toml, and it stays the same when you switch providers. Leave empty for the Codex default: 6 with the classic sub-agent tools, 3 with the new ones. Codex has no unlimited option and the minimum is 1; more sub-agents use up quota faster. Takes effect after reopening Codex.",
-    "agentMaxThreadsPlaceholder": "Leave empty for the Codex default",
-    "agentMaxThreadsV2Override": "[features.multi_agent_v2] in config.toml sets a total of {{total}} (including the main agent), which applies when the new sub-agent tools are used."
+    "agentMaxThreadsHint": "How many sub-agents (not counting the main agent) one Codex session can run at the same time. This is a Codex-wide setting written to [agents] max_threads in config.toml, and it stays the same when you switch providers. Leave empty for the Codex default: 6 with the classic sub-agent tools, 3 with the new ones. Codex has no unlimited option and the minimum is 1; more sub-agents use up quota faster. Takes effect after reopening Codex."
   },
   "geminiConfig": {
     "envFile": "Environment Variables (.env)",
@@ -4456,8 +4426,7 @@
       "omp": "Installs with the official script",
       "dsh": "Runs the official install script during setup",
 
-      "copilot": "Installs with npm",
-      "omp": "Installs with the official script"
+      "copilot": "Installs with npm"
     }
   },
   "appPage": {
@@ -4940,17 +4909,13 @@
       "sseRejectedBody": "These apps only support stdio and HTTP (Streamable HTTP), so writing to them will fail on save. Switch to HTTP, or untick these apps."
     },
     "resync": "Rewrite every app's config from these switches",
-    "checkConnectivity": "Check connectivity",
-    "testConnection": "Test connection",
     "connection": {
-      "unchecked": "Not checked",
-      "connected": "Connection successful",
-      "disconnected": "Connection failed",
-      "checking": "Checking connection",
-      "disabled": "Not enabled"
     }
   },
   "skillsPage": {
+    "headerUpdates": "{{count}} updates",
+    "headerUpdatesShow": "Show only Skills with updates",
+    "headerUpdatesClear": "Show all Skills",
     "noun": "Skills",
     "helpTitle": "How Skills sync",
     "help": "The main copy lives in CC Switch's folder and is synced to the apps you tick. Claude Desktop and OpenClaw don't support Skills, so they have no column.",
@@ -5116,8 +5081,7 @@
       "updatesBody": "Skills from these repositories weren't checked, so the results may be incomplete."
     },
     "updateAllCount": "Update all ({{count}})",
-    "updatingProgress": "Updating {{done}}/{{total}}…",
-    "openDir": "Open folder"
+    "updatingProgress": "Updating {{done}}/{{total}}…"
   },
   "newLayoutNotice": {
     "title": "CC Switch has a new look",
@@ -5329,14 +5293,6 @@
     }
   },
   "providerGroups": {
-    "newGroup": "New group",
-    "ungrouped": "Ungrouped",
-    "moveTo": "Move to group",
-    "saveFailed": "Failed to save groups",
-    "renameAriaLabel": "Group name",
-    "dragGroupHandle": "Drag to reorder groups",
-    "toggleAriaLabel": "Collapse or expand group",
-    "dropToUngrouped": "Drop to remove from group",
     "dropToEnd": "Release to move to the end",
     "settingTitle": "Provider grouping",
     "modeOff": "Off",

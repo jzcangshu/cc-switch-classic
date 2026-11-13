@@ -205,10 +205,6 @@
       "extraArgsPlaceholder": "例如 --debug --append-system-prompt \"簡潔回答\"",
       "extraArgsHint": "接在啟動命令後面，只用於這次開啟的終端機。用空格分隔，含空格的值用引號括起來。",
 
-      "extraArgsHint": "接在啟動命令後面，只用於這次開啟的終端機。用空格分隔，含空格的值用引號括起來。",
-      "agySwitchTitle": "會切換 agy 的登入",
-      "agySwitchBody": "開啟前把 agy 的登入切換到 {{account}}，之後新開的 agy 都用這個帳號。",
-      "agySwitchRunning": "偵測到 agy 正在執行：已開啟的 agy 仍使用原帳號，還可能把原帳號寫回去，最好先結束它們。",
       "isolationBodyCopilot": "這個終端機裡的 copilot 以 --model 選中「{{name}}」的第一個模型，只對這次工作階段生效；位址和 Key 讀自 Copilot 的 providers.json，在別的終端機裡也能用 /model 選到它。"
     },
     "name": "供應商名稱",
@@ -284,8 +280,7 @@
     "editCurrentNotice": "這是正在使用的供應商。儲存後立即生效，下一次請求就用新的設定。",
     "liveConfigReadFailed": "無法讀取 {{app}} 設定檔",
     "liveConfigReadFailedHint": "修好設定檔之前，新增、移除供應商都會失敗。",
-    "searchButtonTip": "搜尋供應商（{{shortcut}}）",
-    "openTerminalIsolated": "以此供應商開啟終端機（環境隔離）"
+    "searchButtonTip": "搜尋供應商（{{shortcut}}）"
   },
   "claudeCode": {
     "needsRouting": "需要路由",
@@ -460,14 +455,10 @@
       "visibleApps": "在應用切換器中顯示哪些應用",
 
       "density": "介面密度",
-      "densityHelp": "舒適的字級更大、控制項更高；緊湊維持原來的尺寸。",
       "densityComfortable": "舒適",
       "densityCompact": "緊湊",
       "zoom": "介面縮放",
-      "zoomHelp": "也可以按 {{shortcut}} + / {{shortcut}} − 調整，{{shortcut}} 0 復原。",
       "quotaDisplayHelp": "供應商卡片、授權中心和系統匣裡，各檔額度寫還剩多少還是已經用了多少。餘額和 Credits 始終寫剩下的。",
-      "sidebarAndHeader": "側欄與頁首",
-      "visibleApps": "在側欄顯示哪些應用",
       "goToApps": "前往「應用」",
       "updates": "各應用的新版本",
       "checkToolUpdates": "啟動時檢查各應用的新版本",
@@ -1070,7 +1061,6 @@
     "uninstallCommandCopyFailed": "複製失敗，請手動選取並複製指令。",
     "oneClickInstallHint": "安裝或更新 Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Kimi Code / Oh My Pi",
 
-    "oneClickInstallHint": "安裝或更新 Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code / Oh My Pi",
     "localEnvCheck": "本地環境檢查",
     "updateAllTools": "全部更新（{{count}}）",
     "currentVersion": "目前版本",
@@ -1191,17 +1181,7 @@
       "symlink": "軟連結",
       "copy": "檔案複製"
     },
-    "languageOptionTurkish": "Türkçe",
     "codexQuotaProtection": {
-      "title": "官方額度保護",
-      "help": "達到任一使用率門檻時暫停新的官方請求，第三方模型仍可使用。僅保護經過 CC Switch 本機路由的 Codex 官方請求。使用率直接讀取官方回應中自帶的額度資訊，正常使用時不會多發請求；只有剛開始使用或閒置約 5 分鐘後，才會先單獨查詢一次。查不到額度（網路問題、登入過期等）時照常放行，不會誤擋。已放行的請求和其他應用程式仍可能把額度用過門檻；暫停期間不會因正常額度耗盡而進入 Luna Reserve。",
-      "thresholds": "暫停官方請求的使用率",
-      "fiveHour": "五小時使用率（%）",
-      "weekly": "每週使用率（%）",
-      "save": "儲存門檻",
-      "reset": "恢復預設值",
-      "hint": "任一達到即暫停。預設 95% / 98%，儲存後立即對新請求生效。",
-      "invalid": "請輸入 1–99 的整數。"
     }
   },
   "apps": {
@@ -1222,8 +1202,7 @@
     "omp": "Oh My Pi",
     "dsh": "DeepSeek Harness",
 
-    "copilot": "Copilot CLI",
-    "omp": "Oh My Pi"
+    "copilot": "Copilot CLI"
   },
   "mcode": {
     "empty": {
@@ -1392,9 +1371,6 @@
     "rawConfig": "config.toml",
     "invalidToml": "config.toml 格式錯誤：{{error}}",
     "defaultModelPlaceholder": "例如: grok-4.5",
-    "defaultModelHint": "Grok Build 預設請求的模型，隨時可改，無需等待軟體更新供應商範本。",
-    "reasoningEffortHint": "上游支援 low/high/max 等思考深度控制時啟用。啟用後會自動啟用思考模式，並把請求中的 reasoning effort 轉成上游 Chat 參數。",
-    "maxOutputTokensHint": "預設上限 8192 容易在長回答或深度思考時被截斷（stop_reason=max_tokens）。此處設定會作為 Anthropic 的 max_tokens 覆蓋請求值。請勿超過該模型／閘道的真實輸出上限，否則可能 400。留空使用預設 8192。",
 
     "defaultModelHint": "Grok Build 預設請求的模型，隨時可改。",
     "reasoningEffortHint": "上游支援 low/high/max 等思考深度時開啟。會同時開啟思考模式，並把請求中的 reasoning effort 轉成上游 Chat 參數。",
@@ -2134,8 +2110,6 @@
     "impersonateClaudeCodeLabel": "模擬 Claude Code 用戶端",
     "impersonateClaudeCodeHint": "閘道或其上游限制只能透過 Claude Code 使用時開啟：偽裝 User-Agent、anthropic-beta、x-app 請求標頭，並在系統提示首行注入 Claude Code 身分。",
     "maxOutputTokensLabel": "最大輸出 tokens",
-    "maxOutputTokensPlaceholder": "留空則使用預設 8192",
-    "maxOutputTokensHint": "Codex 不會把 model_max_output_tokens 寫進請求體，預設上限 8192 容易在長回答或深度思考時被截斷（stop_reason=max_tokens）。此處設定會作為 Anthropic 的 max_tokens 覆蓋請求值。請勿超過該模型／閘道的真實輸出上限，否則可能 400。留空使用預設 8192。",
 
     "maxOutputTokensPlaceholder": "留空則使用預設 32000",
     "maxOutputTokensHint": "Codex 不帶輸出上限，預設以 32000 發出，思考也算在內。閘道的輸出上限更低時會報 400，在這裡填它支援的值。這裡的值會作為 Anthropic 的 max_tokens 發出。",
@@ -2154,14 +2128,12 @@
     "subagentModelHint": "Codex 派出的子代理預設使用的模型和推理強度。留空時沿用主代理的；只填模型時使用該模型自己的預設強度。聚合模式下不生效，改用聚合頁籤「聚合設定」裡的子代理模型。",
     "subagentModelNotInCatalog": "該模型不在模型列表中：Codex 取得不到它的上下文視窗；經路由轉成 Chat / Anthropic 協定時會被換成預設模型。",
     "agentMaxThreadsLabel": "子代理並行上限",
-    "agentMaxThreadsHint": "一個 Codex 會話裡最多同時開多少個子代理（不含主代理），切換供應商時保持不變。留空用 Codex 預設值（經典子 agent 工具 6 個，新版工具 3 個），最小為 1，不支援不限。新對話生效。",
     "agentMaxThreadsPlaceholder": "留空則用 Codex 預設值",
     "agentMaxThreadsV2Override": "config.toml 的 [features.multi_agent_v2] 寫了總數 {{total}}（含主代理），使用新版子 agent 工具時以它為準。",
     "autoReviewModelLabel": "自動審批模型",
     "autoReviewModelHint": "Codex 開了自動審批（Approve for me）時，判斷操作能不能放行所用的模型。審批請求和主對話發給同一家，所以只能選這張卡模型列表裡的。聚合模式下不生效，改用聚合頁籤「聚合設定」裡的自動審批模型。修改後需要重新啟動 Codex。",
     "autoReviewModelCodexDefault": "Codex 預設（codex-auto-review）",
     "autoReviewModelMainDefault": "主模型自己審批（預設）",
-    "autoReviewModelNoList": "這張卡沒有模型列表：Codex 會用官方的 codex-auto-review 審批，只有部分轉發 ChatGPT 帳號的中轉認得它，不認就會回報 404。在模型對應中加上模型後就能選。",
 
     "autoReviewModelNoList": "這張卡沒有模型列表：Codex 會用官方的 codex-auto-review 審批，只有部分轉發 ChatGPT 帳號的中轉認得它，不認就會回報 404。在上面的模型列表裡加上模型後就能選。",
     "officialSpeedTiersLabel": "保留官方 Fast 檔",
@@ -2202,10 +2174,7 @@
     "upstreamFormatCopilotRouteHint": "所有模式都需要開啟路由，由路由注入 Copilot 帳號憑證；手動指定的協定模型不支援時會報錯。",
     "maxOutputTokensWarning": "不要超過模型或閘道的真實輸出上限，否則會回傳 400。",
     "routeOnlySettingsHint": "以下兩項只在路由、聚合模式下生效。",
-    "agentMaxThreadsLabel": "子代理並行上限",
-    "agentMaxThreadsHint": "一個 Codex 會話裡最多同時開多少個子代理（不含主代理）。這是 Codex 的全域設定，寫進 config.toml 的 [agents] max_threads，切換供應商時保持不變。留空用 Codex 預設值：經典子 agent 工具 6 個，新版工具 3 個。Codex 不支援不限，最小為 1；開得越多，同時消耗的額度越多。重新開啟 Codex 後生效。",
-    "agentMaxThreadsPlaceholder": "留空則用 Codex 預設值",
-    "agentMaxThreadsV2Override": "config.toml 的 [features.multi_agent_v2] 寫了總數 {{total}}（含主代理），使用新版子 agent 工具時以它為準。"
+    "agentMaxThreadsHint": "一個 Codex 會話裡最多同時開多少個子代理（不含主代理）。這是 Codex 的全域設定，寫進 config.toml 的 [agents] max_threads，切換供應商時保持不變。留空用 Codex 預設值：經典子 agent 工具 6 個，新版工具 3 個。Codex 不支援不限，最小為 1；開得越多，同時消耗的額度越多。重新開啟 Codex 後生效。"
   },
   "geminiConfig": {
     "envFile": "環境變數 (.env)",
@@ -4458,8 +4427,7 @@
       "omp": "安裝時執行官方安裝腳本",
       "dsh": "安裝時執行官方安裝腳本",
 
-      "copilot": "透過 npm 安裝",
-      "omp": "安裝時執行官方安裝腳本"
+      "copilot": "透過 npm 安裝"
     }
   },
   "appPage": {
@@ -4942,17 +4910,13 @@
       "sseRejectedBody": "這些應用只支援 stdio 和 HTTP（Streamable HTTP），儲存時會寫入失敗。請改選 HTTP，或取消勾選這些應用。"
     },
     "resync": "按這裡的開關重寫各應用設定",
-    "checkConnectivity": "檢查連通性",
-    "testConnection": "測試連線",
     "connection": {
-      "unchecked": "未檢查",
-      "connected": "連線成功",
-      "disconnected": "連線失敗",
-      "checking": "正在檢查連線",
-      "disabled": "未啟用"
     }
   },
   "skillsPage": {
+    "headerUpdates": "{{count}} 個可更新",
+    "headerUpdatesShow": "只看可更新的 Skill",
+    "headerUpdatesClear": "顯示全部 Skill",
     "noun": "Skill",
     "helpTitle": "Skills 怎麼同步",
     "help": "主副本放在 CC Switch 的目錄裡，再同步到你勾選的應用。Claude Desktop、OpenClaw 不支援 Skills，所以表格裡沒有這兩欄。",
@@ -5118,8 +5082,7 @@
       "updatesBody": "這些倉庫裡的 Skill 沒有檢查，更新結果可能不完整。"
     },
     "updateAllCount": "全部更新（{{count}} 個）",
-    "updatingProgress": "正在更新 {{done}}/{{total}}…",
-    "openDir": "開啟資料夾"
+    "updatingProgress": "正在更新 {{done}}/{{total}}…"
   },
   "newLayoutNotice": {
     "title": "介面改版了",
@@ -5331,14 +5294,6 @@
     }
   },
   "providerGroups": {
-    "newGroup": "新增群組",
-    "ungrouped": "未分組",
-    "moveTo": "移動到群組",
-    "saveFailed": "群組儲存失敗",
-    "renameAriaLabel": "群組名稱",
-    "dragGroupHandle": "拖曳調整群組順序",
-    "toggleAriaLabel": "摺疊或展開群組",
-    "dropToUngrouped": "鬆手移出群組",
     "dropToEnd": "放開移至末尾",
     "settingTitle": "供應商分組",
     "modeOff": "關閉",
