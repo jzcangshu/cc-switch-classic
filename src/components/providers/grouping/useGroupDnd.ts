@@ -33,6 +33,7 @@ import {
 } from "@/lib/providerGroups";
 
 import { DROP_ANIMATION } from "./groupMotion";
+import { useDragAutoScroll } from "./dragAutoScroll";
 import {
   resolveWhitespaceInsertion,
   type GroupDropArea,
@@ -170,6 +171,18 @@ export function useGroupDnd(input: UseGroupDndInput) {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+
+  // 拖拽自动滚动（dnd-kit 官方 AutoScroller）与悬停意图的调和层：
+  // 滚动期间冻结落点判定并静默悬停效果，安定 / 指针移动后用重测矩形重算
+  const {
+    autoScroll: autoScrollOptions,
+    attachScrollRoot,
+    notifyDragScroll,
+    freezeCollision,
+    isScrollFrozen,
+    scrollGeneration,
+    settleGeneration,
+  } = useDragAutoScroll();
 
   const [dragState, setDragState] = useState<{
     activeId: string;
@@ -406,11 +419,16 @@ export function useGroupDnd(input: UseGroupDndInput) {
     [input.commitLayout],
   );
 
-  const showGapPreview = useCallback((beforeGroupId: string) => {
-    if (gapPreviewRef.current?.beforeGroupId === beforeGroupId) return;
-    gapPreviewRef.current = { beforeGroupId };
-    setGapPreview({ beforeGroupId });
-  }, []);
+  const showGapPreview = useCallback(
+    (beforeGroupId: string) => {
+      // 滚动冻结窗口内不生成新的缝隙占位：内容正从指针下流过，位置不可信
+      if (isScrollFrozen()) return;
+      if (gapPreviewRef.current?.beforeGroupId === beforeGroupId) return;
+      gapPreviewRef.current = { beforeGroupId };
+      setGapPreview({ beforeGroupId });
+    },
+    [isScrollFrozen],
+  );
 
   const clearGapPreview = useCallback(() => {
     gapPreviewRef.current = null;
@@ -528,6 +546,9 @@ export function useGroupDnd(input: UseGroupDndInput) {
   /** 武装意图：意图相同计时继续，不同则重置（E1 的全部实现） */
   const armIntent = useCallback(
     (intent: Intent) => {
+      // 滚动冻结窗口内不武装任何意图：内容正从指针下流过，新意图不可信
+      // （已武装的由 scrollGeneration effect 撤销）
+      if (isScrollFrozen()) return;
       if (sameIntent(intentRef.current, intent)) return;
       clearIntentTimer();
       intentRef.current = intent;
@@ -541,7 +562,7 @@ export function useGroupDnd(input: UseGroupDndInput) {
       // 拖走即收回。其余意图无任何指示。
       setMergeTargetId(intent.kind === "merge" ? intent.anchorId : null);
     },
-    [clearIntentTimer, fireIntent],
+    [clearIntentTimer, fireIntent, isScrollFrozen],
   );
 
   const disarmIntent = useCallback(() => {
@@ -549,6 +570,22 @@ export function useGroupDnd(input: UseGroupDndInput) {
     intentRef.current = null;
     setMergeTargetId(null);
   }, [clearIntentTimer]);
+
+  // 滚动事件撤销已武装的悬停意图：dwell 计时里的锚点会随内容流走，
+  // 让它在滚动中途 fire 就是「挤开动画与滚动打架」
+  useEffect(() => {
+    if (scrollGeneration > 0) {
+      disarmIntent();
+      clearGapPreview();
+    }
+  }, [scrollGeneration, disarmIntent, clearGapPreview]);
+
+  // 滚动安定重算：碰撞在渲染期跑过一次（矩形已重测、指针没动，传感器事件
+  // 不会再来），这里把碰撞阶段排队的悬停效果落掉，让「压在尽头不动」
+  // 也能按当前位置武装意图——此时松手走既有「松手即落位」路径
+  useEffect(() => {
+    if (settleGeneration > 0) applyHoverEffects();
+  }, [settleGeneration, applyHoverEffects]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -1144,7 +1181,11 @@ export function useGroupDnd(input: UseGroupDndInput) {
 
   return {
     sensors,
-    collisionDetection,
+    // 滚动冻结窗口内停在滚动前的落点上，安定后用重测矩形重算（见 dragAutoScroll）
+    collisionDetection: freezeCollision(collisionDetection),
+    autoScroll: autoScrollOptions,
+    notifyDragScroll,
+    attachScrollRoot,
     handlers: {
       onDragStart: handleDragStart,
       onDragMove: applyHoverEffects,

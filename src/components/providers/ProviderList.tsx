@@ -71,6 +71,10 @@ import {
 } from "@/components/providers/presentation";
 import { type ProviderGroupMenu } from "@/lib/providerGroups";
 import { CARD_SPRING } from "@/components/providers/grouping/groupMotion";
+import {
+  DragScrollCoordinator,
+  useDragAutoScroll,
+} from "@/components/providers/grouping/dragAutoScroll";
 import { useProviderGroups } from "@/hooks/useProviderGroups";
 import { MenuGroupedProviderSections } from "@/components/providers/grouping/MenuGroupedProviderSections";
 import { GroupedProviderSections } from "@/components/providers/grouping/GroupedProviderSections";
@@ -186,6 +190,15 @@ export function ProviderList({
 
   // 主页供应商卡片分组（Classic 层功能）：无分组时主页与原来完全一致
   const providerGroups = useProviderGroups(appId);
+
+  // 平铺视图的拖拽自动滚动：与分组视图同一套窄带触发 + 滚动期冻结 +
+  // 安定重算（dnd-kit 拖拽中不因滚动重测落点矩形，不补测滚动后全错位）
+  const {
+    autoScroll: flatAutoScroll,
+    attachScrollRoot: attachFlatScrollRoot,
+    notifyDragScroll: flatNotifyDragScroll,
+    freezeCollision: flatFreezeCollision,
+  } = useDragAutoScroll();
 
   // 范围沿用第四版口径：名称、备注、官网和请求地址
   const searchIndex = useMemo(
@@ -631,9 +644,9 @@ export function ProviderList({
   const leadSection = sections[0];
   const liftLeadTitle = !switchMode && Boolean(leadSection?.title);
 
-  // 卡片列表铺满主区域，和页头同宽
+  // 卡片列表铺满主区域，和页头同宽；挂载即量出滚动容器、换算触发带
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={attachFlatScrollRoot}>
       <AnimatePresence>
         {isSearchOpen && (
           // 外层只做定位：framer-motion 的动画 transform 会覆盖 Tailwind 的
@@ -731,9 +744,12 @@ export function ProviderList({
             <DndContext
               sensors={sensors}
               modifiers={verticalDragModifiers}
-              collisionDetection={closestCenter}
+              // 滚动期冻结落点、安定后用重测矩形重算（见 dragAutoScroll）
+              collisionDetection={flatFreezeCollision(closestCenter)}
               onDragEnd={handleDragEnd}
+              autoScroll={flatAutoScroll}
             >
+              <DragScrollCoordinator onScroll={flatNotifyDragScroll} />
               {sections.map((section, index) => (
                 <section key={section.key} className="space-y-3">
                   {section.title && !(index === 0 && liftLeadTitle) && (

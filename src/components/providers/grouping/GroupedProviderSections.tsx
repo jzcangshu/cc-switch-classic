@@ -46,6 +46,7 @@ import {
 } from "./ProviderGroupContainer";
 import { UngroupedDropZone } from "./UngroupedDropZone";
 import { GroupDragGhost } from "./GroupDragGhost";
+import { DragScrollCoordinator } from "./dragAutoScroll";
 import { useGroupDnd } from "./useGroupDnd";
 import {
   createGroupDropAnimation,
@@ -214,6 +215,9 @@ export function GroupedProviderSections({
   const {
     sensors,
     collisionDetection,
+    autoScroll,
+    notifyDragScroll,
+    attachScrollRoot,
     handlers,
     containers,
     containerOf,
@@ -449,10 +453,14 @@ export function GroupedProviderSections({
       onDragEnd={handlers.onDragEnd}
       onDragCancel={handlers.onDragCancel}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-      // 关闭拖拽自动滚动：页面高度有限，滚动会移动指针下的内容、
-      // 破坏 iOS 式「静止悬停才互动」的判定（移动端化行为与桌面场景不符）
-      autoScroll={false}
+      // 拖拽自动滚动（dnd-kit 官方 AutoScroller）：顶/底 56px 窄带触发、
+      // 带内线性加速。v2 曾整体关闭它——滚动会移动指针下的内容、破坏
+      // 「静止悬停才互动」判定；现在由 dragAutoScroll 的冻结机制调和：
+      // 滚动期间落点判定整体冻结、悬停意图静默并撤销，安定（或指针真实
+      // 移动）后用重测的矩形重算，滚动与挤开/建组/落位动画互不打架
+      autoScroll={autoScroll}
     >
+      <DragScrollCoordinator onScroll={notifyDragScroll} />
       <ProviderSectionTitle section={primarySection} />
       {/* 共享布局测量通知：退出管理会保留未重渲染的卡片，也必须参与让位快照。 */}
       <LayoutGroup>
@@ -468,7 +476,7 @@ export function GroupedProviderSections({
               : frozenDisplacementStrategy
           }
         >
-          <div className="space-y-3">
+          <div className="space-y-3" ref={attachScrollRoot}>
             <AnimatePresence initial={false} mode="popLayout">
               {[
                 ...groupContainers.flatMap((container) => [

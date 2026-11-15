@@ -12,6 +12,7 @@ import {
   MERGE_DWELL_MS,
   EXPAND_DWELL_MS,
 } from "@/components/providers/grouping/useGroupDnd";
+import { SCROLL_SETTLE_MS } from "@/components/providers/grouping/dragAutoScroll";
 vi.mock("@dnd-kit/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/core")>();
   return {
@@ -352,4 +353,53 @@ it("releases a failed layout explicitly instead of waiting for a visual timeout"
   expect(
     result.current.containers.find((c) => c.id === UNGROUPED_ID)?.providerIds,
   ).toEqual(["a", "b"]);
+});
+describe("drag auto-scroll reconciliation", () => {
+  it("interrupts an armed hover intent so it cannot fire mid-scroll", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
+    act(() => vi.advanceTimersByTime(100));
+    act(() => result.current.notifyDragScroll());
+    act(() => vi.advanceTimersByTime(MERGE_DWELL_MS + 100));
+    expect(result.current.previewGroup).toBeNull();
+  });
+
+  it("keeps hover intents silent while scrolling and re-arms once scrolling settles", () => {
+    const { result } = setup();
+    act(() => result.current.notifyDragScroll());
+    // 滚动冻结窗口内：碰撞停在滚动前的结果，悬停效果静默
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
+    act(() => vi.advanceTimersByTime(MERGE_DWELL_MS + 100));
+    expect(result.current.previewGroup).toBeNull();
+
+    // 安定（SCROLL_SETTLE_MS 无滚动事件）：重算后按指针位置正常武装
+    act(() => vi.advanceTimersByTime(SCROLL_SETTLE_MS));
+    act(() => {
+      result.current.collisionDetection(collision());
+      result.current.handlers.onDragMove();
+    });
+    act(() => vi.advanceTimersByTime(MERGE_DWELL_MS));
+    expect(result.current.previewGroup).not.toBeNull();
+  });
+
+  it("freezes the collision result while content scrolls under a stationary pointer", () => {
+    const { result } = setup();
+    // 滚动前：指针不在任何落点上（x<0 的 fixture 约定返回空命中）
+    const before = result.current.collisionDetection(collision(-1));
+    expect(before).toEqual([]);
+    act(() => result.current.notifyDragScroll());
+    // 滚动把新卡片送到指针下：冻结窗口内仍返回滚动前的落点
+    const during = result.current.collisionDetection(collision(4));
+    expect(during).toEqual([]);
+    act(() => vi.advanceTimersByTime(SCROLL_SETTLE_MS));
+    // 安定：落点矩形已重测，碰撞按真实几何重跑
+    const settled = result.current.collisionDetection(collision(4));
+    expect(settled).toEqual([{ id: "b" }]);
+  });
 });

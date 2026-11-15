@@ -389,9 +389,11 @@ describe("ProviderList Component", () => {
       />,
     );
 
-    expect(providerCardRenderSpy).toHaveBeenCalledTimes(2);
+    // 拖拽自动滚动在列表根挂载时量一次滚动容器（ref 回调 → setState），
+    // 挂载因此固定多一次重渲染；这里锁首屏顺序与重渲染上限
     expect(providerCardRenderSpy.mock.calls[0][0].provider.id).toBe("b");
     expect(providerCardRenderSpy.mock.calls[1][0].provider.id).toBe("a");
+    expect(providerCardRenderSpy).toHaveBeenCalledTimes(4);
     expect(lastProps("b")?.isCurrent).toBe(true);
     expect(screen.getByTestId("drag-attr-b")).toHaveTextContent("b");
     expect(screen.getByTestId("drag-attr-a")).toHaveTextContent("a");
