@@ -1501,7 +1501,10 @@ function App() {
         title={appPageName}
         actions={
           currentView === "hermesMemory" ? (
-            <HermesMemorySaveButton />
+            // 懒加载按钮必须自带边界：页头在正文边界之外，挂起会一路冒到全局错误边界
+            <Suspense fallback={null}>
+              <HermesMemorySaveButton />
+            </Suspense>
           ) : undefined
         }
       />
@@ -1768,7 +1771,7 @@ function App() {
                 section={settingsSection}
                 hideHeader
                 active={currentView === "settings"}
-                onUnsavedDirectoriesChange={onSettingsDraftChange}
+                onUnsavedSettingsChange={onSettingsDraftChange}
                 appConfigScrollTarget={appConfigScrollTarget}
                 onImportSuccess={handleImportSuccess}
                 onOpenApp={selectApp}
@@ -1865,22 +1868,23 @@ function App() {
               modeView={formModeView}
             />
           )}
-        </Suspense>
 
-        {effectiveUsageProvider && (
-          <UsageScriptModal
-            key={effectiveUsageProvider.id}
-            provider={effectiveUsageProvider}
-            appId={activeApp}
-            isOpen={Boolean(usageProvider)}
-            onClose={() => setUsageProvider(null)}
-            onSave={(script) => {
-              if (usageProvider) {
-                void saveUsageScript(usageProvider, script);
-              }
-            }}
-          />
-        )}
+          {/* 懒加载弹窗必须待在这个边界里：首次打开时的挂起不能冒到全局错误边界 */}
+          {effectiveUsageProvider && (
+            <UsageScriptModal
+              key={effectiveUsageProvider.id}
+              provider={effectiveUsageProvider}
+              appId={activeApp}
+              isOpen={Boolean(usageProvider)}
+              onClose={() => setUsageProvider(null)}
+              onSave={(script) => {
+                if (usageProvider) {
+                  void saveUsageScript(usageProvider, script);
+                }
+              }}
+            />
+          )}
+        </Suspense>
 
         <OpenTerminalDialog
           provider={terminalProvider}

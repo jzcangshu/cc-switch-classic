@@ -30,6 +30,7 @@ import { AppVisibilitySettings } from "@/components/settings/AppVisibilitySettin
 import { TerminalSelect } from "@/components/settings/TerminalSettings";
 import { SkillsStorageSettings } from "@/components/skills/SkillsStorageSheet";
 import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
+import type { CodexQuotaThresholdDraft } from "@/components/settings/CodexQuotaProtectionSettings";
 import type { SkillStorageLocation } from "@/types";
 import {
   SettingsBlock,
@@ -51,6 +52,9 @@ interface GeneralSectionProps {
   onAutoSave: (updates: Partial<SettingsFormState>) => Promise<boolean>;
   savedCodexConfigDir?: string;
   onStorageMigrated: (location: SkillStorageLocation) => void;
+  /** 额度阈值草稿由设置页持有：切分区会卸载本节，草稿不能只存在本节里 */
+  quotaDraft?: CodexQuotaThresholdDraft;
+  onQuotaDraftChange?: (draft: CodexQuotaThresholdDraft) => void;
 }
 
 /**
@@ -63,6 +67,8 @@ export function GeneralSection({
   onAutoSave,
   savedCodexConfigDir,
   onStorageMigrated,
+  quotaDraft,
+  onQuotaDraftChange,
 }: GeneralSectionProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
@@ -269,6 +275,8 @@ export function GeneralSection({
         settings={settings}
         onChange={onAutoSave}
         codexConfigDir={savedCodexConfigDir}
+        quotaDraft={quotaDraft}
+        onQuotaDraftChange={onQuotaDraftChange}
       />
 
       <SettingsBlock title={t("settings.general.updates")}>

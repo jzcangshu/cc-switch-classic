@@ -176,11 +176,14 @@ export function SessionManagerPage({
   const [groupMode, setGroupMode] = useState<GroupMode>(readGroupMode);
   const [expanded, setExpanded] = useState<Set<string>>(readExpanded);
   const [readerKey, setReaderKey] = useState<string | null>(null);
-  // 点了行下方某条摘录打开的：跳到那条消息，而不是最相关的那条
+  // 点了行下方某条摘录打开的：跳到那条消息，而不是最相关的那条。
+  // requestId 让阅读器能把「同一会话里再点另一条摘录」当成新请求重新定位。
   const [readerJump, setReaderJump] = useState<{
     key: string;
     messageIndex: number;
+    requestId: number;
   } | null>(null);
+  const readerJumpSeqRef = useRef(0);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
     () => new Set(),
@@ -272,6 +275,8 @@ export function SessionManagerPage({
     hits: contentHits,
     status: indexStatus,
     isSearching: isSearchingContent,
+    error: contentSearchError,
+    retry: retryContentSearch,
   } = useSessionContentSearch({
     query,
     enabled: contentSearchEnabled,
@@ -384,15 +389,20 @@ export function SessionManagerPage({
     }
   }, [readerKey, readerSession, isLoading]);
 
-  // 从正文命中打开的会话：阅读页带上查询词，并跳到摘录所在的那条消息
+  // 从正文命中打开的会话：阅读页带上查询词，并跳到摘录所在的那条消息。
+  // requestId 只在摘录点击时存在：跟着跳转请求一起变，阅读器据此重新定位。
   const readerHit = readerSession ? contentHitOf(readerSession) : undefined;
   const readerInitialFind = useMemo(() => {
     if (!trimmedQuery || !readerHit) return undefined;
-    const messageIndex =
-      readerJump && readerJump.key === readerKey
-        ? readerJump.messageIndex
-        : readerHit.snippets[0]?.messageIndex;
-    return { query: trimmedQuery, messageIndex };
+    const jumped = readerJump && readerJump.key === readerKey;
+    const messageIndex = jumped
+      ? readerJump.messageIndex
+      : readerHit.snippets[0]?.messageIndex;
+    return {
+      query: trimmedQuery,
+      messageIndex,
+      requestId: jumped ? readerJump.requestId : undefined,
+    };
   }, [trimmedQuery, readerHit, readerJump, readerKey]);
 
   const transcript = useSessionTranscript(
@@ -494,7 +504,11 @@ export function SessionManagerPage({
 
   const openReader = (session: SessionMeta, messageIndex?: number) => {
     const key = getSessionKey(session);
-    setReaderJump(messageIndex === undefined ? null : { key, messageIndex });
+    setReaderJump(
+      messageIndex === undefined
+        ? null
+        : { key, messageIndex, requestId: ++readerJumpSeqRef.current },
+    );
     setReaderKey(key);
     focusSoon(["session-reader-back"]);
   };
@@ -1010,6 +1024,28 @@ export function SessionManagerPage({
   // ─── 空状态 ────────────────────────────────────────────────────────────
   const renderEmpty = () => {
     if (trimmedQuery) {
+      // 正文索引查询失败时，空结果不等于「正文里没有这个词」
+      if (contentSearchEnabled && contentSearchError) {
+        return (
+          <EmptyState
+            title={t("sessionManager.contentSearchFailed", {
+              defaultValue: "正文搜索失败，暂时只能按标题、目录和首末消息查找",
+            })}
+            hint={contentSearchError}
+            primaryAction={{
+              label: t("common.retry", { defaultValue: "重试" }),
+              onClick: retryContentSearch,
+            }}
+            action={t("sessionManager.clearSearchAction", {
+              defaultValue: "清除搜索",
+            })}
+            onAction={() => {
+              setQuery("");
+              focusSoon(["session-search"]);
+            }}
+          />
+        );
+      }
       return (
         <EmptyState
           title={
@@ -1449,6 +1485,34 @@ export function SessionManagerPage({
               ]}
             />
           </div>
+
+          {/* 还有元数据命中时列表照常显示，只在上面说明正文结果不全；
+              一条都没命中时由空状态承载同样的说明（见 renderEmpty） */}
+          {trimmedQuery &&
+            contentSearchEnabled &&
+            contentSearchError &&
+            matches.length > 0 && (
+              <div role="status" className="mx-6 mt-2 shrink-0">
+                <Notice
+                  tone="warning"
+                  title={t("sessionManager.contentSearchFailed", {
+                    defaultValue:
+                      "正文搜索失败，暂时只能按标题、目录和首末消息查找",
+                  })}
+                  actions={
+                    <Button
+                      variant="neutral"
+                      size="compact"
+                      onClick={retryContentSearch}
+                    >
+                      {t("common.retry", { defaultValue: "重试" })}
+                    </Button>
+                  }
+                >
+                  {contentSearchError}
+                </Notice>
+              </div>
+            )}
 
           {trimmedQuery && indexStatus?.running && (
             <p

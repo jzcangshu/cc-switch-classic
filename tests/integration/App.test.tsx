@@ -178,15 +178,15 @@ vi.mock("@/components/settings/SettingsPage", async () => {
   const { useState, useEffect } = await import("react");
   return {
     SettingsPage: ({
-      onUnsavedDirectoriesChange,
+      onUnsavedSettingsChange,
     }: {
-      onUnsavedDirectoriesChange?: (dirty: boolean) => void;
+      onUnsavedSettingsChange?: (dirty: boolean) => void;
     }) => {
       const [draft, setDraft] = useState("");
       useEffect(() => {
-        onUnsavedDirectoriesChange?.(draft.length > 0);
-        return () => onUnsavedDirectoriesChange?.(false);
-      }, [draft, onUnsavedDirectoriesChange]);
+        onUnsavedSettingsChange?.(draft.length > 0);
+        return () => onUnsavedSettingsChange?.(false);
+      }, [draft, onUnsavedSettingsChange]);
       return (
         <div data-testid="settings-page">
           <input

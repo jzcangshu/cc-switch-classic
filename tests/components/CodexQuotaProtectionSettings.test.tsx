@@ -8,6 +8,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import { CodexQuotaProtectionSettings } from "@/components/settings/CodexQuotaProtectionSettings";
+import type { CodexQuotaThresholdDraft } from "@/components/settings/CodexQuotaProtectionSettings";
 import type { SettingsFormState } from "@/hooks/useSettings";
 
 vi.mock("react-i18next", () => ({
@@ -21,15 +22,58 @@ const key = (name: string) => `settings.codexQuotaProtection.${name}`;
 
 const ENABLED = { enabled: true, fiveHourThreshold: 95, weeklyThreshold: 98 };
 
+/**
+ * 设置页按分区挂载/卸载正文，草稿必须留在页面这一层。
+ * 这里用和 SettingsPage 相同的关系：草稿在父组件，子组件按条件挂载。
+ */
+function setupPersistentDraft(save = vi.fn().mockResolvedValue(true)) {
+  const initial = { codexQuotaProtection: ENABLED } as SettingsFormState;
+  function Page() {
+    const [settings, setSettings] = useState(initial);
+    const [draft, setDraft] = useState<CodexQuotaThresholdDraft>({});
+    const [section, setSection] = useState<"general" | "other">("general");
+    return (
+      <div>
+        <button onClick={() => setSection("other")}>go-other</button>
+        <button onClick={() => setSection("general")}>go-general</button>
+        <span data-testid="section">{section}</span>
+        {section === "general" && (
+          <CodexQuotaProtectionSettings
+            settings={settings}
+            draft={draft}
+            onDraftChange={setDraft}
+            onChange={async (updates) => {
+              const previous = settings;
+              setSettings({ ...settings, ...updates });
+              try {
+                return await save(updates);
+              } catch (error) {
+                setSettings(previous);
+                throw error;
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+  render(<Page />);
+  return save;
+}
+
 function setup(
   initial: Partial<SettingsFormState> = { codexQuotaProtection: ENABLED },
   save = vi.fn().mockResolvedValue(true),
 ) {
   function Form() {
     const [settings, setSettings] = useState(initial as SettingsFormState);
+    // 和真的设置页一样，草稿存在外面的持久状态里，切分区也不丢
+    const [draft, setDraft] = useState<CodexQuotaThresholdDraft>({});
     return (
       <CodexQuotaProtectionSettings
         settings={settings}
+        draft={draft}
+        onDraftChange={setDraft}
         onChange={async (updates) => {
           // Match SettingsPage: update optimistically, then roll back on failure.
           const previous = settings;
@@ -213,6 +257,25 @@ describe("Codex official quota protection settings", () => {
       },
     });
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("keeps an unsaved threshold draft when switching settings sections", async () => {
+    const save = setupPersistentDraft();
+    const fiveHour = screen.getByRole("spinbutton", { name: key("fiveHour") });
+    fireEvent.change(fiveHour, { target: { value: "91" } });
+    expect(fiveHour).toHaveValue(91);
+
+    // 切到别的设置分区：通用分区被卸载
+    fireEvent.click(screen.getByText("go-other"));
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+
+    // 切回来：草稿还在，保存按钮仍然可用
+    fireEvent.click(screen.getByText("go-general"));
+    expect(
+      screen.getByRole("spinbutton", { name: key("fiveHour") }),
+    ).toHaveValue(91);
+    expect(screen.getByRole("button", { name: key("save") })).toBeEnabled();
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("keeps unsaved edits retryable when saving fails", async () => {

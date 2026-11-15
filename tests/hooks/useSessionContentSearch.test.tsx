@@ -16,20 +16,22 @@ vi.mock("@/lib/api/sessions", () => ({
   },
 }));
 
-function renderSearch(enabled = true) {
+function renderSearch(
+  enabled = true,
+  options: Partial<{ query: string; providerIds: string[] }> = {},
+) {
   const client = createTestQueryClient();
   return renderHook(
-    ({ enabled }) => {
+    ({ enabled }: { enabled: boolean }) => {
       const list = useSessionsQuery();
-      const options = {
-        query: "",
+      const result = useSessionContentSearch({
+        query: options.query ?? "",
         enabled,
         listIsSuccess: list.isSuccess,
         listUpdatedAt: list.dataUpdatedAt,
-        providerIds: ["claude"],
-      };
-      useSessionContentSearch(options);
-      return { ...list };
+        providerIds: options.providerIds ?? ["claude"],
+      });
+      return { ...list, content: result };
     },
     {
       initialProps: { enabled },
@@ -153,5 +155,49 @@ describe("useSessionContentSearch index synchronization", () => {
     await waitFor(() =>
       expect(sessionsApi.syncContentIndex).toHaveBeenCalledTimes(1),
     );
+  });
+});
+
+describe("useSessionContentSearch failure reporting", () => {
+  beforeEach(() => {
+    vi.mocked(sessionsApi.list).mockReset().mockResolvedValue([session]);
+    vi.mocked(sessionsApi.syncContentIndex)
+      .mockReset()
+      .mockResolvedValue({ running: false, processed: 0, total: 0 });
+    vi.mocked(sessionsApi.searchContent).mockReset();
+  });
+
+  it("surfaces an index error returned inside a successful result", async () => {
+    vi.mocked(sessionsApi.searchContent).mockResolvedValue({
+      hits: [],
+      status: { running: false, processed: 0, total: 0 },
+      error: "Session index error: database disk image is malformed",
+    });
+    const { result } = renderSearch(true, { query: "needle" });
+    await waitFor(() =>
+      expect(result.current.content.error).toBe(
+        "Session index error: database disk image is malformed",
+      ),
+    );
+    // 结果里有 error 时 hits 为空不代表没有匹配，界面据此区别于「没搜到」
+    expect(result.current.content.hits.size).toBe(0);
+  });
+
+  it("surfaces a rejected search command", async () => {
+    vi.mocked(sessionsApi.searchContent).mockRejectedValue(
+      new Error("Failed to search session content: boom"),
+    );
+    const { result } = renderSearch(true, { query: "needle" });
+    await waitFor(() => expect(result.current.content.error).toContain("boom"));
+  });
+
+  it("reports no error for an ordinary empty result", async () => {
+    vi.mocked(sessionsApi.searchContent).mockResolvedValue({
+      hits: [],
+      status: { running: false, processed: 0, total: 0 },
+    });
+    const { result } = renderSearch(true, { query: "needle" });
+    await waitFor(() => expect(sessionsApi.searchContent).toHaveBeenCalled());
+    expect(result.current.content.error).toBeNull();
   });
 });

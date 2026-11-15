@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sessionsApi } from "@/lib/api/sessions";
+import { extractErrorMessage } from "@/utils/errorUtils";
 import type { SessionContentHit, SessionIndexStatus } from "@/types";
 
 /** 输入停顿多久后才查正文（毫秒） */
@@ -42,6 +43,10 @@ interface UseSessionContentSearchResult {
   /** 索引进度；还没拿到时为 null */
   status: SessionIndexStatus | null;
   isSearching: boolean;
+  /** 正文索引查询失败的原因；失败时 `hits` 为空不代表没有匹配 */
+  error: string | null;
+  /** 重新查询（失败提示里的「重试」） */
+  retry: () => void;
 }
 
 /**
@@ -136,9 +141,20 @@ export function useSessionContentSearch({
     return map;
   }, [enabled, debounced, query, search.data]);
 
+  // 后端把索引打不开/查询失败报成结果里的 error（而不是拒绝命令），
+  // 这样元数据命中照样能用，只需额外说明正文结果不可信。命令本身失败时同样要报。
+  const settled = enabled && debounced !== "" && debounced === query.trim();
+  const error = settled
+    ? (search.error ? extractErrorMessage(search.error) : "") ||
+      search.data?.error ||
+      null
+    : null;
+
   return {
     hits,
     status: enabled ? (status ?? search.data?.status ?? null) : null,
     isSearching: enabled && query.trim() !== "" && search.isFetching,
+    error,
+    retry: () => void search.refetch(),
   };
 }

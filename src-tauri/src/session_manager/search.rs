@@ -96,6 +96,10 @@ pub struct IndexStatus {
 pub struct ContentSearchResult {
     pub hits: Vec<ContentHit>,
     pub status: IndexStatus,
+    /// 索引打不开或查询失败时的原因。为 `Some` 时 `hits` 为空并不代表正文里没有匹配，
+    /// 前端要据此提示「正文搜索失败」而不是「没有结果」。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 /// 存进索引的指纹：mtime（纳秒，取不到为 None）+ 长度
@@ -655,15 +659,26 @@ pub fn search(query: &str, providers: Option<Vec<String>>, limit: usize) -> Cont
         return ContentSearchResult {
             hits: Vec::new(),
             status,
+            error: None,
         };
     }
     let providers: Option<HashSet<String>> = providers.map(|list| list.into_iter().collect());
-    let hits =
-        with_index(|index| index.search(query, providers.as_ref(), limit)).unwrap_or_else(|e| {
-            log::warn!("会话正文搜索失败: {e}");
-            Vec::new()
-        });
-    ContentSearchResult { hits, status }
+    match with_index(|index| index.search(query, providers.as_ref(), limit)) {
+        Ok(hits) => ContentSearchResult {
+            hits,
+            status,
+            error: None,
+        },
+        // 索引只是缓存，读不出来时明确告知：空结果会被界面当成「正文里没有这个词」
+        Err(error) => {
+            log::warn!("会话正文搜索失败: {error}");
+            ContentSearchResult {
+                hits: Vec::new(),
+                status,
+                error: Some(error),
+            }
+        }
+    }
 }
 
 /// 在后台线程里把索引同步到当前的会话列表；已经在跑时只记一次「跑完再来一遍」。

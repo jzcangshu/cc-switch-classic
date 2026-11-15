@@ -137,10 +137,12 @@ export interface SessionReaderProps {
   /** 列表的搜索词：阅读页里照样高亮 */
   listQuery: string;
   /**
-   * 从正文搜索结果进入：打开时展开查找栏并填入查询词；会话读完后跳到
-   * `messageIndex` 那条消息上的命中（列表摘录所在处），而不是第一个匹配
+   * 从正文搜索结果进入：展开查找栏并填入查询词；会话读完后跳到
+   * `messageIndex` 那条消息上的命中（列表摘录所在处），而不是第一个匹配。
+   * 同一会话里再次点别的摘录时阅读器不会重新挂载，`requestId` 让每份请求
+   * 都能被认出来并重新执行定位（连点同一条摘录也算一次新的请求）。
    */
-  initialFind?: { query: string; messageIndex?: number };
+  initialFind?: { query: string; messageIndex?: number; requestId?: number };
   /** 一键恢复用的终端名；不是 macOS 时为 null（只能复制命令） */
   launchTerminal: string | null;
   hasPrev: boolean;
@@ -294,18 +296,54 @@ export function SessionReader({
     paddingEnd: 64,
   });
 
-  // 从正文搜索进入：等整段读完、命中算好后，把查找位置定到摘录所在的那条消息（只做一次）
-  const pendingMessageRef = useRef(initialFind?.messageIndex);
+  // 从正文搜索进入：等整段读完、命中算好后，把查找位置定到摘录所在的那条消息。
+  // 阅读器以会话身份做 key，同一会话里再点另一条摘录不会重新挂载，所以定位要能被再次触发：
+  // requestId 由列表在每次点摘录时自增，这里只认比上次处理过的更大的值。
+  // 没有 requestId 的请求只用于首次挂载的定位（列表改了搜索词不该覆盖查找框里用户自己改的词）。
   const transcriptReady =
     !transcript.isLoading &&
     !transcript.isStreaming &&
     messages.length === transcript.messages.length;
+  // 首次挂载：沿用「等 transcript 读完再定位」的一次性行为
+  const initialJumpRef = useRef<typeof initialFind | null>(initialFind ?? null);
+  // 已经处理过的摘录点击请求
+  const appliedRequestRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const target = pendingMessageRef.current;
-    if (target === undefined || !transcriptReady || !search) return;
-    pendingMessageRef.current = undefined;
-    setFindIndex(findMatchPositionForMessage(turns, search, target));
+    const pending = initialJumpRef.current;
+    if (!pending || !transcriptReady || !search) return;
+    if (pending.requestId !== undefined) {
+      // 首次挂载就带着点击请求时，交给下面那条 effect 处理，避免定位两次
+      return;
+    }
+    initialJumpRef.current = null;
+    if (pending.messageIndex !== undefined) {
+      setFindIndex(
+        findMatchPositionForMessage(turns, search, pending.messageIndex),
+      );
+    }
   }, [search, transcriptReady, turns]);
+
+  useEffect(() => {
+    const requestId = initialFind?.requestId;
+    if (requestId === undefined || !initialFind) {
+      if (initialFind === undefined) initialJumpRef.current = null;
+      return;
+    }
+    // 首次挂载时还算不出命中：等 transcript 读完再处理
+    if (!transcriptReady || !search) return;
+    const previous = appliedRequestRef.current;
+    if (previous !== null && requestId <= previous) return;
+    appliedRequestRef.current = requestId;
+    initialJumpRef.current = null;
+    setFindOpen(true);
+    setFindQuery(initialFind.query);
+    if (initialFind.messageIndex !== undefined) {
+      setFindIndex(
+        findMatchPositionForMessage(turns, search, initialFind.messageIndex),
+      );
+    }
+  }, [initialFind, search, transcriptReady, turns]);
 
   // 查找：跳到当前命中所在行
   useEffect(() => {

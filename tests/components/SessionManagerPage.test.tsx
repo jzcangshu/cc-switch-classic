@@ -152,7 +152,6 @@ const setupZetaSession = (word = "zeta") => {
   return searchSpy;
 };
 
-
 describe("SessionManagerPage", () => {
   beforeEach(() => {
     // 分桶按自然日进行：固定时钟到当日 12:00，避免 00:00-01:00 运行时 now-1h 的会话落入「昨天」桶
@@ -551,6 +550,21 @@ describe("SessionManagerPage", () => {
     searchSpy.mockRestore();
   });
 
+  it("re-jumps when another snippet of the already open session is clicked", async () => {
+    // 阅读器打开后列表只是藏起来（min-[900px]:flex），jsdom 里点不到条内的摘录按钮；
+    // 同一会话内的再次定位由 SessionReader 的单元测试覆盖。
+    const searchSpy = setupZetaSession();
+    renderPage("codex");
+    await screen.findByText("Needle Session");
+    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话" }), {
+      target: { value: "zeta" },
+    });
+    expect(await screen.findByText(/2 条消息命中/)).toBeInTheDocument();
+    openRow("Needle Session");
+    expect(await screen.findByText("2 / 2")).toBeInTheDocument();
+    searchSpy.mockRestore();
+  });
+
   it.each([false, true])(
     "keeps Unicode snippet highlights and clicked message positions aligned (extra: %s)",
     async (extra) => {
@@ -631,7 +645,9 @@ describe("SessionManagerPage", () => {
     await waitFor(() => expect(sync).toHaveBeenCalledTimes(1));
 
     // 列表内容不变（正文可能变了）：刷新后仍要再同步一次
-    await userEvent.click(screen.getByRole("button", { name: "会话的更多操作" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "会话的更多操作" }),
+    );
     await userEvent.click(
       await screen.findByRole("menuitem", { name: "刷新列表" }),
     );
@@ -651,6 +667,32 @@ describe("SessionManagerPage", () => {
     expect(
       await screen.findByText("没有标题、目录或首末消息匹配“const a”的会话"),
     ).toBeInTheDocument();
+  });
+
+  it("reports a text index failure instead of claiming there are no matches", async () => {
+    const searchSpy = vi.spyOn(sessionsApi, "searchContent").mockResolvedValue({
+      hits: [],
+      status: { running: false, processed: 1, total: 1 },
+      error: "Session index error: database disk image is malformed",
+    });
+    renderPage("codex");
+    await screen.findByText("Alpha Session");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话" }), {
+      target: { value: "const a" },
+    });
+
+    // 索引读不出来时不能声称「没有会话包含…」，要说明正文搜索失败
+    expect(
+      await screen.findByText(
+        "正文搜索失败，暂时只能按标题、目录和首末消息查找",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("没有会话的标题、目录或消息正文包含“const a”"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "重试" })).toBeInTheDocument();
+    searchSpy.mockRestore();
   });
 
   it("keeps message text search off by default and offers it from an empty search", async () => {

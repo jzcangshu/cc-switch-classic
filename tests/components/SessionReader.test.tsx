@@ -64,17 +64,19 @@ const onCopy = vi.fn();
 const renderReader = (
   providerId: string,
   messages: SessionMessage[],
-): ReturnType<typeof render> => {
+  initialFind?: { query: string; messageIndex?: number; requestId?: number },
+) => {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  const ui: ReactElement = (
+  const ui = (find: typeof initialFind): ReactElement => (
     <QueryClientProvider client={client}>
       <SessionReader
         session={meta(providerId)}
         appName={providerId === "claude" ? "Claude Code" : providerId}
         transcript={transcriptOf(messages)}
         listQuery=""
+        initialFind={find}
         launchTerminal={null}
         hasPrev={false}
         hasNext={false}
@@ -89,7 +91,11 @@ const renderReader = (
       />
     </QueryClientProvider>
   );
-  return render(ui);
+  const view = render(ui(initialFind));
+  return {
+    ...view,
+    rerenderFind: (find: typeof initialFind) => view.rerender(ui(find)),
+  };
 };
 
 /** 正文滚动区（右侧对话目录里也有同样的摘要，断言正文时限定在这里） */
@@ -428,6 +434,25 @@ describe("SessionReader", () => {
     fireEvent.click(open);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     vi.unstubAllGlobals();
+  });
+
+  it("同一会话里换一条摘录时重新定位，而不是停在首次的命中上", async () => {
+    const messages = [
+      msg("user", [text("zeta first")], { turnId: "t1" }),
+      msg("assistant", [text("reply")], { turnId: "t1" }),
+      msg("user", [text("again")], { turnId: "t2" }),
+      msg("assistant", [text("zeta second")], { turnId: "t2" }),
+    ];
+    const { rerenderFind } = renderReader("claude", messages, {
+      query: "zeta",
+      messageIndex: 3,
+      requestId: 1,
+    });
+    expect(await screen.findByText("2 / 2")).toBeInTheDocument();
+
+    // 列表里再点同一会话的另一条摘录：requestId 变、messageIndex 变，阅读器不重新挂载
+    rerenderFind({ query: "zeta", messageIndex: 0, requestId: 2 });
+    expect(await screen.findByText("1 / 2")).toBeInTheDocument();
   });
 
   it("查找命中在折叠的步骤里时自动展开该轮与该步", async () => {

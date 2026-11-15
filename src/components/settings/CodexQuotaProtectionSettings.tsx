@@ -13,28 +13,55 @@ export const DEFAULT_CODEX_QUOTA_PROTECTION = {
   weeklyThreshold: 98,
 };
 
+/** 阈值的输入草稿；空串保持原样，由调用方判断是否合法 */
+export interface CodexQuotaThresholdDraft {
+  fiveHour?: string;
+  weekly?: string;
+}
+
+export const quotaConfigOf = (settings: SettingsFormState) =>
+  settings.codexQuotaProtection ?? DEFAULT_CODEX_QUOTA_PROTECTION;
+
+/** 草稿里有没有未保存的阈值改动（非法输入也算改过） */
+export const hasQuotaThresholdDraft = (
+  settings: SettingsFormState,
+  draft: CodexQuotaThresholdDraft,
+) => {
+  const config = quotaConfigOf(settings);
+  const fiveHour = draft.fiveHour ?? String(config.fiveHourThreshold);
+  const weekly = draft.weekly ?? String(config.weeklyThreshold);
+  return (
+    Number(fiveHour) !== config.fiveHourThreshold ||
+    Number(weekly) !== config.weeklyThreshold
+  );
+};
+
 /**
  * Codex 官方额度保护（第三版小节形态）：ToggleRow 开关 + 启用后内联展开阈值
  * 输入与保存/重置，说明常驻可见（不使用「?」悬浮）。
+ *
+ * 阈值草稿由设置页持有：设置页按分区挂载/卸载本节，草稿留在组件里会在切分区时
+ * 丢掉，只保存在本节的组件内就会违背「切页不丢输入」的契约。
  */
 export function CodexQuotaProtectionSettings({
   settings,
   onChange,
+  draft,
+  onDraftChange,
 }: {
   settings: SettingsFormState;
   onChange: (
     updates: Partial<SettingsFormState>,
   ) => void | boolean | Promise<void | boolean>;
+  draft: CodexQuotaThresholdDraft;
+  onDraftChange: (draft: CodexQuotaThresholdDraft) => void;
 }) {
   const { t } = useTranslation();
   const id = useId();
-  const config =
-    settings.codexQuotaProtection ?? DEFAULT_CODEX_QUOTA_PROTECTION;
+  const config = quotaConfigOf(settings);
   // Keep edits separate from optimistic settings and their possible rollback.
-  const [fiveHourDraft, setFiveHourDraft] = useState<string>();
-  const [weeklyDraft, setWeeklyDraft] = useState<string>();
-  const fiveHour = fiveHourDraft ?? String(config.fiveHourThreshold);
-  const weekly = weeklyDraft ?? String(config.weeklyThreshold);
+  const fiveHour = draft.fiveHour ?? String(config.fiveHourThreshold);
+  const weekly = draft.weekly ?? String(config.weeklyThreshold);
   const [saving, setSaving] = useState(false);
   const valid = (value: string) =>
     /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 99;
@@ -42,14 +69,15 @@ export function CodexQuotaProtectionSettings({
   const dirty =
     Number(fiveHour) !== config.fiveHourThreshold ||
     Number(weekly) !== config.weeklyThreshold;
+  const editDraft = (patch: CodexQuotaThresholdDraft) =>
+    onDraftChange({ ...draft, ...patch });
 
   const save = async (next: typeof DEFAULT_CODEX_QUOTA_PROTECTION) => {
     setSaving(true);
     try {
       const saved = await onChange({ codexQuotaProtection: next });
       if (saved !== false) {
-        setFiveHourDraft(undefined);
-        setWeeklyDraft(undefined);
+        onDraftChange({});
       }
     } catch {
       toast.error(t("notifications.saveFailedGeneric"));
@@ -86,7 +114,9 @@ export function CodexQuotaProtectionSettings({
                 disabled={saving}
                 aria-invalid={!valid(fiveHour)}
                 aria-describedby={`${id}-hint`}
-                onChange={(event) => setFiveHourDraft(event.target.value)}
+                onChange={(event) =>
+                  editDraft({ fiveHour: event.target.value })
+                }
                 className="w-24"
               />
             </label>
@@ -105,7 +135,7 @@ export function CodexQuotaProtectionSettings({
                 disabled={saving}
                 aria-invalid={!valid(weekly)}
                 aria-describedby={`${id}-hint`}
-                onChange={(event) => setWeeklyDraft(event.target.value)}
+                onChange={(event) => editDraft({ weekly: event.target.value })}
                 className="w-24"
               />
             </label>

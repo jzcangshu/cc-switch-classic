@@ -617,6 +617,11 @@ export interface SessionIndexStatus {
 export interface SessionContentSearchResult {
   hits: SessionContentHit[];
   status: SessionIndexStatus;
+  /**
+   * 正文索引查询失败的原因（索引打不开、数据库损坏等）。此时 `hits` 为空并不代表
+   * 没有匹配，界面要把它和「确实没搜到」区分开。
+   */
+  error?: string;
 }
 
 export interface SessionMeta {

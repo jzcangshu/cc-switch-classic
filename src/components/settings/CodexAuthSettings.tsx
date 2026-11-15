@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { settingsApi } from "@/lib/api";
 import { formatBytes } from "@/components/settings/BackupStorageSection";
 import { CodexQuotaProtectionSettings } from "./CodexQuotaProtectionSettings";
+import type { CodexQuotaThresholdDraft } from "./CodexQuotaProtectionSettings";
 
 interface CodexAuthSettingsProps {
   settings: SettingsFormState;
@@ -17,14 +18,21 @@ interface CodexAuthSettingsProps {
   ) => void | boolean | Promise<void | boolean>;
   /** 已保存的 Codex 配置目录覆盖（不是输入框里的草稿）：变了就重读会话压缩状态 */
   codexConfigDir?: string;
+  /** 额度阈值草稿由设置页持有，切分区后不丢；不传时本节自己兜底 */
+  quotaDraft?: CodexQuotaThresholdDraft;
+  onQuotaDraftChange?: (draft: CodexQuotaThresholdDraft) => void;
 }
 
 export function CodexAuthSettings({
   settings,
   onChange,
   codexConfigDir,
+  quotaDraft,
+  onQuotaDraftChange,
 }: CodexAuthSettingsProps) {
   const { t } = useTranslation();
+  const [localQuotaDraft, setLocalQuotaDraft] =
+    useState<CodexQuotaThresholdDraft>({});
   const [showEnableConfirm, setShowEnableConfirm] = useState(false);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
   const [hasUnifyBackup, setHasUnifyBackup] = useState(false);
@@ -142,7 +150,12 @@ export function CodexAuthSettings({
         <h3 className="text-sm font-medium">{t("settings.codexAuth")}</h3>
       </div>
 
-      <CodexQuotaProtectionSettings settings={settings} onChange={onChange} />
+      <CodexQuotaProtectionSettings
+        settings={settings}
+        onChange={onChange}
+        draft={quotaDraft ?? localQuotaDraft}
+        onDraftChange={onQuotaDraftChange ?? setLocalQuotaDraft}
+      />
 
       <ToggleRow
         icon={<KeyRound className="h-4 w-4 text-emerald-500" />}

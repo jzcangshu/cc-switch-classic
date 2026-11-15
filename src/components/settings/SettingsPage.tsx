@@ -39,6 +39,10 @@ import { AboutSection } from "@/components/settings/AboutSection";
 import { RoutingSection } from "@/components/settings/sections/RoutingSection";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { GeneralSection } from "@/components/settings/sections/GeneralSection";
+import {
+  hasQuotaThresholdDraft,
+  type CodexQuotaThresholdDraft,
+} from "@/components/settings/CodexQuotaProtectionSettings";
 import { AppConfigSection } from "@/components/settings/sections/AppConfigSection";
 import {
   SettingsBlock,
@@ -66,7 +70,7 @@ interface SettingsPageProps {
   section: SettingsSection;
   hideHeader?: boolean;
   active?: boolean;
-  onUnsavedDirectoriesChange?: (dirty: boolean) => void;
+  onUnsavedSettingsChange?: (dirty: boolean) => void;
   /** 从应用页的「配置目录」进入时，定位到该应用的配置区域。 */
   appConfigScrollTarget?: AppId;
   onImportSuccess?: () => void | Promise<void>;
@@ -82,7 +86,7 @@ export function SettingsPage({
   section,
   hideHeader = false,
   active = true,
-  onUnsavedDirectoriesChange,
+  onUnsavedSettingsChange,
   appConfigScrollTarget,
   onImportSuccess,
   onOpenApp,
@@ -109,6 +113,11 @@ export function SettingsPage({
     acknowledgeRestart,
   } = useSettings();
   const { data: savedSettings } = useSettingsQuery();
+  // 额度阈值草稿提升到这里：设置页按分区挂载/卸载正文，草稿留在分区组件里会在
+  // 切分区时丢掉；同时要把「有未保存的阈值」报给外壳，离开设置页前执行确认。
+  const [quotaDraft, setQuotaDraft] = useState<CodexQuotaThresholdDraft>({});
+  const quotaDraftDirty =
+    settings !== null && hasQuotaThresholdDraft(settings, quotaDraft);
   const directoriesDirty =
     settings !== null &&
     (DIRECTORY_KEYS.some(
@@ -119,9 +128,9 @@ export function SettingsPage({
       (appConfigDir?.trim() || undefined) !==
         (initialAppConfigDir?.trim() || undefined));
   useEffect(() => {
-    onUnsavedDirectoriesChange?.(directoriesDirty);
-    return () => onUnsavedDirectoriesChange?.(false);
-  }, [directoriesDirty, onUnsavedDirectoriesChange]);
+    onUnsavedSettingsChange?.(directoriesDirty || quotaDraftDirty);
+    return () => onUnsavedSettingsChange?.(false);
+  }, [directoriesDirty, quotaDraftDirty, onUnsavedSettingsChange]);
 
   const {
     selectedFile,
@@ -387,6 +396,8 @@ export function SettingsPage({
             onStorageMigrated={(skillStorageLocation) =>
               updateSettings({ skillStorageLocation })
             }
+            quotaDraft={quotaDraft}
+            onQuotaDraftChange={setQuotaDraft}
           />
         );
       case "appConfig":
