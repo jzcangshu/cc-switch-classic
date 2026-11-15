@@ -74,7 +74,7 @@ export function ModeTabs({
   );
 
   return (
-    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-3 px-6 pt-4">
+    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-3 px-6 pb-3 pt-4">
       <div
         ref={indicator.ref}
         role="group"
