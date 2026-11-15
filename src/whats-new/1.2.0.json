@@ -17,10 +17,10 @@
     },
     {
       "type": "new",
-      "zh": "外观设置新增界面密度与缩放调节",
-      "zh-TW": "外觀設定新增介面密度與縮放調整",
-      "en": "General settings gain interface density and zoom controls",
-      "ja": "設定に表示密度とズーム調整を追加しました"
+      "zh": "首页卡片拖拽支持边缘自动滚动，长列表挪卡建组更顺手",
+      "zh-TW": "首頁卡片拖曳支援邊緣自動捲動，長列表挪卡建組更順手",
+      "en": "Home cards auto-scroll when dragged to the list edges — rearrange and group across long lists",
+      "ja": "カードを端でドラッグすると自動スクロールし、長いリストでも自由に並べ替え・グループ化できます"
     },
     {
       "type": "improve",
