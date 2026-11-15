@@ -119,14 +119,21 @@ describe("formatUsageTrendTickLabel", () => {
 });
 
 describe("formatUsageTrendTokenTickLabel", () => {
-  // 上游对语言是严格匹配，zhb/jam 这类伪造变体拿不到 CJK 单位；经典是宽匹配
-  // （zh*/ja* 前缀一律归入 zh/ja），变体拿到 CJK 单位才是预期——断言随语义反转
+  // cjkThousandUnits 只认精确 zh/zh-*/ja/ja-*；zhb/jam 这类伪造变体落进 Intl 的
+  // 默认 locale 回退——本机默认 zh、CI 默认 en，输出随运行环境变，任何固定字符串
+  // 断言都是环境骰子（本机假绿 / CI 红）。这里锁定真实契约：未知变体 = 纯 Intl
+  // compact（与显式构造的同一格式化结果恒等），不额外套 CJK 单位。
   it.each(["zhb", "jam"])(
-    "maps zh*/ja* prefixed variants to CJK axis units for %s",
+    "falls back to plain Intl compact units for %s",
     (locale) => {
       const formatter = createUsageTrendTokenTickFormatter(locale);
-      expect(formatUsageTrendTokenTickLabel(50_000_000, formatter)).toMatch(
-        /[千亿億万萬]/,
+      const expected = new Intl.NumberFormat(locale, {
+        notation: "compact",
+        compactDisplay: "short",
+        maximumFractionDigits: 1,
+      }).format(50_000_000);
+      expect(formatUsageTrendTokenTickLabel(50_000_000, formatter)).toBe(
+        expected,
       );
     },
   );
