@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 页头懒加载按钮自带 Suspense 边界：按钮挂起不再冒到全局错误边界。
 - Codex 官方登录、额度保护与子 agent 加密提示等状态文案跟进 4.0.29 的新设置入口路径（设置 → 通用 → Codex 应用增强；路由/聚合页签右侧设置）。
 
+### 致谢
+
+- @yz0812（PR #11）：独立定位了聚合模式模型目录丢失 Codex Fast 能力的成因，并对照 OpenAI Codex 源码给出完整证据链。v1.2.0 已随内核升级内置同能力——供应商卡片「保留官方 Fast 档」开关（直连/路由、原生 Responses 生效），感谢这份高质量分析。
+
 ### 预设口径（延续无推广契约）
 
 - 移除合并带入的 218 个第三方推广预设与四语言推广文案，保留火山系直营、Kimi 与 google-official 功能哨兵；新采用上游社区预设 4 家（TokenFactory / ClaudeAPI / Code0 / Genesis），其中 ClaudeAPI 与 Code0 的申请链接去除注册归因码。
